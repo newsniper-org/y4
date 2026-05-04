@@ -67,6 +67,7 @@ Y4/
 ├── LICENSE              Apache-2.0 (full text)
 ├── NOTICE               attributions + reuse manifest
 ├── README.md            this file
+├── CLAUDE.md            project context auto-loaded by Claude Code
 ├── CONTRIBUTING.md      DCO, SPDX header policy, signing
 ├── docs/
 │   ├── architecture.md  canonical design memo

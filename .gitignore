@@ -44,6 +44,10 @@ build.bk/
 .claude-memos/_completed/
 *.local.md
 
+# Claude Code per-user state (settings.local.json holds machine-local allowlists)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
 # Tooling caches
 .cache/
 .direnv/
