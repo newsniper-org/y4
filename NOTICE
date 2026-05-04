@@ -1,0 +1,56 @@
+Y4 — WaveTensor accelerator host hypervisor
+Copyright (c) 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this project except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+
+Y4 is the Type-1 host hypervisor designed to run WaveTensor accelerator
+boards across all commercial form factors (server-farm host A,
+special-purpose laptop, rack-mount node, handheld+dock unit, embedded
+SoC/SoM). Architecture rationale, base-OS reuse policy, IPC and allocator
+fusion model, formal-verification stance, and bootloader selection are
+documented in `docs/architecture.md` (canonical) and were originally drafted
+under the WaveTensor project as `host_a_custom_hypervisor.md`.
+
+================================================================================
+
+Bases that Y4 reuses (each shipping under its own license; not redistributed
+in this repository — pulled in via `third_party/` submodules):
+
+  * seL4 microkernel       https://sel4.systems/
+                           (BSD-2-Clause, formally verified)
+  * Tock OS (capsule model) https://tockos.org/
+                           (MIT OR Apache-2.0)
+  * DragonFlyBSD (LWKT, vkernel components)
+                           https://www.dragonflybsd.org/
+                           (BSD-3-Clause)
+  * Redox OS (scheme IPC, relibc, kernel core crates)
+                           https://www.redox-os.org/
+                           (MIT)
+  * Limine bootloader      https://limine-bootloader.org/
+                           (BSD-2-Clause) — primary bootloader
+
+Verification toolchain (build-time, not redistributed):
+
+  * Verus                  https://verus-lang.github.io/verus/
+                           (MIT)
+  * Coq / Rocq             https://coq.inria.fr/
+                           (LGPL-2.1)
+  * Kani                   https://model-checking.github.io/kani/
+                           (Apache-2.0 OR MIT)
+
+================================================================================
+
+Driver-layer note: GPL'd Linux drivers, when used as a 3rd-tier fallback,
+are isolated as separate capsule binaries with explicit ABI boundaries
+(no direct linking from the Apache-2.0 main tree). See
+`docs/licensing.md` §"Linux driver tier".
+
+Trademarks: "Y4", "WaveTensor", and "WT64v1" are not registered as of the
+copyright year above. Future trademark policy will be published separately
+and is not granted by the Apache-2.0 license per its §6.

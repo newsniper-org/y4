@@ -1,0 +1,54 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Build artifacts
+build/
+out/
+dist/
+*.o
+*.a
+*.elf
+*.bin
+*.img
+*.efi
+
+# seL4 / kernel build
+build.bk/
+*.dtb
+*.dtbo
+
+# Verification artifacts
+*.vo
+*.vok
+*.vos
+*.glob
+*.aux
+.coq-native/
+.crusti_caesar/
+*.proof
+*.smt2.cache
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local notes / private deployment
+.private/
+.claude-memos/_completed/
+*.local.md
+
+# Tooling caches
+.cache/
+.direnv/
+.pre-commit-cache/
+
+# Submodule scratch
+third_party/*/build/
+third_party/*/.git/
