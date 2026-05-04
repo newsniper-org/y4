@@ -64,6 +64,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "y4-capsules"
+version = "0.0.0"
+dependencies = [
+ "heapless",
+]
+
+[[package]]
 name = "y4-ipc"
 version = "0.0.0"
 dependencies = [

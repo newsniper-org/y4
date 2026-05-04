@@ -5,6 +5,7 @@
 resolver = "3"
 members = [
     "alloc",
+    "capsules",
     "ipc",
     "scudo-sys",
 ]
