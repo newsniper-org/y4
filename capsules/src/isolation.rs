@@ -131,12 +131,13 @@ pub fn c3_holds(s: &CapsulesState) -> bool {
             }
             for ta in &cap_a.cap_set {
                 for tb in &cap_b.cap_set {
-                    if let (Some(token_a), Some(token_b)) = (s.tokens.get(ta), s.tokens.get(tb)) {
-                        if token_a.resource == token_b.resource && ta == tb {
-                            // Same resource, same token id, two
-                            // distinct holders — violates C3.
-                            return false;
-                        }
+                    if let (Some(token_a), Some(token_b)) = (s.tokens.get(ta), s.tokens.get(tb))
+                        && token_a.resource == token_b.resource
+                        && ta == tb
+                    {
+                        // Same resource, same token id, two distinct
+                        // holders — violates C3.
+                        return false;
                     }
                 }
             }

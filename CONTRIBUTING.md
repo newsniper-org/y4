@@ -89,7 +89,7 @@ For documentation:
 
 ## 4. Code style
 
-Phase 0 / Phase 1 internal-only — style guide will be promoted to a
+Phase A–E internal-only — style guide will be promoted to a
 proper file when external contribution begins. Until then:
 
 - Rust: `cargo fmt` + `cargo clippy -- -D warnings` clean.

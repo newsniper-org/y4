@@ -5,7 +5,7 @@
 //! scudo standalone allocator (`y4-scudo-sys`).
 //!
 //! Hosted Linux only (`#[cfg(feature = "scudo")]` gating lives at
-//! [`crate`] root).  When Y4 is built for the seL4 / no_std target the
+//! [`crate`] root).  When Y4 is built for the seL4 / `no_std` target the
 //! Rust [`crate::hardened::HardenedBackend`] is used instead — scudo
 //! will be wired into `kernel/` once that subsystem provides the
 //! platform shims (mmap, pthread).

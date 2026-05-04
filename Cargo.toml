@@ -24,12 +24,17 @@ members = [
 # crates.io, and is invoked directly by the `verus` CLI from
 # `proofs/verus/justfile`.  Including it here would force cargo to resolve
 # `use vstd::prelude::*;` against a non-existent crates.io entry.
-exclude = ["proofs/verus"]
+#
+# `kernel/` is excluded because it builds for `x86_64-unknown-none` (its
+# own .cargo/config.toml selects the target) — it is not a hosted Rust
+# crate and would derail `cargo build --workspace`.  Build it via
+# `just kernel-build`.
+exclude = ["proofs/verus", "kernel"]
 
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.94"
 authors = ["윤병익 (BYUNG-IK YEUN) and Y4 contributors"]
 license = "Apache-2.0"
 repository = "https://github.com/y4-hypervisor/y4"

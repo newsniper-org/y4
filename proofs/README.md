@@ -12,20 +12,23 @@
 | 도구 | 역할 | 위치 |
 |------|------|------|
 | **Verus** | Rust-native 명세 + 증명. lease capability invariant, allocator 안전성, IPC 타입 안전성 등 Rust 코드와 직접 정렬되는 모든 증명 | [`./verus/`](./verus/) |
-| **Coq** | Verus 가 표현 못 하는 high-level invariant. cross-component 보안 정리, 비-Rust 컴포넌트(seL4 wrapper 등)의 모델링 | [`./coq/`](./coq/) |
+| **Rocq** (formerly Coq) | Verus 가 표현 못 하는 high-level invariant. cross-component 보안 정리, 비-Rust 컴포넌트(seL4 wrapper 등)의 모델링 | [`./coq/`](./coq/) |
 
 원칙은 CLAUDE.md §6.6 ("Formal-first verification") 참조.
 
-## 설치 상태 (2026-05-04 기준)
+## 현황 (2026-05-04)
 
-- **Coq:** 설치 진행 중 (사용자 측). `coqc` 가 PATH 에 들어오면 `just coq`
-  가 즉시 동작.
-- **Verus:** 아직 미설치. 설치 가이드는 [`./verus/README.md`](./verus/README.md).
-  설치 전까지 `just verus` 는 친절한 에러를 출력하고 exit 1.
-
-`just tools-check` (top-level) 가 두 도구의 존재 여부를 확인하고,
-Verus/Coq 가 없을 때는 fatal 이 아닌 **warn** 으로 보고한다 — 도구 설치
-이전이라도 cargo build / cargo test 는 진행 가능.
+- **Verus:** AUR `verus-bin` 설치됨 (`/usr/bin/verus`). vstd 는
+  `/opt/verus/libvstd.rlib` 에서 자동 link.
+- **Rocq:** 시스템 패키지 9.x 설치됨 (`/usr/bin/rocq` 신규 + `/usr/bin/coqc`
+  legacy 호환).
+- **명세:** **`just verus` → 50 verified, 0 errors** (alloc 13 + ipc 13 +
+  capsules 11 + error 1 + 모듈 top-level + refinement 10 + placeholder 등).
+  **`just coq` → Rocq 9.1.1 trivial theorem placeholder 통과**.
+- **Refinement:** alloc/ipc 각 모듈에 `refinement.rs` 추가 — 10개
+  invariant 가 `assume()` 대신 executable spec function + 귀납 증명으로
+  discharge. 자세한 내역은 [`./verus/src/alloc/refinement.rs`](./verus/src/alloc/refinement.rs)
+  와 [`./verus/src/ipc/refinement.rs`](./verus/src/ipc/refinement.rs).
 
 ## 워크플로우
 

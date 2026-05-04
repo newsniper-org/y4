@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+
+[package]
+name = "y4-roottask"
+description = "Y4 root task — first userland program seL4 hands control to.  Phase B step 5 milestone: 'Hello, Y4' on the serial console."
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.94"
+authors = ["윤병익 (BYUNG-IK YEUN) and Y4 contributors"]
+license = "Apache-2.0"
+publish = false
+
+# Bare-metal binary: no std, custom entry point, custom link layout.
+[[bin]]
+name = "y4-roottask"
+path = "src/main.rs"
+
+[dependencies]
+
+# Roottask must use abort on panic (no unwinding in `no_std` userland).
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = 2
+lto = false
+debug = true
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }

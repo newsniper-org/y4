@@ -71,19 +71,19 @@ qemu-boot target="x86_64-debug":
         -display none \
         -no-reboot
 
-# Smoke test: boot under QEMU for ≤ 15 s and assert seL4 produced any
-# boot output ("Boot config:" line).  Phase B step 2 milestone = this
-# passes.  The literal "Hello, Y4" string requires a Y4 root task,
-# which lives in kernel/ (Phase B step 3+).
+# Smoke test: boot under QEMU for ≤ 15 s and assert the Y4 root task
+# greeted on the serial.  Phase B step 5 milestone = this passes.
+# The earlier Phase B step 2 milestone (seL4 boot path reached) is
+# implied — without it the greeting can't appear.
 qemu-smoke target="x86_64-debug":
     @timeout 15 qemu-system-x86_64 \
         -machine q35 -cpu max -m 512 \
         -cdrom ../build/iso/y4-{{target}}.iso \
         -serial mon:stdio -display none -no-reboot 2>&1 \
         | tee /tmp/y4-qemu-smoke.log \
-        | grep -q '^Boot config:' \
-        && echo "[qemu-smoke] PASS — seL4 boot path reached" \
-        || (echo "[qemu-smoke] FAIL — no seL4 boot output. log:"; cat /tmp/y4-qemu-smoke.log; exit 1)
+        | grep -q '^Hello, Y4' \
+        && echo "[qemu-smoke] PASS — root task greeted on serial" \
+        || (echo "[qemu-smoke] FAIL — no 'Hello, Y4' on serial. log:"; cat /tmp/y4-qemu-smoke.log; exit 1)
 
 # --- Cleanup ------------------------------------------------------------
 

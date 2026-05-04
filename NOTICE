@@ -20,29 +20,52 @@ under the WaveTensor project as `host_a_custom_hypervisor.md`.
 ================================================================================
 
 Bases that Y4 reuses (each shipping under its own license; not redistributed
-in this repository — pulled in via `third_party/` submodules):
+in this repository — pulled in via `third_party/` git submodules or, for
+LLVM scudo, via the on-demand vendoring described in
+`third_party/scudo/README.md`):
 
   * seL4 microkernel       https://sel4.systems/
                            (BSD-2-Clause, formally verified)
-  * Tock OS (capsule model) https://tockos.org/
+                           pinned: 15.0.0     (`third_party/sel4/`)
+  * Limine bootloader      https://limine-bootloader.org/
+                           (BSD-2-Clause)
+                           pinned: v12.1.0    (`third_party/limine/`)
+  * LLVM scudo standalone  https://llvm.org/
+                           (Apache-2.0 with LLVM exception)
+                           pinned via SHA in `third_party/scudo/PIN.toml`,
+                           materialised by `just scudo-fetch`
+                           (vendored on demand — sidesteps the 175k-file
+                           git index a full llvm-project submodule incurs)
+  * Tock OS (capsule model — design + selected crates)
+                           https://tockos.org/
                            (MIT OR Apache-2.0)
-  * DragonFlyBSD (LWKT, vkernel components)
+  * DragonFlyBSD (LWKT msgport, lock-free SLAB — algorithmic port)
                            https://www.dragonflybsd.org/
                            (BSD-3-Clause)
-  * Redox OS (scheme IPC, relibc, kernel core crates)
+                           read-only reference at
+                           /home/ybi/y4-upstream-refs/dragonfly/
+  * Redox OS (scheme IPC dispatcher — algorithmic port)
                            https://www.redox-os.org/
                            (MIT)
-  * Limine bootloader      https://limine-bootloader.org/
-                           (BSD-2-Clause) — primary bootloader
+                           read-only reference at
+                           /home/ybi/y4-upstream-refs/redox-kernel/
 
 Verification toolchain (build-time, not redistributed):
 
   * Verus                  https://verus-lang.github.io/verus/
                            (MIT)
-  * Coq / Rocq             https://coq.inria.fr/
+                           Arch Linux: `verus-bin` AUR package
+  * Rocq (formerly Coq)    https://rocq-prover.org/
                            (LGPL-2.1)
+                           pinned: 9.x via system package
   * Kani                   https://model-checking.github.io/kani/
-                           (Apache-2.0 OR MIT)
+                           (Apache-2.0 OR MIT) — reserved, not yet wired
+
+Build orchestration (host-side tools, not redistributed):
+
+  * just                   https://just.systems/                (CC0)
+  * logicutils             freshcheck / stamp / lu-par / lu-rule
+                           /home/ybi/logicutils/                (LGPL-3.0)
 
 ================================================================================
 

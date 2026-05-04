@@ -72,6 +72,14 @@ test:
 
 # --- Verification (formal-first gate) ------------------------------------
 
+# --- Phase B step 5: kernel/ root task ----------------------------------
+
+# Build the Y4 root task ELF (bare-metal x86_64-unknown-none).  Excluded
+# from the workspace — its own .cargo/config.toml selects the target.
+roottask-build:
+    cd kernel && cargo build --release
+    @ls -lh kernel/target/x86_64-unknown-none/release/y4-roottask
+
 # --- Phase B step 2: boot subtree ---------------------------------------
 
 # Verify host build prerequisites for the boot chain (cmake/ninja/gcc/...).

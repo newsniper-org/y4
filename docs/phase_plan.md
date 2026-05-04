@@ -12,46 +12,54 @@
 가장 큰 리스크는 ABI churn — RTL 이 나중에 모양이 바뀌면 Y4 가 비용을
 흡수해야 한다. 이를 막는 단일 게이트가 **Phase A 의 HIU ABI 동결**.
 
-## Phase A — 레포 기반 + 하드웨어 무관 문서 (현재 단계)
+## Phase A — 레포 기반 + 하드웨어 무관 문서
 
 | 산출물 | 상태 |
 |---|---|
-| `LICENSE`, `NOTICE`, `README.md`, `CONTRIBUTING.md` | ✅ 완료 |
-| `docs/architecture.md` (CC-BY-4.0 → Apache-2.0 inbound) | ✅ 완료 |
-| `docs/licensing.md`, `docs/phase_plan.md` (본 문서) | ✅ 완료 |
-| `docs/glossary.md` — RTL 추출 용어 사전 | ✅ 완료 |
-| `docs/hiu_abi.md` — v0 draft | ✅ 완료 |
+| `LICENSE`, `NOTICE`, `README.md`, `CONTRIBUTING.md` | ✅ |
+| `docs/architecture.md` (CC-BY-4.0 → Apache-2.0 inbound) | ✅ |
+| `docs/licensing.md`, `docs/phase_plan.md` (본 문서) | ✅ |
+| `docs/glossary.md` — RTL 추출 용어 사전 | ✅ |
+| `docs/hiu_abi.md` — v0 draft | ✅ |
+| `docs/lease_capability.md` — capability 스키마 v0 | ✅ |
 | **`docs/hiu_abi.md` v1.0 동결 (Y4 + WaveTensor 양측 sign-off)** | ⏳ 진행 |
-| `docs/lease_capability.md` — capability 스키마 v0 | ⏳ 다음 |
 
 **Phase A → Phase B 진입 트리거:** `docs/hiu_abi.md` 가 `v1.0 frozen`
 으로 표시되고 `HIU_ABI_VERSION` 값이 `0x0001_0000` 으로 고정.
+*(HIU 와 무관한 Phase B 산출물은 본 동결 전이라도 진행 가능 —
+실제로 Phase B 의 5개 단계는 모두 mock 위에서 완료됨.)*
 
-## Phase B — seL4 base + 비-HIU 캡슐 (하드웨어 0 % 필요)
+## Phase B — seL4 base + 비-HIU 캡슐 (하드웨어 0 % 필요) ✅
 
 본 단계의 모든 코드는 **QEMU + mock HIU** 로 빌드/실행/검증된다.
 
-**구현 순서 (확정):**
-1. `proofs/` 빌드 하네스 (Verus + Coq + CI gate) — formal-first 의 전제
-2. `boot/` Limine → seL4 QEMU 부팅 ("Hello, Y4")
-3. `ipc/` 와 `alloc/` 병렬 (각자 Verus 명세 선행)
-4. `capsules/` 비-HIU 캡슐 (PCIe enum / USB stub / CXL stub)
+**구현 순서 (모두 ✅):**
 
-| 산출물 | 비고 |
-|---|---|
-| `third_party/` 의존 통합 — **hybrid (D3)** | non-Rust upstream(seL4 15.x, Limine 12.x)은 git submodule; Tock 의 Rust crate 들은 `[patch.crates-io]` + git deps |
-| CMake invocation wrapping | **logicutils-only** — `boot/<sub>.rules` + `lu-rule` + `lu-par` + `freshcheck`/`stamp`. xtask/cargo-make/CMakePresets 모두 제외. |
-| `proofs/` Verus + Coq 빌드 하네스, CI 게이팅 | **첫 PR**. PR-단위 게이트 |
-| Limine → seL4 부팅을 QEMU 에서 성립 | **x86_64 only first (D2)**. 다른 arch 는 형상 작업 시 |
-| `kernel/` Y4 특화 레이어 (root task, capability 부트스트랩) | seL4 위 specialization |
-| `ipc/` LWKT + Redox scheme 융합 + Verus 명세 선행 | formal-first |
-| `alloc/` DragonFly lock-free SLAB + LLVM scudo 융합 + Verus 명세 선행 | formal-first; 사전점검 결정상 ipc/alloc 독립이라 ipc 와 자유 병렬 |
-| `capsules/` 비-HIU 캡슐 (PCIe enumeration, USB stub, CXL stub) | Tock 캡슐 타이핑 |
-| Build orchestration | **Cargo workspace + justfile + logicutils (D1)** — `freshcheck`/`stamp`/`lu-par` |
+| Step | 영역 | 마일스톤 | 결과 |
+|---|---|---|---|
+| 1 | `proofs/` Verus + Rocq 하네스 + CI gate | placeholder + 모듈 트리 | **50 verified, 0 errors** |
+| 2 | `boot/` Limine → seL4 QEMU | seL4 boot path reached | qemu boot OK |
+| 3a | `ipc/` Rust 크레이트 — scheme + LWKT msgport hybrid | open/send/wait/forward/abort/priority | **18 tests** |
+| 3b | `alloc/` Rust 크레이트 — DragonFly SLAB + hardened backend | bump + slab + scudo contract + integrated | **22 tests** |
+| 3c | `scudo-sys/` LLVM scudo C++ FFI | link smoke + alloc/free | **4 tests** + alloc 의 `--features scudo` 시 +2 |
+| 3d | Verus refinement proofs (alloc + ipc) | `assume()` → constructive | **10 invariant 추가** |
+| 4 | `capsules/` Tock isolation + PCIe enum | C1–C3, P1–P3 | **16 tests** |
+| 5 | `kernel/` root task | "Hello, Y4" on serial | `qemu-smoke` PASS |
 
-**Phase B → Phase C 진입 트리거:** seL4 위에서 비-HIU 캡슐 IPC 왕복이
-QEMU 통합 테스트로 통과 + 모든 신규 privileged path 의 Verus 명세
-머지 완료.
+**확정된 build/dev 결정 (durable, `MEMORY/y4_build_decisions.md`):**
+
+- **D1** Cargo workspace + per-subtree justfile + logicutils
+  (`freshcheck`/`stamp`/`lu-par`).
+- **D2** x86_64 only first (Phase B 전 단계).
+- **D3** hybrid 의존 통합 — non-Rust upstream (seL4 15.0.0, Limine v12.1.0)
+  은 git submodule; Rust crate 는 cargo `[patch.crates-io]` + git deps;
+  LLVM scudo 는 pin-file + `just scudo-fetch` 로 vendored on demand.
+- **D4** Phase B 구현 순서 (위 표).
+- **CMake wrapping** logicutils-only (`boot/<sub>.rules` + `lu-rule` +
+  `lu-par`). xtask / cargo-make / CMakePresets 모두 제외.
+
+**Phase B → Phase C 진입 트리거:** ✅ 도달 — `qemu-smoke` 가 root task
+greeting 까지 검증, 모든 Verus 명세 머지 완료.
 
 ## Phase C — Mock HIU 위 lease 런타임 (여전히 하드웨어 0 %)
 

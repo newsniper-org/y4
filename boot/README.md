@@ -77,19 +77,25 @@ just qemu-boot
 
 각 recipe 는 logicutils sentinel 로 hash-driven incremental.
 
-## 현 상태 (2026-05-04)
+## 현 상태 (Phase B 완료)
 
 - ✅ submodule 핀 확정 (sel4 15.0.0, limine v12.1.0)
 - ✅ logicutils-only 호출 framework 골격
-- ✅ `just sel4-build` — `kernel.elf` 1.2 MB 산출 (KernelDebugBuild + KernelPrinting + uniprocessor + PCID/HugePage off + FSGSBASE msr fallback for QEMU emulated CPU)
-- ✅ `just limine-build` — Limine 12.1.0 host-side 5 binary (limine, BOOTX64.EFI, limine-bios.sys, limine-bios-cd.bin, limine-uefi-cd.bin)
-- ✅ `just iso-build` — 19 MB hybrid BIOS+UEFI ISO via xorriso
-- ✅ `just qemu-smoke` — seL4 가 QEMU 에서 부팅 경로 진입 확인 (`Boot config:` 출력) — Phase B step 2 milestone
+- ✅ `just sel4-build` — `kernel.elf` 1.2 MB 산출 (KernelDebugBuild +
+  KernelPrinting + uniprocessor + PCID/HugePage off + FSGSBASE msr
+  fallback for QEMU emulated CPU)
+- ✅ `just limine-build` — Limine 12.1.0 host-side 5 binary (limine,
+  BOOTX64.EFI, limine-bios.sys, limine-bios-cd.bin, limine-uefi-cd.bin)
+- ✅ `just roottask-build` — `y4-roottask` ELF (`x86_64-unknown-none`,
+  19 KB)
+- ✅ `just iso-build` — hybrid BIOS+UEFI ISO with kernel + roottask +
+  Limine via xorriso
+- ✅ `just qemu-smoke` — root task 의 시리얼 greeting 검출 →
+  **Phase B step 5 milestone "Hello, Y4" PASS**
 
-다음 milestone 은 Phase B step 3 의 영역: `kernel/` 서브시스템이 들어와
-seL4 root task 로서 동작하면 그때 비로소 "Hello, Y4" 문자열이 시리얼에
-나타난다. 현재 boot 출력은 root task 부재로 `boot_sys failed: no boot
-modules` 에서 halt — 이것이 Phase B step 2 의 정상 종료 상태.
+`limine.conf` 의 `module_path: boot():/boot/y4-roottask.elf` 가 root
+task ELF 를 multiboot1 module 로 노출하면, seL4 가 이를 `boot_module`
+로 인식하여 entry point (0x401000) 로 점프한다.
 
 ## 비-목표 (Phase B step 2 범위 외)
 

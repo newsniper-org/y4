@@ -24,13 +24,22 @@ if a change crosses into WaveTensor's RTL ABI.
 
 ## 2. Status
 
-**Scaffold + Phase A docs.** Y4 가 WaveTensor RTL 의 실제 운용 전에
-먼저 개발된다 — 운용 데이터 대신 **HIU ABI 명세**(`docs/hiu_abi.md`)가
+**Phase B complete.** Y4 가 WaveTensor RTL 의 실제 운용 전에 먼저
+개발된다 — 운용 데이터 대신 **HIU ABI 명세**(`docs/hiu_abi.md`)가
 capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로 격리.
 
-Phase A → Phase B 진입 트리거: `docs/hiu_abi.md` 가 `v1.0 frozen` 으로
+5개 Phase B 단계 모두 그린:
+1. `proofs/` Verus + Rocq 하네스 (50 verified, 0 errors)
+2. `boot/` Limine v12.1.0 + seL4 15.0.0 → QEMU `qemu-smoke` PASS
+3. `ipc/` (18 tests) + `alloc/` (22 tests, +2 with `--features scudo`)
+   Rust 크레이트 + Verus refinement proof
+4. `capsules/` PCIe enum 드라이버 (16 tests)
+5. `kernel/` root task — 시리얼에 **`Hello, Y4`** 출력
+   (`qemu-smoke` PASS)
+
+**HIU/lease 런타임은 차단**: `docs/hiu_abi.md` 가 `v1.0 frozen` 으로
 표시되고 (Y4 + WaveTensor 양측 sign-off), `HIU_ABI_VERSION` 레지스터
-값이 `0x0001_0000` 으로 고정.
+값이 `0x0001_0000` 으로 고정될 때까지.
 
 전체 Phase A → Phase E 진행은 `docs/phase_plan.md` 참조.
 
@@ -90,29 +99,36 @@ systemd-tied; misaligned with Y4's BSD/Redox/Tock+Rust ecosystem),
 Y4/
 ├── LICENSE              Apache-2.0 (full text)
 ├── NOTICE               attributions + reuse manifest
-├── README.md            project overview
+├── README.md            project overview (longer + per-subsystem status)
 ├── CONTRIBUTING.md      DCO sign-off + SPDX header rules
 ├── CLAUDE.md            this file (Claude Code project context)
+├── Cargo.toml           workspace root
+├── rust-toolchain.toml  channel = stable (MSRV 1.94)
+├── justfile             top-level recipes (ci / scudo-fetch / mirror-memory / ...)
 ├── docs/
-│   ├── architecture.md  canonical design memo (Apache-2.0 inbound from WaveTensor's CC-BY-4.0)
-│   ├── licensing.md     Apache-2.0 main + GPL-capsule isolation
-│   └── phase_plan.md    Phase 0 → Phase 4 progression
-└── third_party/         seL4, Tock, etc. (added as git submodules in Phase 1)
+│   ├── architecture.md     canonical design memo
+│   ├── glossary.md         WaveTensor terms (HIU/lease/TRNG/...) extracted from RTL
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI v0 (frozen → unblocks `hiu/`)
+│   ├── lease_capability.md lease capability schema v0
+│   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
+│   └── phase_plan.md       Phase A → Phase E progression + entry triggers
+├── alloc/               y4-alloc (DragonFly SLAB + hardened backend)
+├── capsules/            y4-capsules (Tock isolation + PCIe enum)
+├── ipc/                 y4-ipc (Redox scheme + LWKT msgport hybrid)
+├── kernel/              y4-roottask (bare-metal x86_64-unknown-none)
+├── scudo-sys/           y4-scudo-sys (LLVM scudo C++ FFI)
+├── boot/                Limine config + seL4 cmake rules + ISO assembly
+├── proofs/{verus,coq}/  Verus + Rocq specifications + CI gate
+├── tools/{git-hooks,scudo-fetch.sh}
+├── .claude-memories/    read-only mirror of Claude Code's project memory
+└── third_party/
+    ├── sel4/            git submodule (seL4 15.0.0)
+    ├── limine/          git submodule (Limine v12.1.0)
+    └── scudo/           pinned standalone (PIN.toml + materialised on demand)
 ```
 
-When Phase 1 begins, these top-level dirs will be added — they are
-**deliberately omitted from the scaffold** so empty placeholders don't
-accumulate:
-
-```
-kernel/    Y4 specialization layer above seL4
-capsules/  Tock-style driver capsules (PCIe / USB / CXL / HIU)
-ipc/       fused LWKT + Redox-scheme IPC implementation
-alloc/     fused DragonFly lock-free SLAB + LLVM scudo allocator
-hiu/       HIU integration & lease capability runtime
-boot/      Limine config + Y4 first-stage handoff
-proofs/    Verus and Coq specifications
-```
+`hiu/` is the one Phase B subsystem still missing — blocked on
+`docs/hiu_abi.md` v1.0 frozen.
 
 ## 6. Engineering principles
 

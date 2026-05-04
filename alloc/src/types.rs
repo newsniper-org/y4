@@ -97,6 +97,6 @@ impl Allocation {
     /// `true` if `range.start` honours `layout.align`.
     #[must_use]
     pub fn aligned(&self) -> bool {
-        self.range.start % self.layout.align == 0
+        self.range.start.is_multiple_of(self.layout.align)
     }
 }

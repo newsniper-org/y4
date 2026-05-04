@@ -22,18 +22,21 @@ target="${1:?usage: assemble-iso.sh <target>}"
 
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 kernel="${repo_root}/build/sel4/${target}/kernel.elf"
+roottask="${repo_root}/kernel/target/x86_64-unknown-none/release/y4-roottask"
 limine_dir="${repo_root}/third_party/limine"
 limine_conf="${repo_root}/boot/limine.conf"
 iso_root="${repo_root}/build/iso/${target}-staging"
 iso_out="${repo_root}/build/iso/y4-${target}.iso"
 
 [[ -f "$kernel"      ]] || { echo "missing: $kernel  (run 'just sel4-build ${target}' first)";  exit 1; }
+[[ -f "$roottask"    ]] || { echo "missing: $roottask  (run 'just roottask-build' first)"; exit 1; }
 [[ -f "$limine_conf" ]] || { echo "missing: $limine_conf"; exit 1; }
 [[ -d "$limine_dir"  ]] || { echo "missing: third_party/limine submodule"; exit 1; }
 command -v xorriso >/dev/null || { echo "missing: xorriso (Arch: pacman -S libisoburn)"; exit 1; }
 
 mkdir -p "${iso_root}/boot/limine"
 cp "$kernel"      "${iso_root}/boot/kernel.elf"
+cp "$roottask"    "${iso_root}/boot/y4-roottask.elf"
 cp "$limine_conf" "${iso_root}/boot/limine/limine.conf"
 
 # Limine 12.x ships the BIOS payloads as build artifacts; copy whatever
