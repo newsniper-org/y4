@@ -4,45 +4,29 @@
 //! Y4 allocator specifications — `DragonFly lock-free SLAB` front-end +
 //! `LLVM scudo` backend (decision A-P1).
 //!
-//! Layered structure:
-//!
-//! ```text
-//! caller
-//!   │
-//!   ▼
-//! [SLAB front-end]   ← per-CPU magazine, hot-path object cache
-//!   │
-//!   ▼
-//! [scudo backend]    ← NUMA-aware quarantine, randomization,
-//!                      guard pages, UAF detection
-//!   │
-//!   ▼
-//! seL4 kernel API:
-//!   seL4_X86_Page_Map / Unmap, seL4_X86_PageTable_Map,
-//!   seL4_Untyped_Retype                       (C4 trusted boundary)
-//! ```
-//!
-//! Each layer has its own spec file in this module.  See
-//! `proofs/verus/src/alloc/README.md` for the v0 invariant catalog.
+//! See `proofs/verus/src/alloc/README.md` for the v0 invariant catalog.
 
 use vstd::prelude::*;
 
+pub mod state;
 pub mod slab;
 pub mod scudo;
 pub mod boundary;
 
+use state::*;
+
 verus! {
 
-/// Top-level no-overlap invariant.  Holds across the whole alloc
-/// subsystem — both the SLAB and scudo layers individually preserve
-/// it, and the boundary contract ensures it under composition.
-///
-/// ⚠ TODO Phase B step 3 — body intentionally empty, awaiting concrete
-///       heap state model.  The signature stands so dependent specs
-///       can call `alloc_no_overlap(...)` without recompile breakage.
-pub proof fn alloc_no_overlap()
-    ensures true,
+/// Top-level no-overlap invariant.  Lifts X3 (composed_no_overlap) to
+/// the alloc-public surface so callers can reason about safety without
+/// reaching into either layer.
+pub proof fn alloc_no_overlap(s: AllocState)
+    requires
+        s.scudo.live_well_formed(),
+        s.slab.magazines_well_formed(),
+    ensures boundary::alloc_no_overlap_holds(s)
 {
+    boundary::composed_no_overlap(s);
 }
 
 } // verus!
