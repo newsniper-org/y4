@@ -17,11 +17,20 @@
 //! │   └── README.md
 //! ├── alloc/        ← DragonFly SLAB + LLVM scudo (A-P1)
 //! │   ├── mod.rs
+//! │   ├── state.rs
 //! │   ├── slab.rs
 //! │   ├── scudo.rs
 //! │   ├── boundary.rs
 //! │   └── README.md
-//! ├── kernel/       ← seL4 root-task + cap bootstrap (Phase B step 4+)
+//! ├── capsules/     ← Tock-style isolation + PCIe/USB/CXL (Phase B step 4)
+//! │   ├── mod.rs
+//! │   ├── state.rs
+//! │   ├── isolation.rs
+//! │   ├── pcie.rs
+//! │   ├── usb.rs
+//! │   ├── cxl.rs
+//! │   └── README.md
+//! ├── kernel/       ← seL4 root-task + cap bootstrap (Phase B step 5+)
 //! └── lease/        ← LeaseCap I1–I6 (deferred — needs hiu_abi v1.0)
 //! ```
 //!
@@ -34,6 +43,7 @@ use vstd::prelude::*;
 pub mod error;
 pub mod alloc;
 pub mod ipc;
+pub mod capsules;
 
 verus! {
 

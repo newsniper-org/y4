@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# LLVM scudo standalone — pinned upstream coordinate.
+#
+# `just scudo-fetch` materialises this exact commit into
+# `third_party/scudo/standalone/` (gitignored).  The fetch is shallow +
+# sparse (only the standalone subdir is downloaded), so the local
+# footprint is ~1 MB regardless of LLVM tree size.
+#
+# To bump the pin: edit `commit` below to the new SHA, run
+# `just scudo-fetch`, then `cargo test -p y4-scudo-sys` to confirm
+# the new revision still links.
+
+repo    = "https://github.com/llvm/llvm-project.git"
+branch  = "main"
+# Pinned commit (full SHA — short SHAs are not reproducible).
+commit  = "dc79e2a9a1c6809c940ef87c405ed8590768cceb"
+# Subdirectory of the upstream tree we vendor.
+subpath = "compiler-rt/lib/scudo/standalone"
+# Date of the pinned commit (informational; not used by the fetch script).
+date    = "2026-05-04"
+# Subject line of the pinned commit (informational).
+subject = "[flang] avoid introducing iteration dependencies in WHERE and FORALL temporaries (#195053)"

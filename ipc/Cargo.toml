@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+
+[package]
+name = "y4-ipc"
+description = "Y4 hypervisor IPC: Redox scheme + DragonFly LWKT msgport hybrid."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "y4_ipc"
+path = "src/lib.rs"
+
+[dependencies]
+heapless = { version = "0.9", default-features = false }
+
+[lints]
+workspace = true

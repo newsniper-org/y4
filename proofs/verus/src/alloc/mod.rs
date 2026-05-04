@@ -12,6 +12,7 @@ pub mod state;
 pub mod slab;
 pub mod scudo;
 pub mod boundary;
+pub mod refinement;
 
 use state::*;
 

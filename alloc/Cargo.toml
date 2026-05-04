@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+
+[package]
+name = "y4-alloc"
+description = "Y4 hypervisor memory allocator: DragonFly SLAB front-end + LLVM scudo backend."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "y4_alloc"
+path = "src/lib.rs"
+
+[features]
+default = []
+# Optional dependency on the LLVM scudo C++ allocator.  Pulled into
+# `cargo test` runs and any hosted Linux build that opts in; the seL4 /
+# no_std target stays on the Rust hardened backend until `kernel/`
+# provides scudo's platform shims.
+scudo = ["dep:y4-scudo-sys"]
+
+[dependencies]
+heapless = { version = "0.9", default-features = false }
+y4-scudo-sys = { path = "../scudo-sys", optional = true }
+
+[lints]
+workspace = true

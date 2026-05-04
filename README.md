@@ -89,7 +89,7 @@ boot/      Limine + seL4 chain (Phase B step 2 milestone) (✅ qemu-smoke PASS)
 kernel/    Y4 specialization layer above seL4             (⏳ pending)
 ipc/       fused LWKT + Redox-scheme IPC implementation   (⏳ pending)
 alloc/     DragonFly SLAB + LLVM scudo                    (⏳ pending)
-capsules/  Tock-style driver capsules (non-HIU)           (⏳ pending)
+capsules/  Tock-style driver capsules (non-HIU)           (✅ spec scaffolded)
 hiu/       HIU integration & lease capability runtime     (⛔ blocked: hiu_abi v1.0)
 ```
 

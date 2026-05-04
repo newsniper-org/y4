@@ -3,7 +3,11 @@
 
 [workspace]
 resolver = "3"
-members = []
+members = [
+    "alloc",
+    "ipc",
+    "scudo-sys",
+]
 
 # Phase B subsystems will be added as members when their first crate lands:
 #   "kernel",

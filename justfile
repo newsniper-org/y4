@@ -149,6 +149,22 @@ _gate name deps:
         && { [ -z "$deps" ] || stamp record --method=hash --store={{stamp_store}} "$sentinel" $deps >/dev/null; }; \
     fi
 
+# --- scudo upstream mirror ----------------------------------------------
+#
+# `third_party/scudo/PIN.toml` records the exact LLVM commit + subpath
+# that y4-scudo-sys vendors.  `scudo-fetch` materialises that pin into
+# `third_party/scudo/standalone/` (gitignored) without leaving a
+# 175k-file submodule index behind.
+
+# Fetch the pinned scudo standalone subtree into third_party/scudo/standalone.
+# Idempotent: re-running with the same PIN.toml is a no-op (clean exit).
+scudo-fetch:
+    @bash tools/scudo-fetch.sh
+
+# Drop the materialised standalone tree.  Next `scudo-fetch` re-clones.
+scudo-fetch-clean:
+    rm -rf third_party/scudo/standalone
+
 # --- Memory mirror -------------------------------------------------------
 #
 # Claude Code's memory store lives outside the repo at

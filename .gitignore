@@ -49,7 +49,7 @@ proofs/verus/lib*.rlib
 
 # Local notes / private deployment
 .private/
-.claude-memos/_completed/
+.claude-notes/_completed/
 *.local.md
 
 # Claude Code per-user state (settings.local.json holds machine-local allowlists)
@@ -64,3 +64,8 @@ proofs/verus/lib*.rlib
 # Submodule scratch
 third_party/*/build/
 third_party/*/.git/
+
+# Vendored-on-demand scudo source — `just scudo-fetch` materialises this
+# from third_party/scudo/PIN.toml.  PIN.toml is committed; the source is not.
+third_party/scudo/standalone/
+third_party/scudo/standalone.tmp/

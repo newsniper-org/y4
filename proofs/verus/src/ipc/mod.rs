@@ -12,6 +12,7 @@ pub mod state;
 pub mod scheme;
 pub mod msgport;
 pub mod consistency;
+pub mod refinement;
 
 use state::*;
 
