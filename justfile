@@ -94,9 +94,13 @@ limine-build:
 iso-build target="x86_64-debug":
     cd boot && just iso-build {{target}}
 
-# Boot the ISO under QEMU. Phase B step 2 success: "Hello, Y4" on serial.
+# Boot the ISO under QEMU interactively (Ctrl-A x to exit).
 qemu-boot target="x86_64-debug":
     cd boot && just qemu-boot {{target}}
+
+# Phase B step 2 milestone gate: seL4 boot output reached under QEMU.
+qemu-smoke target="x86_64-debug":
+    cd boot && just qemu-smoke {{target}}
 
 # --- Verification (formal-first gate) ------------------------------------
 
@@ -144,6 +148,45 @@ _gate name deps:
         && touch "$sentinel" \
         && { [ -z "$deps" ] || stamp record --method=hash --store={{stamp_store}} "$sentinel" $deps >/dev/null; }; \
     fi
+
+# --- Memory mirror -------------------------------------------------------
+#
+# Claude Code's memory store lives outside the repo at
+#   /home/ybi/.claude/projects/-home-ybi-Y4/memory/
+# so it survives `rm -rf Y4/` but is lost if the home dir is wiped.
+# `mirror-memory` keeps an in-repo copy at .claude-memories/ as a
+# safety net; commit it like any other doc.
+#
+# Wiring options (none enforced — user decides):
+#   - run before each commit:  add `just mirror-memory` to a pre-commit hook
+#   - run on a schedule:       systemd-user timer or cron calling
+#                              `just -f /home/ybi/Y4/justfile mirror-memory`
+#   - run on Claude exit:      add to settings.json `Stop` hook
+
+memory_src := "/home/ybi/.claude/projects/-home-ybi-Y4/memory"
+memory_dst := justfile_directory() + "/.claude-memories"
+
+# Mirror live memory → .claude-memories/ (exact copy, deletions propagated).
+# Safe to re-run; rsync only moves changed bytes.
+mirror-memory:
+    @mkdir -p {{memory_dst}}
+    @rsync -av --delete --itemize-changes \
+        {{memory_src}}/ {{memory_dst}}/
+
+# Show what mirror-memory WOULD change without writing anything.
+mirror-memory-dry:
+    @rsync -avn --delete --itemize-changes \
+        {{memory_src}}/ {{memory_dst}}/
+
+# --- Git hook installer --------------------------------------------------
+#
+# Y4 ships its git hooks in `tools/git-hooks/` (committed) so every
+# clone gets the same checks.  This recipe wires git to use them by
+# setting `core.hooksPath` — a one-time, repo-local config change.
+install-hooks:
+    git config core.hooksPath tools/git-hooks
+    @echo "[install-hooks] core.hooksPath = tools/git-hooks"
+    @ls -l tools/git-hooks/
 
 # --- Stamp store maintenance ---------------------------------------------
 

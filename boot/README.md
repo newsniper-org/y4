@@ -81,9 +81,15 @@ just qemu-boot
 
 - ✅ submodule 핀 확정 (sel4 15.0.0, limine v12.1.0)
 - ✅ logicutils-only 호출 framework 골격
-- ⏳ 첫 `just sel4-build` 통과 (다음 PR)
-- ⏳ Limine 빌드 + ISO 어셈블 (그 다음)
-- ⏳ QEMU "Hello, Y4" (그 다음)
+- ✅ `just sel4-build` — `kernel.elf` 1.2 MB 산출 (KernelDebugBuild + KernelPrinting + uniprocessor + PCID/HugePage off + FSGSBASE msr fallback for QEMU emulated CPU)
+- ✅ `just limine-build` — Limine 12.1.0 host-side 5 binary (limine, BOOTX64.EFI, limine-bios.sys, limine-bios-cd.bin, limine-uefi-cd.bin)
+- ✅ `just iso-build` — 19 MB hybrid BIOS+UEFI ISO via xorriso
+- ✅ `just qemu-smoke` — seL4 가 QEMU 에서 부팅 경로 진입 확인 (`Boot config:` 출력) — Phase B step 2 milestone
+
+다음 milestone 은 Phase B step 3 의 영역: `kernel/` 서브시스템이 들어와
+seL4 root task 로서 동작하면 그때 비로소 "Hello, Y4" 문자열이 시리얼에
+나타난다. 현재 boot 출력은 root task 부재로 `boot_sys failed: no boot
+modules` 에서 halt — 이것이 Phase B step 2 의 정상 종료 상태.
 
 ## 비-목표 (Phase B step 2 범위 외)
 

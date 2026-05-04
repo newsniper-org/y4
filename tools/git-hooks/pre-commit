@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Y4 pre-commit hook.
+#
+# Steps (in order, fail-fast):
+#   1. Mirror Claude Code memory → .claude-memories/ and stage any
+#      changes so the in-repo backup ships with this commit.
+#
+# Installed via `just install-hooks` (sets core.hooksPath to
+# tools/git-hooks).  Bypass with `git commit --no-verify` only when the
+# hook itself is broken — never to skip the mirror.
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# 1. Memory mirror -------------------------------------------------------
+echo "[pre-commit] mirror-memory ..."
+just mirror-memory
+if ! git diff --quiet --exit-code -- .claude-memories/ \
+   || git ls-files --others --exclude-standard .claude-memories/ | grep -q . ; then
+    echo "[pre-commit] staging .claude-memories/ updates"
+    git add .claude-memories/
+fi

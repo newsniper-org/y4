@@ -48,7 +48,7 @@ team.
 | Microkernel | binary as-is | seL4 (BSD-2-Clause, formally verified) |
 | Driver / device isolation | model + crate reuse | Tock capsule (MIT/Apache-2.0) |
 | IPC | source port (fused) | DragonFlyBSD LWKT + Redox scheme |
-| Memory allocator | algorithm fusion | SLUB + DragonFlyBSD lock-free SLAB + OpenBSD mmap-only malloc |
+| Memory allocator | algorithm fusion | DragonFlyBSD lock-free SLAB + LLVM scudo (Apache-2.0; supersedes SLUB+OpenBSD malloc — see `docs/architecture.md`) |
 | Bootloader | upstream as-is, chain-loaded | **Limine** (1st), GRUB2-BLS (2nd), U-Boot (3rd), coreboot (4th) — `systemd-boot` and `rEFInd` are explicitly excluded for Y4. See `docs/architecture.md` §Bootloader. |
 | Verification toolchain | build-time | Verus (Rust), Coq (high-level invariants) |
 
@@ -84,11 +84,11 @@ Phase B has begun. The following top-level dirs land in order
 once its first PR ships:
 
 ```
-proofs/    Verus + Rocq specifications + CI gate          (✅ scaffolded)
-boot/      Limine config + seL4 cmake rules               (✅ scaffolded)
+proofs/    Verus + Rocq specifications + CI gate          (✅ harness green)
+boot/      Limine + seL4 chain (Phase B step 2 milestone) (✅ qemu-smoke PASS)
 kernel/    Y4 specialization layer above seL4             (⏳ pending)
 ipc/       fused LWKT + Redox-scheme IPC implementation   (⏳ pending)
-alloc/     fused SLUB + lock-free SLAB + mmap-only        (⏳ pending)
+alloc/     DragonFly SLAB + LLVM scudo                    (⏳ pending)
 capsules/  Tock-style driver capsules (non-HIU)           (⏳ pending)
 hiu/       HIU integration & lease capability runtime     (⛔ blocked: hiu_abi v1.0)
 ```

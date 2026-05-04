@@ -1,0 +1,8 @@
+- [Y4 project basics](y4_basics.md) — what Y4 is, repo layout, single Apache-2.0 license, scaffold-only status, Phase 0 still in WaveTensor.
+- [Y4 design canonical doc](y4_canonical_doc.md) — `docs/architecture.md` is the source of truth; WaveTensor's memo is historical context only.
+- [Y4 reuse manifest + bootloader exclusions](y4_reuse_manifest.md) — seL4/Tock/DragonFly/Redox; Limine 1st, systemd-boot/rEFInd excluded.
+- [Y4 formal-first verification rule](y4_formal_first.md) — proofs land before privileged code; Verus 1st-tier, Coq for invariants Verus cannot express.
+- [Y4 ↔ WaveTensor relationship](y4_wavetensor_relation.md) — sibling repo at /home/ybi/WaveTensor; do not edit WaveTensor sources from Y4 unless ABI crosses.
+- [WaveTensor 용어 — Y4 ABI 경계 정의](wavetensor_terms.md) — HIU 포트/partitioned TLB(4×16)/shadow(16)/XChaCha20(192-bit nonce, 256-bit key)/context_switch/lease/TRNG 핵심 수치; 정전 사전은 Y4/docs/glossary.md.
+- [Y4 build & dev 결정 (D1–D4)](y4_build_decisions.md) — Cargo workspace + justfile/logicutils, x86_64 first, hybrid submodule+cargo deps, Phase B 순서: proofs → boot → ipc/alloc → capsules.
+- [Y4 ipc/alloc 사전점검 결정](y4_ipc_alloc_preflight.md) — SMP-first, 공통 Y4Error, ipc/alloc 독립(d), scheme+raw msgport 하이브리드, alloc=DragonFly SLAB+scudo, seL4 bare page API. Refs: /home/ybi/y4-upstream-refs/.

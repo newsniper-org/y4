@@ -11,7 +11,7 @@
 # -----------------------------------------------------------------------------
 pattern: build/limine/host/limine
 deps: third_party/limine
-recipe: cd third_party/limine && ./bootstrap && ./configure --enable-bios --enable-bios-cd --enable-uefi-x86-64 --enable-uefi-cd && $(MAKE) -j$(nproc) && mkdir -p ../../build/limine/host && cp limine ../../build/limine/host/
+recipe: bash boot/scripts/build-limine.sh
 
 ---
 

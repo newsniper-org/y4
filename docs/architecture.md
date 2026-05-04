@@ -44,7 +44,7 @@ WaveTensor 가속기를 탑재하는 **모든 상용 폼팩터의 공통 기반 
 │  - seL4 microkernel base                            │
 │  - Tock capsule 모델 (드라이버 격리)                 │
 │  - 융합 IPC (DragonFlyBSD LWKT + Redox scheme)      │
-│  - 융합 malloc (SLUB + lock-free SLAB + mmap-only)  │
+│  - 융합 malloc (DragonFly SLAB + LLVM scudo)         │
 │  - HIU / 가속기 lease cap                           │
 └────────────────────────┬───────────────────────────┘
                          │
@@ -141,18 +141,42 @@ Y4 가 기반으로 삼을 컴포넌트 조합 (사용자 결정):
 - 각 디바이스 드라이버가 Rust capsule 로 격리, capability typing 으로 cross-driver leak 방지
 - HIU / PCIe / USB / CXL controller 모두 capsule 로 작성
 
-### IPC — **DragonFlyBSD LWKT-based encapsulated IPC + Redox scheme IPC 융합**
-- DragonFlyBSD: lightweight kernel thread + per-CPU cache, lock 최소화 → 가속기 wave 단위 latency 결정론
-- Redox: scheme = pluggable namespace (file/network/event 통합) → 사용자 환경 친숙성
-- **융합**: Redox scheme 의 namespace API 를 외부 인터페이스로, LWKT 의 thread/queue 메커니즘을 내부 구현으로
-- 결과: 사용자 코드 입장에선 namespace 기반 깨끗한 API, 내부적으론 lock-free per-CPU 빠른 dispatch
+### IPC — **DragonFlyBSD LWKT + Redox scheme — 두 layer 동시 노출 (hybrid)**
+- DragonFlyBSD LWKT (BSD-3): lightweight kernel thread + per-CPU cache,
+  lock 최소화 → 가속기 wave 단위 latency 결정론. 데이터평면 fast-path.
+- Redox scheme (MIT): pluggable namespace (file/network/event 통합) →
+  사용자 환경 친숙성. 제어평면 표준.
+- **두 API 동시 노출 (hybrid):** Redox scheme verbs (`open`/`read`/`write`/
+  `close`) 가 제어평면 표준 — lease 발급, capability mint, 자원 발견 등.
+  LWKT raw msgport 가 데이터평면 fast-path — HIU MMIO 디스패치, accel-d
+  ↔ tenant 전송 등. 두 API 가 서로의 race 를 만들지 않음을 명세에서 증명.
+- ipc/ 와 alloc/ 는 서로 독립 — LWKT 는 dispatch-only (메시지는 caller
+  가 alloc 에서 받아 넘김).
 
-### Memory allocator — **SLUB + lock-free SLAB + mmap-only malloc 융합**
-- Linux SLUB: object cache 의 단순함, NUMA 인지
-- DragonFlyBSD lock-free SLAB: 멀티코어 확장성 핵심
-- OpenBSD mmap-only malloc: 보안 (use-after-free 검출, randomization)
-- **융합**: SLUB 의 cache 구조 + DragonFlyBSD 의 lock-free 알고리즘 + OpenBSD 의 mmap-randomized 백엔드
-- 가속기 메모리 할당 (zero-copy ring buffer 등) 에 결정론적 latency + 보안 동시 확보
+> **외부 API 경계 변경 기록 (2026-05-04):** 원안의 "scheme 외부 / LWKT
+> 내부" 단일 API 대신 두 layer 동시 노출 (hybrid) 로 결정. 이유: scheme
+> dispatch overhead (~60–100 cycle) 가 LWKT 의 lock-free 이점 (~10–30
+> cycle) 의 2–10× → 데이터평면에서 그대로 흡수 불가. 결정 상세는
+> 메모리의 `y4_ipc_alloc_preflight.md` I-P2 참조.
+
+### Memory allocator — **DragonFlyBSD lock-free SLAB + LLVM scudo 융합**
+- DragonFlyBSD lock-free SLAB (BSD-3): 멀티코어 확장성 핵심 — per-CPU
+  magazine, hot-path 객체 캐시
+- LLVM scudo (Apache-2.0): NUMA-aware 백엔드 + 보안 (UAF 검출,
+  randomization, guard pages 등 hardened 스택 전체)
+- **융합**: DragonFly SLAB front-end + scudo backend. SLUB 의 NUMA-aware
+  partial-list 역할은 scudo 가 흡수. OpenBSD malloc 의 보안 가치도 scudo
+  가 흡수.
+- 가속기 메모리 할당 (zero-copy ring buffer 등) 에 결정론적 latency +
+  보안 동시 확보.
+
+> **컴포넌트 변경 기록 (2026-05-04):** 원안의 "SLUB + lock-free SLAB +
+> mmap-only" 3-자 융합에서 SLUB 와 OpenBSD malloc 을 제거하고 scudo
+> 단일 백엔드로 교체했다. 이유: (i) Linux SLUB 가 GPL-2.0 이라 직접
+> 코드 차용 불가, (ii) scudo 의 LLVM hardened 스택이 NUMA-aware +
+> OpenBSD malloc 의 보안 가치 (UAF / random / guard) 를 모두 만족,
+> (iii) Apache-2.0 라이선스로 Y4 main tree 에 직접 link 가능. 결정
+> 상세는 메모리의 `y4_ipc_alloc_preflight.md` A-P1 참조.
 
 ### Bootloader — **기존 OSS bootloader 최소 수정 채택** (자체 개발 X)
 

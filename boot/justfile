@@ -28,14 +28,16 @@ deps-check:
     @[ -f ../third_party/sel4/CMakeLists.txt ] || { echo "missing: third_party/sel4 (run 'git submodule update --init --recursive')"; exit 1; }
     @[ -f ../third_party/limine/Makefile.in  ] || [ -f ../third_party/limine/configure.ac ] || { echo "missing: third_party/limine"; exit 1; }
     @command -v xorriso >/dev/null || echo "warn:  xorriso not installed — ISO assembly will fail. install before 'just iso-build'."
+    @command -v qemu-system-x86_64 >/dev/null || echo "warn:  qemu-system-x86_64 not installed — qemu-boot will fail. Arch: pacman -S qemu-full"
     @echo "boot deps OK"
 
 # --- seL4 ----------------------------------------------------------------
 
 # Build seL4 kernel.elf for a given form factor (default: x86_64-debug).
 # Form factor matrix lives in sel4.rules; add a rule block to extend.
+# `lu-rule --dry-run` prints the expanded recipe; piping to `bash` runs it.
 sel4-build target="x86_64-debug":
-    @cd ../ && lu-rule --rulefile=boot/sel4.rules --format=shell "build/sel4/{{target}}/kernel.elf" | bash
+    cd ../ && lu-rule --rulefile=boot/sel4.rules --dry-run "build/sel4/{{target}}/kernel.elf" | bash
 
 # Print the expanded recipe without running it.
 sel4-dry-run target="x86_64-debug":
@@ -45,7 +47,7 @@ sel4-dry-run target="x86_64-debug":
 
 # Build Limine host-side tools + boot binaries.
 limine-build:
-    @cd ../ && lu-rule --rulefile=boot/limine.rules --format=shell "build/limine/host/limine" | bash
+    cd ../ && lu-rule --rulefile=boot/limine.rules --dry-run "build/limine/host/limine" | bash
 
 limine-dry-run:
     @cd ../ && lu-rule --rulefile=boot/limine.rules --dry-run "build/limine/host/limine"
@@ -54,15 +56,34 @@ limine-dry-run:
 
 # Pack kernel.elf + Limine + limine.conf into a hybrid ISO.
 iso-build target="x86_64-debug":
-    @cd ../ && lu-rule --rulefile=boot/limine.rules --format=shell "build/iso/y4-{{target}}.iso" | bash
+    cd ../ && lu-rule --rulefile=boot/limine.rules --dry-run "build/iso/y4-{{target}}.iso" | bash
 
-# Run the assembled ISO under QEMU. "Hello, Y4" success criterion.
+# Run the assembled ISO under QEMU.  Interactive — Ctrl-A x to exit.
+# `-cpu max` exposes FSGSBASE etc. that seL4's x86_64 boot path requires;
+# QEMU's default CPU model (qemu64) does not.
 qemu-boot target="x86_64-debug":
     qemu-system-x86_64 \
+        -machine q35 \
+        -cpu max \
+        -m 512 \
         -cdrom ../build/iso/y4-{{target}}.iso \
         -serial mon:stdio \
         -display none \
         -no-reboot
+
+# Smoke test: boot under QEMU for ≤ 15 s and assert seL4 produced any
+# boot output ("Boot config:" line).  Phase B step 2 milestone = this
+# passes.  The literal "Hello, Y4" string requires a Y4 root task,
+# which lives in kernel/ (Phase B step 3+).
+qemu-smoke target="x86_64-debug":
+    @timeout 15 qemu-system-x86_64 \
+        -machine q35 -cpu max -m 512 \
+        -cdrom ../build/iso/y4-{{target}}.iso \
+        -serial mon:stdio -display none -no-reboot 2>&1 \
+        | tee /tmp/y4-qemu-smoke.log \
+        | grep -q '^Boot config:' \
+        && echo "[qemu-smoke] PASS — seL4 boot path reached" \
+        || (echo "[qemu-smoke] FAIL — no seL4 boot output. log:"; cat /tmp/y4-qemu-smoke.log; exit 1)
 
 # --- Cleanup ------------------------------------------------------------
 

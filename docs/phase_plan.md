@@ -45,7 +45,7 @@
 | Limine → seL4 부팅을 QEMU 에서 성립 | **x86_64 only first (D2)**. 다른 arch 는 형상 작업 시 |
 | `kernel/` Y4 특화 레이어 (root task, capability 부트스트랩) | seL4 위 specialization |
 | `ipc/` LWKT + Redox scheme 융합 + Verus 명세 선행 | formal-first |
-| `alloc/` SLUB + lock-free SLAB + mmap-only 융합 + Verus 명세 선행 | formal-first |
+| `alloc/` DragonFly lock-free SLAB + LLVM scudo 융합 + Verus 명세 선행 | formal-first; 사전점검 결정상 ipc/alloc 독립이라 ipc 와 자유 병렬 |
 | `capsules/` 비-HIU 캡슐 (PCIe enumeration, USB stub, CXL stub) | Tock 캡슐 타이핑 |
 | Build orchestration | **Cargo workspace + justfile + logicutils (D1)** — `freshcheck`/`stamp`/`lu-par` |
 

@@ -75,7 +75,7 @@ Y4 main tree. See `docs/licensing.md` §2.
 | Microkernel | seL4 | BSD-2-Clause | Binary as-is (formally verified) |
 | Driver isolation | Tock | MIT/Apache-2 | Capsule pattern + crate reuse |
 | IPC | DragonFlyBSD LWKT + Redox scheme | BSD-3 / MIT | Source port (fused) |
-| Allocator | Linux SLUB + DragonFlyBSD lock-free SLAB + OpenBSD mmap-only | mixed permissive | Algorithmic fusion |
+| Allocator | DragonFlyBSD lock-free SLAB + LLVM scudo | BSD-3 + Apache-2.0 | Algorithmic fusion (replaces original SLUB+OpenBSD-malloc plan; see `docs/architecture.md` §Memory allocator) |
 | Bootloader | Limine (1st), GRUB2-BLS (2nd), U-Boot (3rd), coreboot (4th) | mixed | Chain-loaded only, never linked |
 | Verification | Verus, Coq, Kani | MIT / LGPL-2.1 / Apache-2/MIT | Build-time only |
 
@@ -108,7 +108,7 @@ accumulate:
 kernel/    Y4 specialization layer above seL4
 capsules/  Tock-style driver capsules (PCIe / USB / CXL / HIU)
 ipc/       fused LWKT + Redox-scheme IPC implementation
-alloc/     fused SLUB + lock-free SLAB + mmap-only allocator
+alloc/     fused DragonFly lock-free SLAB + LLVM scudo allocator
 hiu/       HIU integration & lease capability runtime
 boot/      Limine config + Y4 first-stage handoff
 proofs/    Verus and Coq specifications
@@ -177,6 +177,11 @@ TRNG output format, etc.). Y4 design changes stay here.
   `alloc/` in parallel → `capsules/` (non-HIU). HIU-touching work
   (`hiu/`, lease runtime) defers until `docs/hiu_abi.md` is `v1.0
   frozen`.
+- **Git hooks:** `tools/git-hooks/` is committed. Fresh clones must run
+  `just install-hooks` once to wire `core.hooksPath`. The pre-commit
+  hook mirrors Claude Code memory into `.claude-memories/` (also
+  triggered by the Claude Code Stop hook in `.claude/settings.json`)
+  and stages the diff so the in-repo backup ships with each commit.
 - **Commits:** DCO sign-off mandatory (`git commit -s`). PRs without
   sign-off do not merge.
 - **Style:** `cargo fmt` + `cargo clippy -- -D warnings` clean. C
