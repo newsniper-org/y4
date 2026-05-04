@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# seL4 build rules consumed by lu-rule (logicutils 0.1.0+).
+# See: /home/ybi/logicutils/docs/man/lu-rule.1
+#
+# Each block below produces one cmake invocation. Form-factor matrix
+# extension = add a new block (Phase D); do NOT add new justfile recipes.
+
+# -----------------------------------------------------------------------------
+# x86_64 debug — Phase B step 2 first milestone target.
+#
+# Initial-cache file (boot/x86_64-debug.cmake) provides every -D so the
+# recipe stays short and the cmake call is reproducible from the cache file
+# alone.
+# -----------------------------------------------------------------------------
+pattern: build/sel4/x86_64-debug/kernel.elf
+deps: third_party/sel4 boot/x86_64-debug.cmake
+recipe: cmake -B build/sel4/x86_64-debug -S third_party/sel4 -G Ninja -C boot/x86_64-debug.cmake && cmake --build build/sel4/x86_64-debug --target kernel.elf
+
+---
+
+# -----------------------------------------------------------------------------
+# x86_64 release — Phase B step 2 second milestone (deferred).
+# Stub kept here so the pattern matrix is visible even before the cache
+# file lands; lu-rule will fail-with-message until x86_64-release.cmake exists.
+# -----------------------------------------------------------------------------
+pattern: build/sel4/x86_64-release/kernel.elf
+deps: third_party/sel4 boot/x86_64-release.cmake
+recipe: cmake -B build/sel4/x86_64-release -S third_party/sel4 -G Ninja -C boot/x86_64-release.cmake && cmake --build build/sel4/x86_64-release --target kernel.elf

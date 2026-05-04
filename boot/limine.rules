@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Limine bootloader build rules consumed by lu-rule.
+
+# -----------------------------------------------------------------------------
+# Host-side Limine tools (limine-deploy, ISO assembly utilities).
+#
+# Limine ships its own configure/make pipeline under third_party/limine.
+# We do NOT fork — invoke upstream's pipeline as-is.
+# -----------------------------------------------------------------------------
+pattern: build/limine/host/limine
+deps: third_party/limine
+recipe: cd third_party/limine && ./bootstrap && ./configure --enable-bios --enable-bios-cd --enable-uefi-x86-64 --enable-uefi-cd && $(MAKE) -j$(nproc) && mkdir -p ../../build/limine/host && cp limine ../../build/limine/host/
+
+---
+
+# -----------------------------------------------------------------------------
+# Boot ISO — packs Y4 kernel.elf + Limine binaries + limine.conf into a
+# bootable hybrid ISO that QEMU can launch with `-cdrom`.
+# -----------------------------------------------------------------------------
+pattern: build/iso/y4-x86_64-debug.iso
+deps: build/sel4/x86_64-debug/kernel.elf build/limine/host/limine boot/limine.conf
+recipe: bash boot/scripts/assemble-iso.sh x86_64-debug

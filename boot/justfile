@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Y4 boot subtree — Limine + seL4 build orchestration.
+#
+# **Policy:** every cmake / make invocation goes through `lu-rule` with
+# its rule file as the single source of truth.  Recipes here are 1–3
+# lines; matrix expansion is done by adding rule blocks, not recipes.
+# (CLAUDE.md §8, MEMORY/y4_build_decisions.md)
+
+set shell := ["bash", "-cu"]
+
+stamp_store := env_var_or_default("Y4_STAMP_STORE", justfile_directory() + "/../.cache/stamps")
+
+default:
+    @just --list --justfile {{justfile()}}
+
+# --- Pre-flight ----------------------------------------------------------
+
+# Fail loudly if any host tool we shell out to is missing.
+deps-check:
+    @command -v cmake >/dev/null || { echo "missing: cmake";   exit 1; }
+    @command -v ninja >/dev/null || { echo "missing: ninja";   exit 1; }
+    @command -v gcc   >/dev/null || { echo "missing: gcc";     exit 1; }
+    @command -v nasm  >/dev/null || { echo "missing: nasm (Limine BIOS asm)"; exit 1; }
+    @command -v lu-rule >/dev/null || { echo "missing: logicutils/lu-rule"; exit 1; }
+    @command -v lu-par  >/dev/null || { echo "missing: logicutils/lu-par"; exit 1; }
+    @[ -f ../third_party/sel4/CMakeLists.txt ] || { echo "missing: third_party/sel4 (run 'git submodule update --init --recursive')"; exit 1; }
+    @[ -f ../third_party/limine/Makefile.in  ] || [ -f ../third_party/limine/configure.ac ] || { echo "missing: third_party/limine"; exit 1; }
+    @command -v xorriso >/dev/null || echo "warn:  xorriso not installed — ISO assembly will fail. install before 'just iso-build'."
+    @echo "boot deps OK"
+
+# --- seL4 ----------------------------------------------------------------
+
+# Build seL4 kernel.elf for a given form factor (default: x86_64-debug).
+# Form factor matrix lives in sel4.rules; add a rule block to extend.
+sel4-build target="x86_64-debug":
+    @cd ../ && lu-rule --rulefile=boot/sel4.rules --format=shell "build/sel4/{{target}}/kernel.elf" | bash
+
+# Print the expanded recipe without running it.
+sel4-dry-run target="x86_64-debug":
+    @cd ../ && lu-rule --rulefile=boot/sel4.rules --dry-run "build/sel4/{{target}}/kernel.elf"
+
+# --- Limine --------------------------------------------------------------
+
+# Build Limine host-side tools + boot binaries.
+limine-build:
+    @cd ../ && lu-rule --rulefile=boot/limine.rules --format=shell "build/limine/host/limine" | bash
+
+limine-dry-run:
+    @cd ../ && lu-rule --rulefile=boot/limine.rules --dry-run "build/limine/host/limine"
+
+# --- ISO + QEMU ---------------------------------------------------------
+
+# Pack kernel.elf + Limine + limine.conf into a hybrid ISO.
+iso-build target="x86_64-debug":
+    @cd ../ && lu-rule --rulefile=boot/limine.rules --format=shell "build/iso/y4-{{target}}.iso" | bash
+
+# Run the assembled ISO under QEMU. "Hello, Y4" success criterion.
+qemu-boot target="x86_64-debug":
+    qemu-system-x86_64 \
+        -cdrom ../build/iso/y4-{{target}}.iso \
+        -serial mon:stdio \
+        -display none \
+        -no-reboot
+
+# --- Cleanup ------------------------------------------------------------
+
+clean:
+    rm -rf ../build/sel4 ../build/limine ../build/iso

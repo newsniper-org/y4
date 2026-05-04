@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# This crate is intentionally NOT a member of the Y4 cargo workspace
+# (see ../../Cargo.toml).  It is verified by the `verus` CLI, which uses
+# its own rustc fork and links `vstd` from the Verus install path
+# (e.g. /opt/verus/libvstd.rlib).  `cargo build` on this manifest does
+# not work and is not expected to.
+#
+# This Cargo.toml exists only to make IDEs (rust-analyzer) surface the
+# file as a Rust source.  The actual build is `just verify` (or
+# `just verus` from the repo root).
+
+[package]
+name = "y4-proofs-verus"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "y4_proofs_verus"
+path = "src/lib.rs"
+
+[dependencies]
+# Intentionally empty — vstd is loaded by the verus CLI from /opt/verus,
+# not from crates.io.

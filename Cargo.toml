@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+
+[workspace]
+resolver = "3"
+members = []
+
+# Phase B subsystems will be added as members when their first crate lands:
+#   "kernel",
+#   "ipc",
+#   "alloc",
+#   "capsules/<name>",
+# HIU-touching crates (hiu/, hiu/mock/, hiu/lease) defer until docs/hiu_abi.md
+# is v1.0 frozen.
+
+# `proofs/verus/` is intentionally NOT a workspace member.  Verus uses its
+# own rustc fork, depends on `vstd` which is shipped with the Verus install
+# (e.g. /opt/verus/libvstd.rlib from the verus-bin AUR package) rather than
+# crates.io, and is invoked directly by the `verus` CLI from
+# `proofs/verus/justfile`.  Including it here would force cargo to resolve
+# `use vstd::prelude::*;` against a non-existent crates.io entry.
+exclude = ["proofs/verus"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["윤병익 (BYUNG-IK YEUN) and Y4 contributors"]
+license = "Apache-2.0"
+repository = "https://github.com/y4-hypervisor/y4"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Workspace-wide allowances are added here only with rationale.

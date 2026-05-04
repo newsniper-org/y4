@@ -1,6 +1,5 @@
 # Rust
 target/
-Cargo.lock
 **/*.rs.bk
 *.pdb
 
@@ -30,6 +29,15 @@ build.bk/
 .crusti_caesar/
 *.proof
 *.smt2.cache
+# Rocq generated build files
+Makefile.rocq
+Makefile.rocq.conf
+.Makefile.rocq.d
+Makefile.coq
+Makefile.coq.conf
+.Makefile.coq.d
+# Verus emits the rlib next to the source by default
+proofs/verus/lib*.rlib
 
 # Editor / IDE
 .vscode/

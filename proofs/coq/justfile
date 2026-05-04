@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Rocq (formerly Coq) verification subtree.
+#
+# Y4 standardises on the modern `rocq` CLI (Rocq 9.x). The legacy
+# `coqc` binary is still accepted as a fallback for older installs, but
+# new tooling should target `rocq compile` / `rocq makefile`.
+
+set shell := ["bash", "-cu"]
+
+rocq_repo := "https://github.com/rocq-prover/rocq"
+
+default: verify
+
+# Verify all theories declared in _CoqProject.
+verify:
+    @if command -v rocq >/dev/null; then \
+        echo "[rocq] using $(rocq --version | head -1)"; \
+        rocq makefile -f _CoqProject -o Makefile.rocq; \
+        make --no-print-directory -f Makefile.rocq; \
+    elif command -v coqc >/dev/null; then \
+        echo "[rocq] falling back to legacy coqc — install Rocq 9.x for the modern CLI"; \
+        coq_makefile -f _CoqProject -o Makefile.coq; \
+        make --no-print-directory -f Makefile.coq; \
+    else \
+        echo ""; \
+        echo "  ✗ neither 'rocq' nor 'coqc' found in PATH."; \
+        echo ""; \
+        echo "  Y4 uses Rocq for high-level invariants Verus cannot express"; \
+        echo "  (CLAUDE.md §6.6). Install Rocq 9.x:"; \
+        echo "    https://rocq-prover.org/install"; \
+        echo "    upstream: {{rocq_repo}}"; \
+        echo ""; \
+        exit 1; \
+    fi
+
+# Drop the generated Makefile + intermediate artifacts.
+clean:
+    @if [ -f Makefile.rocq ]; then make --no-print-directory -f Makefile.rocq clean || true; fi
+    @if [ -f Makefile.coq  ]; then make --no-print-directory -f Makefile.coq  clean || true; fi
+    rm -f Makefile.rocq Makefile.rocq.conf Makefile.coq Makefile.coq.conf
+    find theories -type f \( -name '*.vo' -o -name '*.vok' -o -name '*.vos' -o -name '*.glob' -o -name '*.aux' \) -delete

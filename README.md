@@ -70,24 +70,27 @@ Y4/
 ├── CLAUDE.md            project context auto-loaded by Claude Code
 ├── CONTRIBUTING.md      DCO, SPDX header policy, signing
 ├── docs/
-│   ├── architecture.md  canonical design memo
-│   ├── licensing.md     Apache-2.0 main + GPL-capsule isolation
-│   └── phase_plan.md    Phase 0 → Phase 4 progression + entry triggers
+│   ├── architecture.md     canonical design memo
+│   ├── glossary.md         WaveTensor terms (HIU/lease/TRNG/...) extracted from RTL
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI v0 (MMIO map, timing contracts, freeze policy)
+│   ├── lease_capability.md lease capability schema v0 (invariants, lifecycle)
+│   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
+│   └── phase_plan.md       Phase A → Phase E progression + entry triggers
 └── third_party/         seL4, Tock, etc. (added as git submodules during Phase 1)
 ```
 
-When Phase 1 actually starts, the following top-level dirs will be added —
-they are deliberately omitted from this scaffold so empty placeholders do
-not accumulate:
+Phase B has begun. The following top-level dirs land in order
+(`proofs/` → `boot/` → `ipc/` & `alloc/` → `capsules/`); each appears
+once its first PR ships:
 
 ```
-kernel/    Y4 specialization layer above seL4
-capsules/  Tock-style driver capsules (PCIe / USB / CXL / HIU)
-ipc/       fused LWKT + Redox-scheme IPC implementation
-alloc/     fused SLUB + lock-free SLAB + mmap-only allocator
-hiu/       HIU integration & lease capability runtime
-boot/      Limine config + Y4 first-stage handoff
-proofs/    Verus and Coq specifications
+proofs/    Verus + Rocq specifications + CI gate          (✅ scaffolded)
+boot/      Limine config + seL4 cmake rules               (✅ scaffolded)
+kernel/    Y4 specialization layer above seL4             (⏳ pending)
+ipc/       fused LWKT + Redox-scheme IPC implementation   (⏳ pending)
+alloc/     fused SLUB + lock-free SLAB + mmap-only        (⏳ pending)
+capsules/  Tock-style driver capsules (non-HIU)           (⏳ pending)
+hiu/       HIU integration & lease capability runtime     (⛔ blocked: hiu_abi v1.0)
 ```
 
 ## License

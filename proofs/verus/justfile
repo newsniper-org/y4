@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Verus verification subtree.
+#
+# `just verify` (the default) runs the Verus CLI on this crate's lib
+# root. If `verus` is not installed, it prints actionable install
+# instructions and exits non-zero — never silently passes.
+
+set shell := ["bash", "-cu"]
+
+verus_repo := "https://github.com/verus-lang/verus"
+
+default: verify
+
+# Verify all specs in this crate. Errors helpfully if `verus` is missing.
+verify:
+    @if ! command -v verus >/dev/null; then \
+        echo ""; \
+        echo "  ✗ verus not installed."; \
+        echo ""; \
+        echo "  Y4 uses Verus for Rust-native specs (CLAUDE.md §6.6)."; \
+        echo "  Install:"; \
+        echo "    git clone {{verus_repo}} ~/verus"; \
+        echo "    cd ~/verus/source && ./tools/get-z3.sh && ./tools/local-install.sh"; \
+        echo "    export PATH=~/verus/source/target-verus/release:\$PATH"; \
+        echo ""; \
+        echo "  Then re-run:  just verus"; \
+        echo ""; \
+        exit 1; \
+    fi
+    verus --crate-type=lib src/lib.rs
+
+# Note: `cargo build` of this crate does NOT work and is not expected
+# to — `vstd` is not on crates.io.  See Cargo.toml header.

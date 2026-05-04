@@ -13,6 +13,12 @@
 > **연관 메모** (WaveTensor 측):
 > - `WaveTensor/.claude-memos/remote_accelerator_access.md` — A의 호스트 OS 가 가벼우면 좋다는 원래 결정. 본 메모는 그 항목을 한 단계 더 깊이 파는 변형.
 > - `WaveTensor/.claude-memos/sdk_architecture.md` — Rust 중심 stack 일관성. Y4 도 Rust 면 동일 ecosystem.
+>
+> **용어 사전:** 본 문서에 등장하는 HIU / partitioned TLB / shadow region /
+> XChaCha20 / `context_switch` / lease / TRNG / Pod·Cluster·PE / wave 의
+> 정확한 정의(RTL 시그널 폭, FSM 상태, threshold 등)는
+> [`./glossary.md`](./glossary.md) 에 한 곳으로 모아져 있다. WaveTensor
+> 측 정의가 바뀌면 사전을 우선 갱신한다.
 
 ## 제안 (확장 — 적용 범위 전면 확대)
 

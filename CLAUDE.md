@@ -24,15 +24,15 @@ if a change crosses into WaveTensor's RTL ABI.
 
 ## 2. Status
 
-**Scaffold only.** This repo is initialized but not yet committed.
-Phase 0 (Linux + Rust daemon) is active inside the WaveTensor repo. Y4
-itself has no code yet.
+**Scaffold + Phase A docs.** Y4 가 WaveTensor RTL 의 실제 운용 전에
+먼저 개발된다 — 운용 데이터 대신 **HIU ABI 명세**(`docs/hiu_abi.md`)가
+capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로 격리.
 
-Phase 1 entry trigger: WaveTensor RTL has cleared FPGA synthesis with
-timing closure on the target board, AND the Phase 0 daemon has
-accumulated enough operational data to inform the seL4 capability schema.
+Phase A → Phase B 진입 트리거: `docs/hiu_abi.md` 가 `v1.0 frozen` 으로
+표시되고 (Y4 + WaveTensor 양측 sign-off), `HIU_ABI_VERSION` 레지스터
+값이 `0x0001_0000` 으로 고정.
 
-See `docs/phase_plan.md` for the full Phase 0 → Phase 4 progression.
+전체 Phase A → Phase E 진행은 `docs/phase_plan.md` 참조.
 
 ## 3. License
 
@@ -154,6 +154,29 @@ TRNG output format, etc.). Y4 design changes stay here.
 
 - **Branch model:** `main` is the integration branch. Phase-gated
   feature work goes on topic branches (`p1/sel4-bootstrap`, etc.).
+- **Build system:** single Cargo workspace (`Cargo.toml` at repo root).
+  Top-level `justfile` orchestrates incremental and DAG builds via
+  [`logicutils`](/home/ybi/logicutils) — `freshcheck` for hash-driven
+  freshness, `stamp` for signature recording, `lu-par` for DAG-aware
+  parallel execution. Sub-trees may have their own `justfile`.
+- **Target architecture:** **x86_64 first** (Phase B). Other arches
+  (aarch64 for handheld/SoC) added when their form factor work begins.
+- **External dependencies:** **hybrid** — non-Rust upstream
+  (seL4, Limine) as `git submodule` under `third_party/`; Rust crates
+  reused from upstream (Tock parts, etc.) via cargo `[patch.crates-io]`
+  + git deps in workspace `Cargo.toml`. Submodule pins:
+  **seL4 = 15.x stable**, **Limine = 12.x stable**.
+- **CMake invocation wrapping (`boot/`, future capsule build):**
+  **logicutils-only**. Per-form-factor cmake `-D` flags live in
+  `boot/<subsystem>.rules` (consumed by `lu-rule`); matrix execution
+  via `lu-par`; freshness via `freshcheck`/`stamp`. No xtask, no
+  cargo-make, no CMakePresets — single source-of-truth in the
+  logicutils rule files.
+- **Phase B implementation order:** `proofs/` build harness first
+  (Verus + Coq + CI gate) → `boot/` (Limine → seL4 QEMU) → `ipc/` and
+  `alloc/` in parallel → `capsules/` (non-HIU). HIU-touching work
+  (`hiu/`, lease runtime) defers until `docs/hiu_abi.md` is `v1.0
+  frozen`.
 - **Commits:** DCO sign-off mandatory (`git commit -s`). PRs without
   sign-off do not merge.
 - **Style:** `cargo fmt` + `cargo clippy -- -D warnings` clean. C

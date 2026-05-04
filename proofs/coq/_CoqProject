@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Y4 Coq theories.  Used by `coq_makefile -f _CoqProject -o Makefile`.
+
+-Q theories Y4
+
+theories/Placeholder.v
