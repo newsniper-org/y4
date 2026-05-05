@@ -69,6 +69,34 @@ Build orchestration (host-side tools, not redistributed):
 
 ================================================================================
 
+Acknowledgements / Methodology Inspiration:
+
+  No source code from the works in this section is imported into Y4.
+  They are listed here separately from the reuse manifest above because
+  Y4 owes them methodological inspiration (proof techniques, algorithmic
+  patterns, demonstration of feasibility) without copying any code.
+
+  * VeriSMo                "VeriSMo: A Verified Security Module for
+                           Confidential VMs", Zhou et al.,
+                           USENIX OSDI '24 (Best Paper Award).
+                           https://www.usenix.org/conference/osdi24/presentation/zhou
+                           Inspiration: 2-layer concurrency proof
+                           pattern (paper §3-5). Y4 applies this with
+                           layer inversion (cross-tenant upper / within-
+                           cluster lower). See docs/vmm_arch.md §3.
+
+  * Atmosphere             https://github.com/mars-research/atmosphere
+                           SOSP '25 artifact, MIT-licensed Verus + Rust
+                           microkernel work. Inspiration: demonstrates
+                           that Verus is viable for OS-kernel-scale
+                           verification. Y4 does not adopt Atmosphere's
+                           AMD-V code (none is publicly published) but
+                           uses the existence of Atmosphere as evidence
+                           that the Verus + AMD-V combination is
+                           tractable.
+
+================================================================================
+
 Driver-layer note: GPL'd Linux drivers, when used as a 3rd-tier fallback,
 are isolated as separate capsule binaries with explicit ABI boundaries
 (no direct linking from the Apache-2.0 main tree). See

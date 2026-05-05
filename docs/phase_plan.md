@@ -61,7 +61,7 @@
 **Phase B → Phase C 진입 트리거:** ✅ 도달 — `qemu-smoke` 가 root task
 greeting 까지 검증, 모든 Verus 명세 머지 완료.
 
-## Phase C — Mock HIU 위 lease 런타임 (여전히 하드웨어 0 %)
+## Phase C — Mock HIU 위 lease 런타임 + 첫 게스트 호스팅 (여전히 하드웨어 0 %)
 
 | 산출물 | 비고 |
 |---|---|
@@ -70,11 +70,46 @@ greeting 까지 검증, 모든 Verus 명세 머지 완료.
 | XChaCha20 마스킹 / nonce binding on `context_switch` | Verus 불변식 선행 |
 | 멀티테넌트 격리 시나리오 통합 테스트 | 전부 mock 기반 |
 | TRNG 채널 stub + `trng_unhealthy` 처리 | mock entropy seed |
+| **첫 게스트 호스팅 (별도 repo `y4-hypercall`)** | Alpine Linux mini-rootfs. **virtio paravirt only** (게스트 자체 PCIe driver 는 Phase D). 첫 PoC = ramdisk + serial console (G-disk/network/display 결정 G3 통과 후). VMM 위치 = `y4-hypercall` repo. |
+| **하드웨어 driver 일부** (별도 repo `y4-drivers`) | virtio-net/blk + e1000e + AHCI + NVMe 1.x + XHCI 1차 PR 범위. Phase C 기간 중 병렬로 진행 |
 
 **Phase C → Phase D 진입 트리거:** mock 기반 멀티테넌트 격리 시나리오
-의 atomic-rotate 시퀀스가 Verus 명세 + 통합 테스트 양쪽으로 통과.
+의 atomic-rotate 시퀀스가 Verus 명세 + 통합 테스트 양쪽으로 통과 +
+첫 게스트의 virtio paravirt 동작 확인.
 
-## Phase D — 실제 WaveTensor RTL 결합
+> **AMD-V (SVM) 결정 + VMM 아키텍처 (2026-05-04):** seL4 15.0.0 의
+> `KernelVTX` 는 Intel VT-x 전용. 현 호스트가 AMD Ryzen APU.  **길 1
+> + ARCH-II' 채택** — D1a (seL4 측 raw-SVM syscall 패치) +
+> **capsule-decomposed VMM** (10 capsule + thin orchestrator) + Verus
+> 부분 증명 + VeriSMo 의 **2-layer concurrency 증명 기법 영감** (코드
+> import 0).
+> spec: `docs/amdv_safety.md` (14 안전장치 catalog) + `docs/vmm_arch.md`
+> (capsule 분해 디자인).
+> 4 길 (D1/NOVA/Hyperkernel/SVSM) + Atmosphere/VeriSMo 사실 확인 결과는
+> `.claude-notes/amd-v-verified-survey.md`.
+>
+> **fork 호환성 contract:** Strictly Additive Fork — `docs/sel4_fork_policy.md`.
+> upstream seL4 의 모든 회귀 테스트가 Y4 fork 에서도 pass 보장.
+>
+> **Phase C 진입 전 차단 의존 (이 순서):**
+> 1. `docs/amdv_safety.md` v1.0 frozen (S1–S14 안전장치 sign-off)
+> 2. `docs/vmm_arch.md` v1.0 frozen (ARCH-II' capsule 분해 sign-off)
+> 3. `docs/sel4_fork_policy.md` v1.0 frozen
+> 4. `docs/verus_to_isabelle.md` v1.0 frozen + `y4-verus2isabelle`
+>    번역기 구현 (statement-only `sorry` + `axiom` opt-in hybrid)
+> 5. seL4 측 D1a C 패치 (`CONFIG_Y4_AMDV` gate, default OFF). 회귀
+>    게이트 통과
+> 6. **vmrun-orchestrator + 10 capsule 첫 PR** (`Y4/vmrun-orchestrator/`
+>    + `Y4/capsules/` 의 새 멤버) + Verus 명세 (S1–S14 본문)
+> 7. `y4-hypercall` 재정의 — Phase D 의 R-α/R-γ + S14 사용자 CLI 도구
+>    repo (core VMM 코드는 Y4 워크스페이스 안)
+>
+> 4 는 5–6 과 시간상 병렬. 6 의 contribute-back PR 은 도구 산출물
+> (Isabelle `.thy` skeleton) 함께 제출.
+>
+> **위 7 단계 완료 후에 y4-drivers / capsules 깊이 작업 진입.**
+
+## Phase D — 실제 WaveTensor RTL 결합 + PCIe passthrough
 
 WaveTensor 측이 FPGA 타이밍 클로저를 통과한 시점에 진입.
 
@@ -84,6 +119,11 @@ WaveTensor 측이 FPGA 타이밍 클로저를 통과한 시점에 진입.
 | Conformance 테스트: mock vs RTL 동일 ABI trace | regression gate |
 | 형상별 부팅 검증 (서버 / 랩톱 / 랙 / 핸드헬드+독 / SoC) | 5 형상 |
 | 성능 특성화 + 회귀 게이트 | latency 분포 표 |
+| **PCIe device passthrough 인프라** | IOMMU passthrough + per-device BAR cap + IRQ remap + VFIO-eq API. **게스트가 자체 driver 로 hardware 직접 접근하는 보장이 본 단계에서 성립** (Phase B/C 의 게스트는 virtio paravirt only). |
+| **하드웨어 driver 확장 PR 들** (별도 repo `y4-drivers`) | Wi-Fi 칩셋 1 개, USB4/Thunderbolt 4, NVMe 2.x, 이동통신 1 모뎀 등 장기 로드맵 항목 진입 |
+| **R-α `/dev/kvm` ioctl 프록시** | 게스트가 KVM-기반 VM (QEMU/Firecracker/Kata/최신 VBox/Android emulator) 실행 시 host (Y4-VMM) 에 sibling VM 생성으로 자동 redirect. S9 (nested SVM 차단) 의 우회 — verification 표면 작게 유지 |
+| **R-γ paravirt agent** | 비-KVM VM 매니저 (legacy VBox vboxdrv, VMware) 용 wrapper agent + paravirt sibling-VM-create API. R-α 보완 |
+| **GPU passthrough** | Waydroid 가속 등 게스트 그래픽 워크로드 활성화 (Waydroid 는 nested virt 무관 — LXC 기반) |
 
 **Phase D → Phase E 진입 트리거:** mock vs RTL conformance 가 모든 ABI
 경로에서 일치 + 5 형상 booting + 외부 보안 민감 워크로드 1 개 이상.

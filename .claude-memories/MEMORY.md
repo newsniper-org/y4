@@ -6,3 +6,5 @@
 - [WaveTensor 용어 — Y4 ABI 경계 정의](wavetensor_terms.md) — HIU 포트/partitioned TLB(4×16)/shadow(16)/XChaCha20(192-bit nonce, 256-bit key)/context_switch/lease/TRNG 핵심 수치; 정전 사전은 Y4/docs/glossary.md.
 - [Y4 build & dev 결정 (D1–D4)](y4_build_decisions.md) — Cargo workspace + justfile/logicutils, x86_64 first, hybrid submodule+cargo deps, Phase B 순서: proofs → boot → ipc/alloc → capsules.
 - [Y4 ipc/alloc 사전점검 결정](y4_ipc_alloc_preflight.md) — SMP-first, 공통 Y4Error, ipc/alloc 독립(d), scheme+raw msgport 하이브리드, alloc=DragonFly SLAB+scudo, seL4 bare page API. Refs: /home/ybi/y4-upstream-refs/.
+- [y4-drivers + y4-hypercall + 게스트 호스팅 계획](y4_drivers_and_guest_plan.md) — 별도 repo, virtio-drivers/e1000e/AHCI/NVMe1.x/XHCI 1차, smoltcp/acpi-rs/xhci 채택, FS matrix, AMD-V 차단 이슈.
+- [Y4 sign-off 후 후속 논의 대기 항목](y4_pending_topics.md) — ARCH-II' sign-off 18 단계 완료 후 소비전력 관리 기능 논의 (S15+ 후보).

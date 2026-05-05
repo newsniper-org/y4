@@ -44,6 +44,7 @@ pub mod error;
 pub mod alloc;
 pub mod ipc;
 pub mod capsules;
+pub mod amdv;
 
 verus! {
 
