@@ -3,6 +3,15 @@
 
 # Verus → Isabelle/HOL 번역기 — 설계 사양
 
+> **상태:** **v1.0 frozen** (2026-05-05, Phase 4 일괄 마킹).
+> §0 scope clamp (Y4-scope 한정, general-purpose translator 아님) +
+> §1 hybrid scope (T-i sorry / T-ii axiom / T-iv SMT-LIB hybrid +
+> logicutils augmentation) + §2 매핑 표 (6 sub-section, Y4 도메인 type
+> + (T-iv) SMT-LIB + theory file 분리) + §3 도구 형상 (옵션 A 별도
+> sibling repo + 8 sub-section) 모두 sign-off.  짝 frozen doc =
+> amdv_safety.md / vmm_arch.md / sel4_fork_policy.md.  v1.0 frozen 후
+> 도구 자체 구현 PR 진입 + Y4 측 PR-4 의 `.thy` 산출물 짝.
+
 Y4 의 contribute-back 경로 (`docs/amdv_safety.md` §6, `docs/sel4_fork_policy.md`
 §4) 의 일부. seL4 mainline 의 verification 트랙은 Isabelle/HOL 이고
 Y4 의 정리는 Verus (Z3 SMT). 두 쪽 사이의 다리.
@@ -33,22 +42,32 @@ Y4 의 정리는 Verus (Z3 SMT). 두 쪽 사이의 다리.
 
 ---
 
-## 1. 범위 — (T-i) + (T-ii) hybrid
+## 1. 범위 — (T-i) + (T-ii) + (T-iv) hybrid + logicutils augmentation
 
-### (T-i) Statement-only 번역
+### 1.1 (T-i) Statement-only 번역
 
 Verus 의 `spec fn` / `proof fn` / `exec fn ... ensures` 의 **시그니처
 + requires + ensures + decreases** 만 추출하여 Isabelle/HOL 의
 `definition` / `lemma ... sorry` 로 변환.  증명 본문은 `sorry` —
 seL4 팀이 Isabelle Isar 로 자체 증명.
 
+추출 정밀화 (A):
+
+| Verus 항목 | (T-i) 추출 |
+|---|---|
+| `requires` / `ensures` | ◎ 추출 |
+| `decreases` | ◎ 추출 (termination) |
+| `recommends` | ✗ 추출 0 (hint only, semantic 영향 없음) |
+| `assert` | ✗ proof step (T-i 외부) |
+| `assume` | ✗ T-i 모드 거부 — Y4 측 도구 panic.  T-ii 모드에서만 별도 axiom 으로 |
+
 장점: 분량 적음, 의미 보존 신뢰.  seL4 팀이 자기 도구로 검증.
 단점: seL4 팀의 작업량이 그대로 남음 (도구는 boilerplate 만 줄임).
 
-### (T-ii) `axiom` 옵트인
+### 1.2 (T-ii) `axiom` 옵트인
 
 Verus 측 lemma 에 attribute 를 붙이면 Isabelle `axiomatization` 으로
-변환:
+변환.  attribute 는 Y4-scope 고정 (D):
 
 ```rust
 #[verus_to_isabelle::axiom]
@@ -68,69 +87,403 @@ axiomatization where
 ```
 
 장점: seL4 팀이 Verus 증명을 axiom 으로 신뢰하면 즉시 사용 가능.
-단점: trust boundary 가 Verus + Z3 로 이동 — Isabelle 측 보증의 "내부
-일관성" 만 유지, "Z3 가 옳다" 는 외부 가정.
+단점: trust boundary 가 Verus + Z3 + 본 도구 자체로 이동 (B 의 trust
+ledger §1.6).
 
-### Hybrid 사용 패턴
+### 1.3 (T-iv) SMT-LIB hybrid (logicutils-augmented, v1.0 기본 강제)
 
-기본은 (T-i) `sorry` — seL4 팀이 자체 증명 권장.  명시적으로
-`#[verus_to_isabelle::axiom]` 표시한 정리만 axiom 으로 import.
+Verus 가 Z3 에 발화하는 SMT-LIB 2 쿼리를 capture → Isabelle 의 `smt`
+method 입력으로 emit.  자동 가능한 proof obligation 은 **Isabelle 안
+에서 즉시 replay** (sledgehammer 와 동등 효과), structural definition
+은 (T-i) sorry, attribute 부착 시 (T-ii) axiom — 3-mode hybrid.
 
-도구 내부 옵션:
-- `--all-sorry` — 모든 lemma 를 `sorry` (default)
-- `--respect-attrs` — attribute 가 있으면 axiom (T-ii 활성)
-- `--all-axiom` — 모든 lemma 를 axiom (논의용 / 제안 단계)
+```isabelle
+(* 자동 가능한 obligation — (T-iv) emit *)
+lemma intercept_floor_implies_no_nested:
+  assumes "intercept_floor_holds vcpu"
+  shows "no_nested_svm vcpu"
+  by (smt (verit) assms s2_implies_s9 ...)   (* SMT-LIB replay *)
+
+(* structural definition — (T-i) sorry *)
+lemma vcpu_invariant: "P vcpu" sorry
+
+(* attribute 부착 — (T-ii) axiom *)
+axiomatization where
+  gif_host_managed: "..."
+```
+
+**Mode 결정 알고리즘 (도구 내부):**
+
+```
+for each lemma L in Verus input:
+    if L has #[verus_to_isabelle::axiom]:
+        emit axiomatization (T-ii)
+    elif L has SMT-LIB obligation captured AND obligation 자동 가능:
+        emit `by (smt (verit) ...)` (T-iv)
+    else:
+        emit sorry (T-i)
+```
+
+#### 1.3.1 logicutils augmentation
+
+(T-iv) 의 mode 분기 + per-statement re-emission 비용 관리는 Y4 의
+build orchestration 도구 **logicutils** (`/home/ybi/logicutils/`) 와
+통합:
+
+| logicutils 기능 | 본 도구에서의 활용 |
+|---|---|
+| `freshcheck` (hash-driven freshness) | 매 Verus statement 의 hash 기록.  변경된 statement 만 재추출 + 재 emit.  `.thy` 산출물에 input statement hash 박음 |
+| `stamp` (signature recording) | 매 emit 결과에 (T-i / T-ii / T-iv) mode tag + Verus version + Z3 version stamp.  reproducibility 검증 |
+| `lu-rule` (per-form-factor flag) | `tools/v2i.rules` 에 mode override (예: 특정 invariant 강제 sorry, 특정 invariant 강제 axiom) — 형상별 build 처럼 paper-track / contribute-back-track 분리 |
+| `lu-par` (DAG-aware parallel) | invariant 사이 의존 그래프 (예: AV6 의 AV1 의존, AV2-D 의 AV2 의존) DAG 정렬 + 병렬 emission |
+
+mode 결정의 deterministic 보장:
+- 같은 input + 같은 logicutils stamp = bit-identical `.thy` 산출물
+- Verus / Z3 / 도구 자체의 version pin → reproducibility (PR-4 의 paper artifact 정합)
+
+### 1.4 도구 모드 옵션
+
+| flag | 의미 | 사용 |
+|---|---|---|
+| (default, no flag) | (T-iv) SMT-LIB hybrid + (T-ii) attribute axiom + (T-i) sorry fallback.  v1.0 기본 강제 | 일반 use case |
+| `--no-smt` | (T-iv) 비활성.  (T-i) sorry + (attribute 시) (T-ii) axiom 만.  Z3 / Isabelle smt method 환경 부재 시 fallback | air-gapped 환경 |
+| `--all-sorry` | 모든 lemma sorry, attribute / SMT-LIB 무시.  seL4 팀 100% 자체 증명 모드 | seL4 팀의 audit-only |
+| `--all-axiom` | 모든 lemma axiom (논의용 / 제안 단계, production X) | discussion |
+| `--respect-attrs` | (T-ii) axiom mode 활성 명시 (default 에 이미 활성) | legacy compat |
+
+### 1.5 AV1~AV20 catalog 와의 짝 (F)
+
+`amdv_safety.md` §5.2 의 20 invariant 의 default mode 는 (T-i) sorry —
+seL4 팀이 자체 증명 권장.  단 다음 2 invariant 는 (T-ii) axiom 후보로
+attribute 부착:
+
+| AV | 안전장치 | (T-ii) axiom 후보 사유 |
+|---|---|---|
+| **AV2** | S3 NPT 격리 | cap derivation 의 seL4 측 invariant 와 직결 — seL4 팀이 axiom 수용 가능성 ↑ |
+| **AV6** | S7 GIF host-managed | microkernel 측 본체 (D1a 의 vmrun wrapper 안), seL4 팀이 본문 직접 검증 가능 |
+
+기타 18 invariant 는 attribute 부착 0 → default (T-i) sorry + (T-iv)
+SMT-LIB hybrid 시도 (가능 시 자동 채움, 불가능 시 sorry).
+
+seL4 팀이 AV2 / AV6 의 axiom 수용 거부 시 `--no-smt --no-axioms` 옵션으로
+순수 (T-i) sorry export — 항상 fallback 가능.
+
+### 1.6 Trust ledger (B)
+
+| 모드 | trust 책임 |
+|---|---|
+| **(T-i) sorry** | Isabelle/HOL 의 sorry 채움이 seL4 팀 책임.  Y4 측 도구 책임 0 — 도구는 syntactic translation 만 |
+| **(T-ii) axiom** | trust = Verus + Z3 + `y4-verus2isabelle` 도구 자체.  도구 버그 → wrong axiom 발생 가능 → Y4 측이 (T-ii) 사용 시 **별도 audit log + diff verification 필수** (§3.x 도구 형상의 logicutils stamp 가 audit chain) |
+| **(T-iv) SMT-LIB hybrid** | trust = Verus + Z3 + Isabelle 의 `smt` method 의 SMT-LIB replay 정확성.  Isabelle smt method 는 mainline Isabelle 의 standard tactic — 추가 trust boundary 없음 |
+
+### 1.7 seL4 팀 inbound contract (G)
+
+도구 결과를 받은 seL4 팀의 사용 흐름:
+
+1. Y4 PR-4 (`amdv_safety.md` §6.2) 가 `.thy` 산출물 첨부 + logicutils
+   stamp.  artifact 형식: `theory Y4_AmdvSafety imports Main begin ...
+   end` + version pin file (Verus / Z3 / 본 도구 / Isabelle 권장 version)
+2. seL4 팀이 자체 Isabelle 환경에서 import — `theory Foo imports
+   Y4_AmdvSafety begin ...` 패턴
+3. sorry 채움 (Isar 자체 증명) 또는 axiom 수용 결정
+4. (T-iv) SMT-LIB replay 결과 fail 시 도구 재실행 또는 manual Isar
+   완성
+
+Y4 측 forward-compat 보장:
+- import path / theory 이름 변경 = v2 (incompatible)
+- `imports` 의 추가 = v1.x patch (기존 use 무영향)
+- AV# 추가 = v1.x patch
+- AV# 제거 / 의미 변경 = v2
 
 ---
 
 ## 2. 입력 → 출력 매핑
 
+### 2.1 핵심 매핑 표
+
 | Verus | Isabelle/HOL |
 |---|---|
 | `spec fn f(x: T) -> R { body }` | `definition f :: "T ⇒ R" where "f x = body"` |
-| `proof fn lemma() requires P, ensures Q` | `lemma name: "P ⟹ Q" sorry` (또는 axiom) |
-| `pub struct S { a: T, b: U }` | `record S = a :: T b :: U` (또는 `datatype`) |
+| `proof fn lemma() requires P, ensures Q` | `lemma name: "P ⟹ Q" sorry` (또는 axiom 또는 `by (smt (verit) ...)`) |
+| `pub struct S { a: T, b: U }` (named fields) | `record S = a :: T b :: U` (D=a 결정) |
+| `pub struct S(T, U)` (tuple struct / newtype) | `datatype S = S T U` (D=a 결정) |
 | `pub enum E { A, B(T) }` | `datatype E = A | B T` |
 | `Set<T>` | `'a set` (HOL.Set) |
 | `Seq<T>` | `'a list` |
 | `Map<K, V>` | `K ⇀ V` (option-valued partial) |
 | `nat`, `int` | `nat`, `int` |
-| `forall\|x: T\| P(x)` | `∀x::T. P x` |
+| Fixed-width int (`u8` / `u16` / `u32` / `u64` / `usize` / `i*`) | abstract `nat` (unsigned) 또는 `int` (signed) — width 정보 폐기 (G=a) |
+| `forall\|x: T, y: U\| P(x, y)` (multi-binder) | `∀x::T y::U. P x y` (E=a) |
+| `forall\|x\| forall\|y\| P` (nested) | `∀x. ∀y. P` (직역, E=a) |
 | `exists\|x: T\| P(x)` | `∃x::T. P x` |
 | `==>` | `⟶` |
 | `&&`, `\|\|` | `∧`, `∨` |
 | `decreases m` | termination via `function ... by (relation "measure m")` |
-| `recommends` | (무시 — Verus 의 hint 만, 의미 변경 X) |
-| `assume(P)` | `axiomatization where ... : P` (위험 — 명시적 표시 권장) |
+| `recommends` | (무시 — Verus 의 hint, 의미 변경 X, A 정밀화) |
+| `assume(P)` | (T-i) 모드에서는 도구 panic, (T-ii) 모드에서만 `axiomatization where ... : P` (위험 — 명시 표시 권장) |
+| `assert(P)` | (무시 — proof step, T-i 외부, A 정밀화) |
+| `#![trigger ...]` annotation | v1.0 무시 (§8 unresolved 항목 2 와 짝) |
 
-미지원 (Phase 1 범위 외):
-- Verus 의 `Tracked<T>` / `Ghost<T>` (linear ghost state) — Isabelle 에 직접 대응 X
-- `verifier::trusted` — 직접 axiom 매핑
-- closure / function pointer
-- Verus 의 `state_machines_macros` DSL
+### 2.2 Operator precedence / parenthesization (F)
+
+도구는 모든 복합식에 **explicit parenthesization** 강제 — Isabelle/HOL
+의 default precedence 의존 X.  출력의 reproducibility 보장 (§1.3
+logicutils stamp 와 짝):
+
+```isabelle
+(* 좋음 — explicit *)
+"((P x) ∧ (Q x)) ⟶ (R x)"
+
+(* 도구가 emit X — implicit precedence 의존 *)
+"P x ∧ Q x ⟶ R x"
+```
+
+### 2.3 (T-iv) SMT-LIB 매핑 (A 추가)
+
+P3.4 §1.3 의 (T-iv) SMT-LIB hybrid 매핑.  Verus 의 Z3 SMT-LIB 2 쿼리 →
+Isabelle smt method 입력 + replay:
+
+| SMT-LIB 2 | Isabelle smt method |
+|---|---|
+| `(declare-sort S 0)` | (Y4 측 type 으로 이미 매핑, 재emit X) |
+| `(declare-fun f (T1 ... Tn) R)` | `consts f :: "T1 ⇒ ... ⇒ Tn ⇒ R"` (Y4 측 spec fn 과 짝) |
+| `(assert φ)` | `lemma "φ" by (smt (verit) <기존 fact 들>)` |
+| `(forall ((x T)) ψ)` | `∀x::T. ψ` (T 매핑 적용) |
+| `(=> P Q)` | `P ⟶ Q` |
+| `(and ...)` / `(or ...)` / `(not P)` | `∧` / `∨` / `¬P` |
+| `(check-sat)` | (Verus 측 의무, 도구는 무관) |
+| `(get-proof)` Z3 proof certificate | Isabelle smt method 가 자체 replay (proof certificate import 필요 시 sledgehammer fallback) |
+
+(T-iv) 의 대상 = automatable proof obligation 만.  structural
+definition / spec body 는 (T-i) 또는 (T-ii) hybrid (P3.4 §1.3 결정
+알고리즘).
+
+### 2.4 Y4 도메인 type 매핑 (B 추가, P1.4 §0 scope clamp 정합)
+
+Y4-scope 한정 도메인 type — 일반 Verus translator 가 다루지 않는
+Y4-specific type 의 axiomatic 매핑:
+
+| Y4 Verus type | Isabelle/HOL emit |
+|---|---|
+| `Cap<T>` | `'a cap` (axiomatic type) + `cap_owns :: 'a cap ⇒ 'a ⇒ bool` + `cap_revoked :: 'a cap ⇒ bool` predicate |
+| `LeaseCap` | `record lease_cap = partition_id :: nat, vmcb_caps :: vmcb_capsule cap list, npt_cap :: npt_capsule cap, ...` (vmm_arch.md §2.3 의 struct 직역) |
+| `VcpuId` | `type_synonym vcpuid = nat` |
+| `RegId` | `datatype reg_id = RAX | RBX | ... | RIP | RFLAGS | CR0 | ...` (§4.1 화이트리스트 enum) |
+| `CapsuleMsg` | `datatype capsule_msg = VmcbReadReg vcpuid reg_id | VmcbWriteReg vcpuid reg_id u64 | ...` (vmm_arch.md §8.1 enum 직역) |
+| `AuditEntry` | `record audit_entry = ts :: nat, vm_id :: nat, severity :: severity_tag, op_tag :: op_tag, payload :: audit_payload` (S12.2 schema 직역) |
+| `XChaCha20Key`, `Aes256Key` | `'a key` (axiomatic) + `key_destroyed :: 'a key ⇒ bool` + `decryptable :: 'a key ⇒ bytes ⇒ bool` predicate (S12.5 / S13.9 정합) |
+| `HostFrame`, `GuestPaddr`, `VAddr` | `type_synonym host_frame = nat`, `guest_paddr = nat`, `vaddr = nat` (abstract) |
+| `Y4Error` | `datatype y4_error = InvalidArgument | NoMemory | BadCap | Timeout | AlreadyDecided | ...` |
+
+### 2.5 미지원 처리 정책 (C)
+
+미지원 Verus 기능 만남 시 **도구 panic + 명확한 에러** (P1.4 §0 scope
+clamp + P3.4 §1.1 정합):
+
+| 미지원 항목 | 도구 동작 | Y4 측 회피 권고 |
+|---|---|---|
+| `Tracked<T>` / `Ghost<T>` (linear ghost state) | panic with `error: linear ghost state not supported (Y4-scope)` | Y4 측 invariant 작성 시 ghost state 대신 `spec fn` / `proof fn` 으로 표현 |
+| `verifier::trusted` | (T-ii) axiom 으로 직접 매핑 (attribute 없이도) | Y4 측 명시 attribute 부착 권고 (audit chain 명확) |
+| Closure / function pointer | panic with `error: closure/fn-ptr not supported (Y4-scope)` | spec fn 의 named definition 으로 분리 |
+| `state_machines_macros` DSL | panic with `error: state_machines_macros DSL not supported (Y4-scope)` | manual spec fn / proof fn 으로 풀어 작성 |
+| 그 외 미지원 syntax | panic + 도구 issue tracker URL 안내 | 본 doc §8 unresolved 에 신규 항목 추가 후 v1.x patch |
+
+silent skip 절대 X — wrong axiom / wrong sorry 발생 risk.
+
+### 2.6 Theory file 분리 정책 (H)
+
+**Per-Verus-module 1 `.thy` 파일** — `proofs/verus/src/amdv/` 의 module
+구조와 1:1:
+
+| Verus 모듈 | Isabelle theory file |
+|---|---|
+| `proofs/verus/src/amdv/upper/npt.rs` | `Y4_AmdvSafety_Upper_Npt.thy` |
+| `proofs/verus/src/amdv/upper/cpu_pin.rs` | `Y4_AmdvSafety_Upper_CpuPin.thy` |
+| `proofs/verus/src/amdv/upper/thread_group.rs` | `Y4_AmdvSafety_Upper_ThreadGroup.thy` |
+| ... (각 upper/* + lower/* 1 파일) | ... |
+| `proofs/verus/src/amdv/lib.rs` (top-level) | `Y4_AmdvSafety.thy` (모든 sub-module imports) |
+
+`imports` 관계는 Y4 측 mod 의존 그래프와 1:1 — `lib.rs` 가 `mod
+upper::npt;` 등을 선언하면 `Y4_AmdvSafety.thy` 가 `imports
+Y4_AmdvSafety_Upper_Npt ...` 로 emit.
+
+장점:
+- AV# 추가 시 해당 Verus module 의 `.thy` 만 재 emit (logicutils
+  freshcheck 정합)
+- seL4 팀이 일부 invariant 만 import 가능 (`theory Foo imports
+  Y4_AmdvSafety_Upper_Npt begin ...`)
+- Y4 의 §3.1 Layer (Upper/Lower) 분류가 file naming 으로 직접 노출
 
 ---
 
 ## 3. 도구 형상
 
-### 옵션 A — 별도 repo `y4-verus2isabelle`
+### 3.1 채택 — 옵션 (A) 별도 sibling repo
 
-- 자체 Rust crate, Cargo workspace
-- Verus 소스를 입력, `.thy` 파일 출력
-- Y4 가 client (proofs/verus → docs/isabelle 변환), seL4 팀도 별도 활용
+| 옵션 | 의미 | 채택 |
+|---|---|:---:|
+| **(A) 별도 repo `/home/ybi/y4-verus2isabelle/`** | sibling 패턴 (P1.4 §5.3 정합).  y4-drivers / y4-hypercall 와 동일.  seL4 팀에 도구 자체 contribute 가능 (Apache-2.0) | **◎** |
+| (B) Y4 워크스페이스 멤버 `Y4/tools/v2i/` | 시작 비용 작음, 재사용성 약간 낮음, P1.4 §5.3 sibling 정책 위배 | ✗ |
+| (C) Verus 측 backend plugin | 가장 깨끗하지만 Verus 팀과 협의 + Y4-scope 한정 보존 어려움 (general-purpose 압력) | ✗ |
 
-### 옵션 B — Y4 워크스페이스 멤버 `tools/v2i/`
+### 3.2 (A) 채택 시 내부 구조
 
-- Y4 cargo workspace 안의 멤버
-- 시작 비용 작음, 재사용성 약간 낮음
+**Single Cargo crate `y4-verus2isabelle`** (binary + lib 분리):
 
-### 옵션 C — Verus 측 backend plugin
+```
+/home/ybi/y4-verus2isabelle/
+├── Cargo.toml              # license = "Apache-2.0"
+├── LICENSE                 # Apache-2.0 full text
+├── NOTICE
+├── README.md
+├── verus-pin.toml          # 지원 Verus version range (F)
+├── isabelle-pin.toml       # 지원 Isabelle version range (G)
+├── src/
+│   ├── lib.rs              # parser / mapper / emitter API (round-trip test 노출용)
+│   ├── main.rs             # CLI binary
+│   ├── parser/             # syn-based Verus AST parsing
+│   ├── mapper/             # §2 매핑 (도메인 type 매핑 §2.4 포함)
+│   ├── emitter/            # Isabelle Isar text emit + pretty-print
+│   └── modes/              # (T-i) / (T-ii) / (T-iv) hybrid 결정 로직 (§1.3)
+├── tests/
+│   ├── unit/               # 도구 자체 unit test
+│   └── fixtures/           # Y4 의 proofs/verus/src/amdv/ snapshot copy (D)
+└── tools/
+    ├── sync-fixtures.sh    # Y4 의 proofs/ → fixtures/ 자동 sync (drift 검출)
+    ├── v2i.rules           # logicutils lu-rule 형식 mode override (P3.4 §1.3.1)
+    └── v2i-build.sh        # logicutils freshcheck/stamp 통합 build entry
+```
 
-- Verus 자체에 PR — Verus 가 출력 backend 로 Isabelle 추가
-- 가장 깨끗하지만 Verus 팀과 협의 필요
+분량: 단일 crate ~1500 LoC + attribute opt-in ~100 LoC + Y4 도메인 매핑
+~200 LoC + (T-iv) SMT-LIB hybrid ~300 LoC + logicutils 통합 ~150 LoC
+≈ **~2250 LoC Rust** 추정.
 
-**권고: A** — y4-drivers / y4-hypercall 와 동일 패턴, Y4 외부 도구.
-seL4 팀에 도구 자체를 contribute 가능 (Apache-2.0).
+### 3.3 logicutils 통합 — cargo dep link
+
+`y4-verus2isabelle` 가 logicutils 를 **cargo dependency 로 직접 link**.
+라이선스 호환 (BSD-2-Clause + Apache-2.0 = single-license 단방향 호환,
+attribution 보존만 필요):
+
+```toml
+[dependencies]
+logicutils-core = { path = "/home/ybi/logicutils", version = "0.1" }
+# 또는 git dep + pin
+```
+
+장점:
+- type-safe API (sub-process invoke 보다 깔끔)
+- 단일 binary (sub-process spawn overhead 0)
+- `freshcheck` / `stamp` 직접 호출 — Verus statement hash 추적 + emit
+  결과의 reproducibility stamp 박음
+- `lu-rule` / `lu-par` 도 library API 로 호출 — `tools/v2i.rules` 파일
+  로 mode override + invariant 의존 그래프 DAG 정렬
+
+NOTICE 갱신 — `y4-verus2isabelle/NOTICE` 에 logicutils BSD-2 attribution
+추가 (Apache-2.0 § 4 (d) 정합).
+
+### 3.4 Round-trip test fixtures (D)
+
+`tests/fixtures/` 안에 Y4 의 `proofs/verus/src/amdv/` 의 snapshot copy.
+신규 invariant 추가 시 drift 검출:
+
+```sh
+#!/bin/bash
+# tools/sync-fixtures.sh
+set -euo pipefail
+src=/home/ybi/Y4/proofs/verus/src/amdv
+dst=tests/fixtures/y4-amdv
+rsync -av --delete --itemize-changes "$src/" "$dst/"
+echo "[sync-fixtures] last sync: $(date -u +%FT%TZ) (Y4 commit $(cd /home/ybi/Y4 && git rev-parse HEAD))" \
+    > "$dst/.sync-stamp"
+```
+
+CI 측 검증: `tools/sync-fixtures.sh` 가 `--dry-run` 모드에서 변경 감지
+시 fail (drift 검출).  drift 발견 → 도구 측 PR + Y4 측 v2i 재 emit
+짝 PR.
+
+### 3.5 CI strategy — 2-tier (E)
+
+#### Tier 1 — `y4-verus2isabelle` repo 자체
+
+GitHub Actions (또는 local just) 의 step:
+
+| Step | 검증 |
+|---|---|
+| `cargo fmt --check` | code style |
+| `cargo clippy -- -D warnings` | lint |
+| `cargo test` | unit test |
+| `cargo run --bin v2i -- tests/fixtures/y4-amdv/ --output /tmp/y4-thy` | 50+ invariant fixture round-trip |
+| Isabelle build of generated `.thy` | sorry / axiom / smt method 모두 syntactic OK |
+
+#### Tier 2 — Y4 측 sub-tier (`Y4/justfile` 의 `verus2isabelle` recipe)
+
+| Step | 검증 |
+|---|---|
+| `cargo install --path /home/ybi/y4-verus2isabelle` (latest tag) | 도구 install |
+| `v2i Y4/proofs/verus/src/amdv/ --output Y4/proofs/isabelle/` | Y4 의 50+ invariant 산출물 generate |
+| Isabelle build of `Y4/proofs/isabelle/` | seL4 팀 환경 simulating |
+
+Tier 2 는 PR-3 / PR-4 의 paper artifact 생성 시점에 실행 — Y4 의 매
+PR commit 마다 실행 X (cost ↑).
+
+### 3.6 Verus / Isabelle version pin (F, G)
+
+#### `verus-pin.toml`
+
+```toml
+[verus]
+# 지원 Verus version range — latest verus-bin 의 stable + 1 minor 이전
+min_version = "0.x.y"     # P3.4 §1.6 trust ledger 와 짝
+max_version = "0.x+1.*"
+recommended = "0.x.z"     # latest stable
+```
+
+새 Verus version 출시 시:
+1. 도구 측 PR — `verus-pin.toml` 갱신 + 호환성 검증 + 매핑 패치
+2. Y4 측 verus-bin 업데이트 trigger
+
+#### `isabelle-pin.toml`
+
+```toml
+[isabelle]
+# 지원 Isabelle version range — 양측 환경 격리, best-effort emit
+min_version = "Isabelle2024"
+max_version = "Isabelle2025+1"
+recommended = "Isabelle2025"
+```
+
+도구는 `.thy` generate 만 — 실제 Isabelle build 는 seL4 팀 환경.
+도구 자체는 version-agnostic best-effort emit.
+
+### 3.7 도구 자체 라이선스 (H)
+
+**Apache-2.0** — Y4 single-license 정책 정합 (`CLAUDE.md` §3, `docs/
+licensing.md`).  SPDX 헤더:
+
+```rust
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+```
+
+NOTICE 의 reuse manifest:
+- syn / quote crate (Apache-2 OR MIT)
+- logicutils-core (BSD-2-Clause)
+- (다른 cargo dep 들)
+
+### 3.8 seL4 팀에 도구 자체 contribute (I)
+
+v1.0 frozen 후 seL4 팀에 제안:
+
+1. Y4 PR-4 (`amdv_safety.md` §6.2) 의 `.thy` 산출물 + 도구 자체를 함께
+   제출
+2. seL4 팀이 평가 — 도구의 50+ invariant round-trip 정확성 + Y4-scope
+   한정의 합리성
+3. 채택 시 seL4 organization 의 `verus2isabelle` repo 로 fork upstream
+4. seL4 팀이 자체 maintenance — Y4 는 client 로 latest tag pull
+5. Y4-scope 한정은 그대로 보존 — 외부 사용자가 일반 Verus 프로젝트 적용
+   시 책임 X (P1.4 §0 scope clamp 정합)
+
+거부 시 Y4 단독 유지 — sibling repo 그대로 publish (Apache-2.0).
 
 ---
 
@@ -193,14 +546,66 @@ frozen 후 도구 구현 PR 진입.  도구 구현은 D1d 의 seL4 측 패치와
 
 ## 8. 미해결 / 추가 결정 필요
 
-1. Verus 의 `Tracked<T>` / `Ghost<T>` 의 Isabelle 대응 — 필요한가? 본
-   도구 v1.0 에서는 미지원, 사용 시 도구가 명확한 에러
-2. **Verus 의 trigger annotation** (`#![trigger ...]`) — Isabelle 에선
-   `[trigger]` attribute 가 다른 의미.  무시해도 되는지 검토
-3. **Isabelle 의 locale / class** 활용 — Verus 의 trait bound 를 어떻게
-   매핑할지
-4. **Round-trip test 의 ground truth** — Y4 의 50+ invariant 를 도구
-   v1.0 검증의 fixture 로 사용. 새로 추가되는 invariant 도 자동 포함
+### 8.1 닫힘 ledger (sign-off 또는 sub-decision 으로 해결됨)
+
+| # | 항목 | 닫힘 사유 |
+|---|---|---|
+| 1 | Verus 의 `Tracked<T>` / `Ghost<T>` 매핑 | **v1.0 미지원 확정** (A).  Y4 측 invariant 작성 시 ghost state 회피 (P3.5 §2.5 정합).  v1.x patch 로 매핑 추가는 실수요 (Y4 의 AV1~AV20 catalog 가 ghost state 사용 시) 발생 시점에 검토 |
+| 2 | Verus 의 trigger annotation (`#![trigger ...]`) | **v1.0 무시 + emit 0** (P3.5 §2.1 정합).  Verus 의 trigger 는 Z3 quantifier 호출 hint, Isabelle 측 quantifier 는 외부 hint 무관 — semantic 영향 0 검증됨 |
+| 3 | Isabelle 의 locale / class 활용 | **v1.0 미사용 확정**.  Y4 의 AV1~AV20 이 trait bound polymorphic spec 0 (모두 concrete domain type, P3.5 §2.4).  Y4 측이 향후 trait-based spec 도입 시 v1.x patch 검토 |
+| 4 | Round-trip test 의 ground truth | **확정** — `tests/fixtures/y4-amdv/` 에 Y4 의 `proofs/verus/src/amdv/` snapshot copy + `tools/sync-fixtures.sh` 자동 sync (P3.6 §3.4 결정).  신규 invariant 추가 → sync script 가 drift 검출 → 도구 측 PR + Y4 v2i 재 emit 짝 PR |
+
+### 8.2 v1.0 통합 항목 (§8 에서 제외)
+
+- **(T-iv.a) SMT-LIB hybrid** → P3.4 §1.3 에 v1.0 기본 강제 (logicutils-
+  augmented).  §8 unresolved 영역 X.
+
+### 8.3 v2 (incompatible) 후보 — multi-backend / 외부 chain
+
+본 도구의 v2 (구조적 변경) 단계에서 검토할 중간 언어 경유 옵션 — v1.0
+단독 불채택, 검토 시점에 재평가:
+
+| 후보 | 의미 | 채택 시 영향 | v1.0 불채택 사유 |
+|---|---|---|---|
+| **(T-iii.a) Why3 backend** | Verus → WhyML → Why3 의 Isabelle/HOL backend (외주). 무료로 Coq / Z3 cross-validation 도 얻음 | 도구 chain 길이 ↑.  Tracked<T> ↔ WhyML ML-style type 매핑 분량 ↑ | WhyML 학습 곡선 + Why3 의 Isabelle backend 의존 + v1.0 ~2250 LoC 초과 분량 |
+| **(T-v.a) Y4-IR + Isabelle backend (multi-backend 진입점)** | Y4 자체 IR 설계 → Isabelle / HOL Light / Rocq / Lean4 multi-backend.  long-term flexibility | greenfield IR 설계 부담 + 의미 검증 비용 | Y4 측 Isabelle 외 backend 실수요 0 — single backend 면 IR 의 의미 X |
+
+채택 trigger:
+- (T-iii.a) — Y4 측 invariant 가 Coq cross-check 또는 Z3 외 SMT solver
+  검증 필요 시
+- (T-v.a) — seL4 외 다른 verification 도구 (HOL Light / Rocq / Lean4)
+  로의 contribute-back 실수요 발생 시
+
+### 8.4 비채택 후보 closed ledger (P3.4 E 재검토 정합)
+
+다음 5 후보는 **closed** — 미래 검토 시 재시도 차단을 위해 사유 명시:
+
+| 후보 | closed 사유 |
+|---|---|
+| **Boogie / IVL 경유** | Verus 자체가 Boogie-style verifier 라 가까운 IR 존재하나, Boogie → Isabelle 산업 도구 부재 (semantics 형식화 paper 만, production-grade 0) |
+| **Rocq 경유** | Y4 가 이미 Rocq 사용하나, Rocq → Isabelle 번역기 production-grade X.  dependent type ↔ simple type mismatch |
+| **F\* 경유** | VeriSMo 가 F* 변형 사용 — 호환성 잠재성 ↑ 그러나 Verus → F* 번역기 부재.  학습 곡선 ↑↑ |
+| **Dedukti / OpenTheory** | universal proof checker 후보, 그러나 SMT-side 입력 약함 (proof obligation 지원 X).  Y4 의 (T-iv) SMT-LIB hybrid 와 mismatch |
+| **TLA+ / TLAPS 경유** | 동시성 invariant 표현 강함, 그러나 함수형 spec (Verus 의 `spec fn`) 표현 약함 — semantics mismatch |
+
+위 5 후보는 v2 단계에서도 재시도 X — Y4 의 verification chain 의 Verus
++ Z3 + Isabelle 결합과 fundamental mismatch.
+
+### 8.5 신규 unresolved (Phase C 진입 후 결정)
+
+1. **Attribute namespace 충돌** — 현재 `#[verus_to_isabelle::axiom]` 만
+   사용.  미래 추가 attribute (`#[verus_to_isabelle::sorry]` 강제 sorry,
+   `#[verus_to_isabelle::skip]` emit 제외 등) 도입 시 namespace 정책.
+   현재 미정 — Phase C 진입 후 도구 사용 패턴 관찰 후 결정.
+2. **(T-iv) SMT-LIB Z3 proof certificate ↔ Isabelle smt method 호환성**
+   — 현재 best-effort (일부 obligation 자동 replay fail 가능).  fail
+   시 sledgehammer fallback 정책 + 어떤 obligation 이 fail 하는지의
+   특성화 (Y4 의 AV1~AV20 catalog 안에서 measurable).  Phase C 진입
+   직후 microbench (50+ invariant 의 (T-iv) success rate 측정).
+3. **Verus polymorphic generics (`<T>`)** — Y4 의 도메인 type 외에
+   등장 시.  현 도구는 P3.5 §2.4 의 9 도메인 type 만 매핑, 그 외
+   generic spec fn 만나면 panic.  Y4 의 신규 invariant 에서 등장 시
+   v1.x patch 로 type variable polymorphic emit 추가 검토.
 
 ---
 

@@ -212,6 +212,22 @@ install-hooks:
     @echo "[install-hooks] core.hooksPath = tools/git-hooks"
     @ls -l tools/git-hooks/
 
+# --- Claude Code session resume -----------------------------------------
+#
+# `.claude-recent-session-id` is written by the SessionStart hook in
+# `.claude/settings.json` whenever a Claude Code session starts in this
+# repo.  After [Ctrl+C] x2 ends a session, run `just claude-resume` (or
+# `make claude-resume`) to re-enter that session.
+claude-resume:
+    @if [ ! -s .claude-recent-session-id ]; then \
+        echo "[claude-resume] .claude-recent-session-id is empty or missing."; \
+        echo "[claude-resume] Has a Claude Code session been started in this repo?"; \
+        exit 1; \
+    fi
+    @sid=$(cat .claude-recent-session-id); \
+        echo "[claude-resume] resuming session $sid"; \
+        exec claude --resume "$sid"
+
 # --- Stamp store maintenance ---------------------------------------------
 
 # Drop the freshness store; next `just ci` re-runs every gate.

@@ -65,7 +65,7 @@ Build orchestration (host-side tools, not redistributed):
 
   * just                   https://just.systems/                (CC0)
   * logicutils             freshcheck / stamp / lu-par / lu-rule
-                           /home/ybi/logicutils/                (LGPL-3.0)
+                           /home/ybi/logicutils/                (BSD-2-Clause)
 
 ================================================================================
 

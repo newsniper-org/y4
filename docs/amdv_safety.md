@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors -->
 
-# Y4 AMD-V (SVM) 안전장치 사양 — D1d
+# Y4 AMD-V (SVM) 안전장치 사양 — D1a + ARCH-II'
 
 본 문서는 Y4 의 AMD-V 채택 결정 (`길 1 + sub-option D1d`) 의 정전
 사양이다.  D1a (seL4 측 raw-SVM syscall + Y4-VMM 모든 로직) 만으로는
@@ -18,11 +18,18 @@ root task 가 raw cap 을 받는 즉시 host 메모리·시간·인터럽트를
 변경 0.  upstream seL4 의 모든 회귀 테스트가 Y4 fork 에서도 pass
 유지.
 
-> **상태:** spec only — **VMM 아키텍처 ARCH-II' 채택 (2026-05-04)** —
-> D1d 의 monolithic VMM 가정 폐기, capsule 분해 + VeriSMo 검증 기법
-> 영감.  자세한 디자인은 `docs/vmm_arch.md`.  Atmosphere/VeriSMo 사실
-> 확인 결과: VeriSMo 는 SEV-SNP SVSM (AMD-V hypervisor 아님), Atmosphere
-> AMD-V 코드는 publicly 미발견 — 둘 다 직접 채택 X, **검증 기법만 영감**.
+> **상태:** **v1.0 frozen** (2026-05-05, Phase 4 일괄 마킹).
+> ARCH-II' (capsule-decomposed VMM + VeriSMo 검증 기법 영감) 정합 완료.
+> 14 안전장치 (S1~S14) + sub-decision + AV1~AV20 invariant catalog +
+> 4 PR 분리 계획 모두 sign-off (§7.3 ledger).  자세한 capsule 매핑은
+> `docs/vmm_arch.md` §4, 짝 frozen doc = vmm_arch.md / sel4_fork_policy.md
+> / verus_to_isabelle.md (§7.2).
+>
+> 이전 단계 record: D1d (monolithic VMM) 가정 폐기 (2026-05-04 ARCH-II'
+> 채택).  Atmosphere/VeriSMo 사실 확인 결과 = VeriSMo 는 SEV-SNP SVSM
+> (AMD-V hypervisor 아님), Atmosphere AMD-V 코드는 publicly 미발견 —
+> 둘 다 직접 채택 X, **검증 기법만 영감** (`.claude-notes/amd-v-verified-
+> survey.md` ledger).
 >
 > **review 진행 중**: S1–S10 ✅ (안전장치 content 그대로 보존), S11–S14
 > review 재개 + §2 ABI + §6 PR split 는 ARCH-II' 의 capsule 분해에
@@ -1633,23 +1640,60 @@ frozen 후 v1.x patch 는 PR review + paper artifact 업데이트, v2 는 별도
 
 ## 8. 미해결 / 추가 결정 필요
 
-### 닫힘 (sign-off 전 결정 — 2026-05-04)
+### 8.1 닫힘 ledger (sign-off 또는 sub-decision 으로 해결됨)
 
 1. ✅ **MAX_VMRUN_DEADLINE** → **`Y4_AMDV_MAX_DEADLINE_NS` build-time
    const, 기본 100 ms, 형상별 override**.  단위 ns (cross-arch portable).
-   API: `Run(vcpu, deadline_ns)`.  자세히는 §2 ABI + §S4.
+   API: `Run(vcpu, deadline_ns)`.  자세히는 §2 ABI + §S4.  *(2026-05-04)*
 2. ✅ **multi-thread VMM** → **(ii) parent thread group**.  AV5 가
    "parent_tcb_pinned" → "parent_thread_group_pinned" (CSpace + VSpace
-   공유 TCB 집합).  Worker pool 지원.
+   공유 TCB 집합).  Worker pool 지원.  *(2026-05-04)*
+3. ✅ **Audit trail 의 retention 정책** → S12 sub-decision (S12.3
+   priority/trace tier + S12.5 XChaCha20 erase + S12.4 Phase B/C
+   memory-only with Phase D dump hook).  *(2026-05-04, S12 sign-off)*
+4. ✅ **SVM nested page table walk 시 page table cache (TLB)** —
+   `tlb_control` 필드는 **vmcb capsule internal** (§4.2 표).  v1.0
+   default = 매 vmrun flush.  Phase C 종반 performance 측정 후 v1.x
+   patch 로 selective flush 도입 검토.  *(2026-05-04, P2.1 §4.2 결정)*
+5. ✅ **#VMEXIT 처리 중 host vmload 호출** → S7.1 의 atomic sequence
+   step 5 = `vmload host_vmcb`.  wrapper 안에서만 발화, fault 시 panic
+   (host VMCB 손상은 회복 불가).  *(2026-05-04, S7.1 sign-off)*
+6. ✅ **AMD ASID 관리** → seL4 D1a 패치의 ASID allocator 가 ASID 0
+   reserve (host).  lifecycle capsule 의 `Migrate` (S5.2) 가 새 CPU
+   의 ASID 공간에서 신규 할당.  guest 별 ASID 할당은 D1a 패치의
+   per-CPU 할당 책임.  *(2026-05-04, S5.2 sign-off)*
 
-### v1.0 frozen 후 v1.x patch 로 닫힐 항목
+### 8.2 v1.x patch 미해결 ledger
 
-3. **Audit trail 의 retention 정책** — ring buffer 크기, lease 회수
-   시 sanitize 의 zeroing 보장.  runtime default → patch 가능.
-4. **SVM nested page table walk 시 page table cache (TLB)** —
-   `tlb_control` 필드의 default 값.  매 vmrun flush 가 안전하지만
-   성능 손실 — runtime default → patch 가능.
-5. **#VMEXIT 처리 중 host 가 vmload 호출 가능한가** — host state save
-   영역 관리 정책.  seL4 내부 detail → patch 가능.
-6. **AMD ASID 관리** — guest 별 ASID 할당, ASID 0 (host) 와 충돌 회피.
-   seL4 내부 detail → patch 가능.
+(현 시점 비어 있음 — frozen 시 추가될 항목 모두 §7.4 의 patch 분류로
+편입.)
+
+### 8.3 ARCH-II' propagation 후 신규 unresolved (Phase C 진입 후 결정)
+
+1. **orchestrator IPC bandwidth budget** — capsule cluster 의 cross-VM
+   IPC contention 측정.  S4 deadline (≤ 100 ms) 안에서 §8.3 boundary
+   crossing 8 회 의 worst-case latency 측정 후 budget 확정.  Phase C
+   진입 직후 microbench (qemu-smoke + capsule cluster 의 vmexit 측정).
+2. **capsule cross-VM partition 정책** — 같은 host 의 다른 lease cluster
+   의 capsule 사이 격리 강도.  현 spec 은 cluster-scope-trusted (§1
+   Row 3) — cross-cluster 격리 invariant (`capsule_cluster_isolated(c1,
+   c2)` 같은) 추가 필요한지 검토.  Verus invariant AV21 후보.  Phase C
+   진입 후 결정.
+3. **Verus 의 `Tracked<T>` 의미 변동 대응** — §3.2 의 semantic 정합
+   caution 의 후속.  latest verus-bin 의 ghost API 변동 시 invariant
+   재증명 cycle 의 자동화 (CI 의 Verus version pin + 자동 round-trip).
+   `verus_to_isabelle.md` §8.1 (Tracked/Ghost 매핑) 과 짝.
+4. **`y4-paper-artifact/` repo 생성 시점** — Phase C 종반 paper draft
+   시점에 Y4 의 v1.0 frozen tag 에서 cherry-pick 으로 생성.  artifact
+   submission 시점 (USENIX/ACM artifact track deadline) 에 맞춰 일정.
+
+### 8.4 Phase D 진입 시 검토 영역 (vmm_arch.md §8.8 cross-ref)
+
+`docs/vmm_arch.md` §8.8 의 4 항목 — Phase D 진입 시 spec patch 로 추가:
+
+- IOMMU programming capsule 의 fault model 과 `vmm_arch.md` §2.5 정합
+- nested-request capsule 의 R-α / R-γ implementation 분리 (현 spec
+  PollNestedRequest stub 만)
+- audit capsule 의 disk-backed persistence (S12.4 forward-compat hook
+  활성화)
+- per-capsule restart policy (`vmm_arch.md` §8.4)

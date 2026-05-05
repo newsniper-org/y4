@@ -56,6 +56,11 @@ proofs/verus/lib*.rlib
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
+# Claude Code session ID captured by SessionStart hook (.claude/settings.json).
+# Used by `make claude-resume` / `just claude-resume` after [Ctrl+C] x2.
+# Per-developer scratch — never commit.
+.claude-recent-session-id
+
 # Tooling caches
 .cache/
 .direnv/

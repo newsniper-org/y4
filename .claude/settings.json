@@ -11,6 +11,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r .session_id > /home/ybi/Y4/.claude-recent-session-id"
+          }
+        ]
+      }
     ]
   }
 }

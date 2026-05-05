@@ -12,8 +12,13 @@ ARCH 비교 (5 candidate architectures) 및 사용자 결정 (2026-05-04).
 보유 — 본 문서는 그 안전장치들이 *어디 (어느 capsule) 에* 구현되며
 *어떻게 (capsule pattern) 격리* 되는지를 정의.
 
-> **상태:** v0 design draft — sign-off 대기.  본 문서가 frozen 되어야
-> seL4 fork 측 D1a 패치 + capsule cluster 첫 PR 진입.
+> **상태:** **v1.0 frozen** (2026-05-05, Phase 4 일괄 마킹).
+> 핵심 결정 §1 의 10 axis + capsule 분해 §2 의 10 capsule + 1
+> orchestrator + VeriSMo 검증 기법 §3 + PR split 매트릭스 §4 + repo
+> 구조 §5 + 차별점 §6 모두 sign-off.  `docs/amdv_safety.md` 의 capsule
+> 매핑 source.  짝 frozen doc = amdv_safety.md / sel4_fork_policy.md /
+> verus_to_isabelle.md.  Phase C 진입 차단 1~4 단계 해제 (§7.5
+> phase_plan §C cross-ref).
 
 ---
 

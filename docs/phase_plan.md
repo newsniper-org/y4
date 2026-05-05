@@ -92,20 +92,27 @@ greeting 까지 검증, 모든 Verus 명세 머지 완료.
 > upstream seL4 의 모든 회귀 테스트가 Y4 fork 에서도 pass 보장.
 >
 > **Phase C 진입 전 차단 의존 (이 순서):**
-> 1. `docs/amdv_safety.md` v1.0 frozen (S1–S14 안전장치 sign-off)
-> 2. `docs/vmm_arch.md` v1.0 frozen (ARCH-II' capsule 분해 sign-off)
-> 3. `docs/sel4_fork_policy.md` v1.0 frozen
-> 4. `docs/verus_to_isabelle.md` v1.0 frozen + `y4-verus2isabelle`
->    번역기 구현 (statement-only `sorry` + `axiom` opt-in hybrid)
-> 5. seL4 측 D1a C 패치 (`CONFIG_Y4_AMDV` gate, default OFF). 회귀
->    게이트 통과
-> 6. **vmrun-orchestrator + 10 capsule 첫 PR** (`Y4/vmrun-orchestrator/`
->    + `Y4/capsules/` 의 새 멤버) + Verus 명세 (S1–S14 본문)
-> 7. `y4-hypercall` 재정의 — Phase D 의 R-α/R-γ + S14 사용자 CLI 도구
->    repo (core VMM 코드는 Y4 워크스페이스 안)
+> 1. ✅ `docs/amdv_safety.md` v1.0 frozen *(2026-05-05, Phase 4)*
+> 2. ✅ `docs/vmm_arch.md` v1.0 frozen *(2026-05-05, Phase 4)*
+> 3. ✅ `docs/sel4_fork_policy.md` v1.0 frozen *(2026-05-05, Phase 4)*
+> 4. ✅ `docs/verus_to_isabelle.md` v1.0 frozen *(2026-05-05, Phase 4)*
+>    — `y4-verus2isabelle` 번역기 구현 PR 진입 가능
+> 5. (열림) seL4 측 D1a C 패치 (`CONFIG_Y4_AMDV` gate, default OFF) —
+>    PR-1, 회귀 게이트 통과
+> 6. (열림) **vmrun-orchestrator + 10 capsule 첫 PR** (`Y4/vmrun-
+>    orchestrator/` + `Y4/capsules/vmm-*/` 의 신규 11 workspace member)
+>    + Verus 명세 본문 — PR-2 / PR-3
+> 7. (열림) `y4-hypercall` 재정의 — Phase D 의 R-α/R-γ + S14 사용자
+>    CLI 도구 repo (core VMM 코드는 Y4 워크스페이스 안)
+> 8. (열림) **PR-5 power-mgr** — `docs/power_safety.md` v1.0 frozen +
+>    `docs/power_arch.md` v1.0 frozen → `Y4/power-orchestrator/` +
+>    `Y4/capsules/pm-*/` 의 신규 7 workspace member + Verus 명세
+>    (AV21~AV30+).  S15~S23 안전장치 catalog
 >
 > 4 는 5–6 과 시간상 병렬. 6 의 contribute-back PR 은 도구 산출물
-> (Isabelle `.thy` skeleton) 함께 제출.
+> (Isabelle `.thy` skeleton) 함께 제출 — PR-4 짝.  8 은 5~7 과 병렬
+> 가능 — power_safety.md / power_arch.md 의 v1.0 cycle 은 ARCH-II'
+> 짝 frozen 과 무관 (별도 cycle).
 >
 > **위 7 단계 완료 후에 y4-drivers / capsules 깊이 작업 진입.**
 
