@@ -3,11 +3,19 @@
 
 # Y4 Power Management 안전장치 사양
 
-> **상태:** v0 spec (2026-05-05 진입).  ARCH-II' v1.0 frozen 후 첫
-> 신규 spec.  amdv_safety.md 의 S1~S14 와 같은 catalog 형식으로 power
-> domain 의 보안 측면 (Hertzbleed / DVFS side-channel / energy counter
-> leak / firmware mailbox attack 등) 을 안전장치 S15+ 로 박는다.
-> 짝 doc = `docs/power_arch.md` (capsule 분해 디자인).
+> **상태:** **v1.0 frozen** (2026-05-07, Phase 4-power 일괄 마킹).
+> ARCH-II' v1.0 frozen (2026-05-05) 후 첫 신규 spec.  9 안전장치
+> (S15~S23) + sub-decision + AV21~AV40 invariant catalog + form-factor
+> + sub-mode + universal customizability + PR-5 분리 모두 sign-off
+> (§6.3 sub-decision ledger).  짝 doc = `docs/power_arch.md` v1.0
+> frozen.  ARCH-II' 측 4 doc (vmm_arch / amdv_safety / sel4_fork_policy
+> / verus_to_isabelle) 와는 별도 v1.0 cycle (단 cross-cluster API 의존
+> §6.2).  cpu_virt_compat 측 vendor-neutrality 정책과 정합.
+>
+> 이전 record: v0 spec 진입 (2026-05-05) — amdv_safety.md S1~S14 와
+> 같은 catalog 형식으로 power domain 의 보안 측면 (Hertzbleed / DVFS
+> side-channel / energy counter leak / firmware mailbox attack 등) 을
+> 안전장치 S15+ 로 박는 spec.
 
 본 doc 은 Y4 의 5 form factor (server-farm / 랩톱 / rack-mount /
 핸드헬드+독 / 임베디드 SoC) 호스트 OS 측면에서 power management 의
@@ -90,7 +98,7 @@ factor 별 build-time const 가 본 가중치를 reflect).
 5. 모든 v1.x 갱신은 본 doc §6 동결 정책 (또는 짝 doc 의 v1.0 frozen
    유지) 정합
 
-기록 위치: `.claude-notes/power-threat-ledger.md` (Phase C 진입 후
+기록 위치: `.claude-notes/trackers/power-threat-ledger.md` (Phase C 진입 후
 신설 — 발견 시점, CVE / paper reference, mitigation 적용 결정 기록).
 
 ---
@@ -3424,24 +3432,238 @@ Verus invariant") 가 paper 의 추가 evidence.
 
 ---
 
-## 6. 동결 정책
+## 6. 동결 정책 (frozen / sign-off)
 
-본 spec 은 v0.  `v1.0 frozen` 조건:
-- §1 위협 모델 sign-off
-- §2 형상별 profile + cmdline + logicutils rule sign-off
-- §3 의 모든 안전장치 (S15~S23 + 추가 후보) sign-off + sub-decision
-  ledger
-- §4 Verus invariant catalog (AV21~AV30+) statement sign-off
-- §5 PR-5 분리 계획 sign-off
-- 짝 doc `docs/power_arch.md` v1.0 frozen 과 짝
+본 doc 은 v0 spec.  `v1.0 frozen` 마킹 조건:
 
-frozen 후 변경은 amdv_safety.md §7.4 패턴 정합 (v1.x patch / v2 분류).
+### 6.1 sign-off 조건
 
-frozen 후 진입 가능: PR-5 (power-orchestrator + 6 capsule + Verus
-명세) 진입.
+- **§1 위협 모델** (12 항목 catalog + 4 threat actor + form-factor 가중치
+  + v1.x ledger path) 사용자 sign-off
+- **§2 form-factor + sub-mode + universal customizability** — 4 default
+  form-factor + mobile 의 3 default sub-mode + certified overlay + 30+
+  cmdline key + `tools/power.rules.d/` overlay merge + ModeSignal
+  String-keyed + detection 2-step + 새 form-factor/sub-mode 추가 path
+  + 3-layer 우선순위 사용자 sign-off
+- **§3 9 안전장치 catalog (S15~S23)** 모두 사용자 sign-off — sub-decision
+  포함 (§6.3 ledger)
+- **§4 Verus invariant catalog (AV21~AV40)** statement 사용자 sign-off
+  (proof body 는 PR-5 진입 시 채움 — formal-first 의 statement-first
+  sign-off, amdv_safety §5.1 패턴 정합)
+- **§5 PR-5 분리 계획 (4 sub-PR + D1a' patch series + Verus + Isabelle
+  통합)** 사용자 sign-off
+- 짝 doc **`docs/power_arch.md` v1.0 frozen** 와 짝 (§6.2)
+
+### 6.2 짝 doc 일괄 frozen 의존
+
+본 doc 의 v1.0 frozen 은 **다음 짝 doc 의 v1.0 frozen 과 짝으로만 발화**
+— power domain 의 별도 v1.0 cycle (vmm_arch.md / amdv_safety.md /
+sel4_fork_policy.md / verus_to_isabelle.md 4 doc 의 v1.0 frozen 과
+**별도 cycle**, 단 cross-cluster capsule API 의존):
+
+| Doc | 짝 frozen 조건 |
+|---|---|
+| `docs/power_arch.md` | capsule 분해 (6 capsule + power-orchestrator) + lease integration + PR split |
+| `docs/power_safety.md` (본 doc) | 14 안전장치 (S15~S23) + AV21~AV40 catalog |
+
+cross-cluster API 의존 (vmm_arch.md 의 frozen capsule 재사용):
+- `audit` capsule (S12 schema) — power op_tag 30+ 추가 (v1.x patch)
+- `lifecycle` capsule — sub-mode transition + lease pause/throttle
+- `firmware-approval` capsule (S14) — `MailboxOperation` entry type 추가
+
+본 cross-cluster 의존 갱신은 amdv_safety.md / vmm_arch.md 의 v1.x patch
+(§7.4 정합) — 4 doc frozen 변경 0.
+
+### 6.3 안전장치 sub-decision sign-off ledger
+
+S15~S23 + S20.2 Tier 1.5 (TQ.1~TQ.9) + Mobile merger (M1~M13) 의 각
+sub-decision 채택 record (amdv_safety §7.3 패턴):
+
+| Safety / Decision | sub-decision 묶음 | 채택 |
+|---|---|---|
+| S15 cpufreq governor 격리 | (a-i)~(h-i) host operator only + MSR observable 차단 + CPUID frequency 마스킹 + form-factor governor + 10 ms dwell + constant_freq + SMT pair 동기 + audit | 2026-05-05 |
+| S16 C-state side-channel 차단 | (a-i)~(i-i) host operator only 진입 + per-form-factor C-state max + MWAIT silent C1 substitution + residency MSR 차단 + L1D flush + deterministic timing + SMT 동기 + lease suspend trigger + audit | 2026-05-05 |
+| S17 RAPL 격리 | (a-i)~(i-i) MSR 18 항목 차단 + virtio-rapl + capsule mediation + 4-bit LSB noise + audit + RAPL↔cpufreq internal channel + form-factor audit + per-VM budget + CPUID 마스킹 | 2026-05-05 |
+| S18 ACPI mediation | (a-i)~(i-i) AML interpreter mediation + DSDT 화이트리스트 + per-VM virtual DSDT + _OSI 화이트리스트 + thermal threshold host-only + Sx host-only + 100 ms timeout + ACPI hash integrity + audit | 2026-05-05 |
+| S19 SMT power gating | M1=a~M13=a + (a-i)~(k-i) host operator only + isolate-pairs strict 동기 + allow-mixed Warning + thread offline + IPI atomic + **3-tier force-toggle (KDE 패턴) + force-on+allow-mixed Critical** + constant_freq SMT + lease assignment + 6 audit op_tag | 2026-05-05 |
+| S20 deep idle lease suspend | (a-i)~(j-i) C3 trigger + **ISA-agnostic 4-tier secure storage (Tier 1 + Tier 1.5 dTPM + Tier 2 + Tier 3)** + S13 패턴 atomicity + **XChaCha20-Poly1305 AEAD + replay protection** + 10/5 ms latency + lock-free 동시성 + form-factor 정책 + S22 wakeup 정합 + KDE force-toggle + 8 audit op_tag | 2026-05-05 |
+| S20.2 Tier 1.5 sub-decisions (TQ.1~TQ.9) | TQ.1 Tier 1.5 신설 + TQ.2 PCR 0+1+2+3+7 + TQ.3 session encryption 의무 + TQ.4 cmdline + TQ.5 form-factor + TQ.6 fTPM Tier1 / dTPM Tier1.5 + TQ.7 audit + TQ.8 AV21 + TQ.9 tss-esapi crate | 2026-05-05 |
+| S21 thermal throttle | (a-i)~(l-i) thermal MSR 7 항목 차단 + 3-bit LSB noise + virtio-thermal + _TCC/_PSV host-only + 5°C hysteresis + S19.6 L2 mode signal + TJMAX hardlimit emergency + KDE force-toggle (conservative/policy/aggressive) + form-factor profile + CPUID 마스킹 + 6 audit op_tag | 2026-05-05 |
+| S22 wake source routing | (a-i)~(k-i) host operator + power-orchestrator only + form-factor 화이트리스트 + lease binding + spurious detection + 6-tier priority + **Y4-defined cryptographic signed magic packet** + USB VID:PID + form-factor wake routing + virtio-rtc + KDE force-toggle (inhibit-all/policy/allow-all) + 6 audit op_tag | 2026-05-05 |
+| S23 PSP/PCH mailbox | (a-i)~(k-i) 9-vendor mailbox 매트릭스 + S14 pending queue 통합 + 3-등급 분류 + ±50 mV voltage range + NPT+IO 격리 + CPUID 마스킹 + form-factor 정책 + S14 single source of truth + MSR 0x150 차단 + KDE force-toggle (strict/policy/permissive) + 5 audit op_tag | 2026-05-05 |
+| Mobile merger | M1=a (laptop+handheld→mobile) + M2=a (3 default sub-mode dock/portable/transportation) + M3=a (build-time `tools/power.rules.d/` overlay) + M4=a (form-factor symmetric) + M5=a (String-keyed namespace) + M6=a (transportation 본격 spec) + M7=a (vehicle-bus+GPS detection) + M8=a (deprecated alias) + M9=a (transportation fTPM 우선) + M10=a (S20 atomicity) + M11=a (AV22~AV24 generic) + M12=a (naming) + M13=a (default removal) | 2026-05-05 |
+| §1 threat model | A~G 12 항목 catalog + 4 threat actor + 3 카테고리 + Layer column + form-factor 가중치 + v1.x ledger | 2026-05-05 |
+| §2 form-factor / customizability | M1~M13 + cmdline 30 + logicutils overlay + ModeSignal + 2-step detection + 3-layer 우선순위 + universal customizability | 2026-05-05 |
+
+### 6.4 v1.x patch / v2 의 정의
+
+amdv_safety §7.4 패턴 정합 + power-specific:
+
+| 분류 | 정의 |
+|---|---|
+| **v1.x patch (backwards-compatible)** | (i) AV21~AV40 statement **약화 X** (강화는 OK).<br>(ii) form-factor / sub-mode 의 default definition 갱신 = patch (mechanism 자체 변경 X).<br>(iii) 새 form-factor / sub-mode / 안전장치 (S24+) 추가 = patch (기존 S15~S23 약화 X 한정).<br>(iv) audit op_tag enum 의 새 variant 추가 = patch.<br>(v) build-time const default 값 조정 = patch.<br>(vi) cross-cluster capsule API 갱신 (audit op_tag / lifecycle / firmware-approval) = patch (각 cluster 의 v1.x patch).<br>(vii) AV28-D Phase D body 채움 = patch (forward-compat hook 활성화). |
+| **v2 (incompatible)** | AV statement 약화 또는 ModeSignal namespace (string-keyed) 변경 또는 `tools/power.rules.d/` overlay merge mechanism 변경 또는 4-tier secure storage 신뢰 model 변경. |
+
+frozen 후 v1.x patch 는 PR review + paper artifact 업데이트, v2 는
+별도 재검토 cycle (S15~S23 + Mobile merger + ARCH-II' 측 호환성 재검토
++ paper revision).
+
+### 6.5 짝 doc — `power_arch.md` v1.0 frozen 조건 (mirror)
+
+`docs/power_arch.md` 의 v1.0 frozen 조건 (본 doc §6 에 mirror — 양 doc
+의 짝 frozen 강제):
+
+- §1 핵심 결정 (8 axis) sign-off
+- §2 capsule 분해 (6 capsule + power-orchestrator + DAG 의존 그래프 +
+  trust model + lease integration) sign-off
+- §3 lease integration (form-factor 별 suspend 정책 + sudden power loss
+  대비 transportation 강화) sign-off
+- §4 PR split 매트릭스 sign-off
+- §5 repo 구조 (vmm_arch.md §5.1 의 16 → 23 workspace member, v1.x
+  patch path) sign-off
+
+### 6.6 frozen 후 진입 가능 작업
+
+본 spec frozen → **PR-5 진입 차단 해제** (phase_plan.md §C 의 8 단계 중
+8 번째):
+
+1. ✅ §6.1 5 sign-off 조건 모두 만족
+2. ✅ `power_arch.md` v1.0 frozen 짝 (§6.2)
+3. (열림) **PR-5a** — `power-orchestrator` + `audit` capsule power op_tag
+   확장 진입 (§5.1)
+4. (열림) **PR-5b** — `lease-pm` capsule + 4-tier secure storage + 11
+   ISA backend 진입
+5. (열림) **PR-5c** — `cpufreq` + `msr-bitmap-extension` 진입
+6. (열림) **PR-5d** — `acpi-pm` / `rapl` / `wakeup` / `psp-pm` 진입
+7. (열림) `tools/power.rules.d/` 의 user override 가능 (build-time, §2.3)
+8. (열림) Verus AV21~AV40 proof body 채움 (PR-3 짝, §5.5)
+9. (열림) `y4-verus2isabelle` 의 power fixture round-trip 검증 (PR-4
+   짝, §5.5)
+
+§5.5 의 4-way contribute-back 진입.
 
 ---
 
 ## 7. 미해결 / 추가 결정 필요
 
-(sign-off cycle 진행 중 발견 시 채움)
+amdv_safety §8 패턴 정합.
+
+### 7.1 닫힘 ledger (sign-off 또는 sub-decision 으로 해결됨)
+
+| # | 항목 | 닫힘 사유 |
+|---|---|---|
+| 1 | Mobile merger (laptop + handheld → mobile, dual-mode → tri-mode) | M1~M13 sign-off (2026-05-05) — `mobile` 단일 form-factor + 3 default sub-mode (dock/portable/transportation) + universal customizability |
+| 2 | TPM 외장 dTPM 의 보안 등급 | TQ.1~TQ.9 sign-off — Tier 1.5 신설, fTPM=Tier 1 sub-case / dTPM=Tier 1.5, PCR 0+1+2+3+7 binding, session encryption 의무, tss-esapi crate |
+| 3 | Wake integrity check primitive 선택 | HMAC-SHA256 → **XChaCha20-Poly1305 AEAD** 정정 (2026-05-05) — Y4 정합 + single AEAD + ISA-agnostic uniform + Tier 분리 책임 |
+| 4 | Replay protection | S20.4.2 — `expected_wake_epoch` lease-pm internal monotonic counter + AEAD AD = epoch + 매 suspend 마다 increment |
+| 5 | ISA-별 secure storage 4-tier | S20.2 — Tier 1 (CPU hardware: PSP/TXT/SEV-SNP/TDX/TZ/CCA/PEF/SE/PMP/CoVE) + Tier 1.5 (외장 dTPM + AEAD master key seal) + Tier 2 (XChaCha20-Poly1305 sealed DRAM universal) + Tier 3 (suspend 거부) |
+| 6 | Universal customizability principle | M3~M4 sign-off + §2.1 — Y4 ship 의 form-factor / sub-mode 도 "default definitions" — built-in 아닌, override / removal 가능, default 와 user-defined 의 mechanism 동일 (`tools/power.rules.d/` overlay merge) |
+| 7 | Mode signal namespace | M5 — String-keyed (default 와 user-defined sub-mode 동일 type) |
+
+### 7.2 v1.x patch 미해결 ledger
+
+(현 시점 비어 있음 — frozen 시 추가될 항목 모두 §6.4 의 v1.x patch 분류
+로 편입.)
+
+### 7.3 Phase C 진입 후 신규 unresolved
+
+PR-5a~d 진입 직후 결정:
+
+1. **Microbench measurement** — S15.5 dwell 10 ms / S20.5 latency budget
+   (10 ms suspend / 5 ms wake) / S22 spurious threshold 의 실제 microbench
+   측정.  Phase C 종반에 `qemu-smoke` + capsule cluster + KernelDebugBuild=ON
+   환경에서 측정 → G7 timing-equal 의 input + paper artifact 의 evaluation
+   data.
+2. **`tools/power.rules.d/` syntax 표준** — overlay merge 의 정확한
+   grammar 결정 (TOML / INI / 자체 lu-rule syntax 의 어느 것).  logicutils
+   의 기존 `lu-rule` syntax (`boot/x86_64-debug.rules`) 와 정합 검토 후
+   결정.  M3/M4 mechanism 명시 후 syntax 분리.
+3. **Vehicle bus signal driver 위치** — S22.6 / M7 의 CAN / OBD-II /
+   vehicle Ethernet AVB driver 가 `y4-drivers` repo 에 추가될지, `wakeup`
+   capsule 안에 통합될지.  Phase C 진입 후 결정 — 주류 옵션은 y4-drivers
+   sibling repo (transportation form-factor 의 기본 driver set) + wakeup
+   capsule 의 abstract signal API 분리.
+4. **Plundervolt 외 mitigation** — S23.4 voltage range 외 추가 mitigation
+   검토:
+   - SGX/TZ enclave 측의 fault detection (Y4 의 Phase D enclave 도입 시
+     통합)
+   - voltage glitch detection (hardware-side, vendor-specific)
+   - 추가 audit/anomaly rule (기존 anomaly rule 보강)
+
+### 7.4 Phase D 진입 시 검토 영역
+
+`docs/vmm_arch.md` §8.8 + 본 doc 의 forward-compat hook 들 — Phase D
+진입 시 spec patch 로 추가:
+
+1. **AV28-D body** — IOMMU programming capsule + per-device BAR cap
+   도입 후 `wake_source_iommu_consistent` invariant body 채움 (forward-
+   compat hook 활성화, §6.4 v1.x patch).
+2. **per-capsule restart policy** (vmm_arch §8.4 정합) — power capsule
+   (cpufreq / acpi-pm / psp-pm / rapl / wakeup / lease-pm) 도 포함, fault
+   recovery 의 cluster revoke vs partial restart 결정.  v1.0 default =
+   cluster revoke (vmm_arch §2.5 정합).
+3. **Disk-backed audit persistence** (S12.4 forward-compat hook) —
+   power op_tag (30+ 추가, §6.2 cross-cluster) 도 disk dump 대상에 포함.
+4. **R-α / R-γ 의 wake source 정합** — Phase D 의 KVM ioctl 프록시 /
+   paravirt agent 가 nested guest 의 wake event 도 처리.  guest-안-VM
+   의 wake source 가 host 의 wake-from-deep-idle 과 정합.
+5. **PCIe device passthrough + power management** — Phase D 의 IOMMU +
+   per-device BAR 가 own driver guest 의 wake source / power state 와
+   정합 (S22.7 USB wake / device wake 의 Phase D 활성화 path).
+6. **Hardware enclave (SGX / TZ Realm) 도입 시 Plundervolt 의 secondary
+   mitigation** — enclave 측 fault detection + Y4 측 voltage range
+   bound (S23.4) 의 보안 layer 통합.
+
+### 7.5 v2 (incompatible) 후보
+
+frozen 후 v2 (incompatible) 단계에서 검토할 변경:
+
+1. **ModeSignal namespace 변경** — string-keyed → typed enum (universal
+   customizability 약화 시 검토).  paper review 또는 산업 도입 피드백
+   에서 string-keyed 의 type-safety 부족이 issue 될 시 재검토.
+2. **`tools/power.rules.d/` overlay merge mechanism 변경** — numbered
+   file overlay → JSON / TOML database 등의 structured config.  logicutils
+   진화 또는 별도 config tool 도입 시.
+3. **4-tier secure storage trust model 변경** — Tier 분리 책임 재구성
+   (예: hardware 자체 integrity 만 신뢰, software MAC 폐지 / 또는 모든
+   tier 가 software MAC 추가).  암호 primitive 진화 (post-quantum 등)
+   시 재검토.
+
+### 7.6 Cross-cluster capsule API 의존 ledger
+
+본 doc 의 power capsule 들이 amdv 측 capsule (vmm_arch.md §2.1) 에
+의존하는 API surface 명시 — 본 의존은 amdv / vmm_arch 의 v1.x patch
+형태로 (4 doc frozen 변경 0):
+
+| 의존 capsule (amdv 측) | 추가 API surface | 짝 sub-decision |
+|---|---|---|
+| `audit` (S12) | power op_tag 30+ enum 확장: `PStateChange` / `PStateRateLimited` (S15) / `CStateTransition` (S16) / `RaplRead` / `EnergyBudgetSet` / `EnergyBudgetExceeded` (S17) / `AcpiMethodEval` (read-only/timeout/rejected/SxStateEnter/TableTampered, 6) (S18) / `SmtPairSync` / `SmtPairDesyncAttempt` / `SmtThreadOffline` / `SmtRuntimeToggle` / `SmtForceToggle` / `SmtAllowMixedActive` (S19) / `LeaseSuspend*` 8 + `LeaseWakeIntegrityFail.reason` (S20) / `ThermalThresholdReached` / `HardlimitReached` / `CoolingComplete` / `ConfigChange` / `ForceToggle` / `MsrAccessDenied` (S21) / `WakeEventReceived` / `SpuriousWakeDetected` / `WakeSourceConfigChange` / `MagicPacketRejected` / `WakeRouting` / `WakeForceToggle` (S22) / `Mailbox*` 5 (S23) / `TpmDetected` / `TpmAbsent` / `TpmPcrMismatch` (S20.2.7) / `SubModeTransition` / `DeprecatedFormFactorAlias` (M8) | S15-S23 의 audit sub-decision + M8 |
+| `lifecycle` | `pause_all_vcpus()` (S21.8 thermal hardlimit) + `revoke_lease(lease_id)` (S20.4 wake integrity fail / S18.8 ACPI table tampered / S22.6 magic packet replay) + sub-mode transition hook (S20 패턴 정합) | S20 / S18 / S21 / S22 |
+| `firmware-approval` (S14) | `FirmwareOp::MailboxOperation { vendor, target, opcode, payload, class }` enum variant 추가 | S23.8 single source of truth |
+| `npt` (S3) | mailbox MMIO range 의 NPT mapping 거부 (`is_in_mailbox_mmio_range(host_pa)` predicate) | S23.5 |
+| `msr-bitmap` (S10.1) | mandatory entry 30+ 항목 추가 (P-state MSR 6 / C-state residency MSR 8 / RAPL MSR 18 / thermal MSR 7 / voltage MSR 4 / SMU vendor MSR) | S15.2 / S16.4 / S17.1 / S21.1 / S23.9 |
+| `io-bitmap` (S11) | mailbox port (PCH PMC port range) default-block 추가 | S23.5 |
+| `cpuid-emul` (S2 의 sub) | power feature bit 마스킹 추가 (CPUID 0x6 thermal 6 / 0x15 + 0x16 frequency / 0x80000007 power feature / 0x80000008 RAPL2 등) | S15.3 / S17.9 / S21.11 / S23.6 |
+
+본 의존 갱신은 amdv_safety.md / vmm_arch.md 의 v1.x patch (§7.4 정합) —
+4 doc frozen 변경 0.
+
+### 7.7 frozen 후 즉시 작업 항목
+
+본 doc + 짝 doc `power_arch.md` 양쪽 v1.0 frozen 후 즉시 시작:
+
+1. `tools/power.rules.d/` directory 신설 + 8 default file 작성:
+   - `00-default-server-farm.rules`
+   - `00-default-rack-mount.rules`
+   - `00-default-mobile.rules` + `00-default-mobile-{dock,portable,
+     transportation}.rules` (4 파일)
+   - `00-default-soc.rules`
+   - `00-default-certified.rules`
+   - `00-default-aliases.rules` (M8 deprecated alias)
+   - `00-default-detection.rules` (§2.5 detection rule)
+2. `Y4/power-orchestrator/` workspace member scaffold (Cargo.toml 만,
+   body 는 PR-5a — `Y4_PM_ORCHESTRATOR_LOC_BUDGET = 600` 적용 + LoC 검사
+   CI hook).
+3. `Y4/capsules/pm-{cpufreq,acpi-pm,psp-pm,rapl,wakeup,lease-pm}/` 6
+   sub-crate scaffold (각 capsule 의 lib.rs + Cargo.toml + 빈 module
+   tree, body 는 PR-5b~d).

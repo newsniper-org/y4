@@ -97,6 +97,9 @@ greeting 까지 검증, 모든 Verus 명세 머지 완료.
 > 3. ✅ `docs/sel4_fork_policy.md` v1.0 frozen *(2026-05-05, Phase 4)*
 > 4. ✅ `docs/verus_to_isabelle.md` v1.0 frozen *(2026-05-05, Phase 4)*
 >    — `y4-verus2isabelle` 번역기 구현 PR 진입 가능
+> 4-vn. (대기) `docs/cpu_virt_compat.md` v0 신설 (2026-05-07) — v1.0
+>    frozen 은 짝 doc (1~4) 의 v1.x patch cycle 또는 별도 마킹.  Intel
+>    VT-x backend 본격 진입은 v1.x patch (cpu_virt_compat §6 path)
 > 5. (열림) seL4 측 D1a C 패치 (`CONFIG_Y4_AMDV` gate, default OFF) —
 >    PR-1, 회귀 게이트 통과
 > 6. (열림) **vmrun-orchestrator + 10 capsule 첫 PR** (`Y4/vmrun-
@@ -104,10 +107,12 @@ greeting 까지 검증, 모든 Verus 명세 머지 완료.
 >    + Verus 명세 본문 — PR-2 / PR-3
 > 7. (열림) `y4-hypercall` 재정의 — Phase D 의 R-α/R-γ + S14 사용자
 >    CLI 도구 repo (core VMM 코드는 Y4 워크스페이스 안)
-> 8. (열림) **PR-5 power-mgr** — `docs/power_safety.md` v1.0 frozen +
->    `docs/power_arch.md` v1.0 frozen → `Y4/power-orchestrator/` +
->    `Y4/capsules/pm-*/` 의 신규 7 workspace member + Verus 명세
->    (AV21~AV30+).  S15~S23 안전장치 catalog
+> 8. (열림) **PR-5 power-mgr** — ✅ `docs/power_safety.md` v1.0 frozen
+>    *(2026-05-07, Phase 4-power)* + ✅ `docs/power_arch.md` v1.0
+>    frozen *(2026-05-07, Phase 4-power)* → `Y4/power-orchestrator/`
+>    + `Y4/capsules/pm-*/` 의 신규 7 workspace member + Verus 명세
+>    (AV21~AV40, AV28-D Phase D forward-compat).  S15~S23 안전장치
+>    catalog + sub-PR 4 분할 (PR-5a~d, power_arch §4.4)
 >
 > 4 는 5–6 과 시간상 병렬. 6 의 contribute-back PR 은 도구 산출물
 > (Isabelle `.thy` skeleton) 함께 제출 — PR-4 짝.  8 은 5~7 과 병렬

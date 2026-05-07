@@ -163,6 +163,12 @@ SVMIoBitmap) + 6 syscall (Configure/Run/Migrate/ChangeParent/RebaseTsc/
 PollNestedRequest) 에 의존 — 부분 enable 의 의미 0.  단일 master flag
 가 capsule cluster 의 atomic 진입점.
 
+**Vendor-neutrality**: `Y4_AMDV` master flag 는 vendor-neutral —
+`KernelSVM` (Y4 신설, AMD-V) + `KernelVTX` (mainline 기존, Intel VT-x)
+둘 다 enable, runtime vendor 자동 감지 후 dispatch.  flag 명칭 (`AMDV`)
+은 historical 잔재, semantic vendor-neutral.  자세한 정책 = `docs/
+cpu_virt_compat.md`.
+
 ### 3.4 새 cap 객체 종류 / generated table extension (E = a')
 
 `#ifdef CONFIG_Y4_AMDV` block 안에서 generated table 확장.  bitfield

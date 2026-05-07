@@ -50,6 +50,31 @@ LLVM scudo, via the on-demand vendoring described in
                            read-only reference at
                            /home/ybi/y4-upstream-refs/redox-kernel/
 
+  * FreeBSD (cpufreq / acpi — algorithmic port for power-mgr capsules)
+                           https://www.freebsd.org/
+                           (BSD-2-Clause)
+                           read-only reference at
+                           /home/ybi/y4-upstream-refs/freebsd/
+
+  * DragonFly powerd (algorithmic port for power-mgr — sibling to LWKT)
+                           https://www.dragonflybsd.org/
+                           (BSD-3-Clause)
+                           read-only reference at
+                           /home/ybi/y4-upstream-refs/dragonfly/
+
+  * ARM Trusted Firmware-A (TF-A) — PSCI reference for power state
+                           coordination, TBBR for trusted board boot,
+                           TZ-fTPM reference for S20.2 Tier 1 fTPM
+                           sub-case
+                           https://trustedfirmware-a.readthedocs.io/
+                           (BSD-3-Clause)
+
+  * tss-esapi crate — TCG TSS 2.0 ESAPI binding (Rust), used by
+                           power-mgr lease-pm capsule for Tier 1.5
+                           external dTPM 2.0 backend
+                           https://crates.io/crates/tss-esapi
+                           (BSD-2-Clause)
+
 Verification toolchain (build-time, not redistributed):
 
   * Verus                  https://verus-lang.github.io/verus/
@@ -94,6 +119,31 @@ Acknowledgements / Methodology Inspiration:
                            uses the existence of Atmosphere as evidence
                            that the Verus + AMD-V combination is
                            tractable.
+
+  * Linux cpufreq /        Algorithm reference only (no code import).
+    cpuidle / thermal /    GPL-2-licensed; Apache-2 main tree cannot
+    powercap drivers       import. Y4 power-mgr capsules study these
+                           subsystems as reference for governor design,
+                           thermal state machines, and RAPL exposure
+                           patterns. Read-only refs at
+                           ~/y4-upstream-refs/linux/. See
+                           docs/power_arch.md §1.1.
+
+  * Plundervolt            "Plundervolt: Software-based Fault Injection
+    (USENIX Sec '20)       Attacks against Intel SGX", Murdock et al.
+                           Mitigation reference for power_safety.md S23.4
+                           (voltage range bound).
+
+  * PLATYPUS               "PLATYPUS: Software-based Power Side-Channel
+    (USENIX Sec '21)       Attacks on x86", Lipp et al. Mitigation
+                           reference for power_safety.md S17 (RAPL
+                           isolation).
+
+  * Hertzbleed             "Hertzbleed: Turning Power Side-Channel Attacks
+    (USENIX Sec '22)       Into Remote Timing Attacks on x86", Wang et al.
+                           Mitigation reference for power_safety.md S15
+                           (cpufreq isolation, DVFS dwell, constant-freq
+                           mode).
 
 ================================================================================
 

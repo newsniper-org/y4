@@ -121,6 +121,9 @@ Y4/
 ├── proofs/{verus,coq}/  Verus + Rocq specifications + CI gate
 ├── tools/{git-hooks,scudo-fetch.sh}
 ├── .claude-memories/    read-only mirror of Claude Code's project memory
+├── .claude-notes/       design memos + decision archives (git-tracked)
+│   ├── trackers/        active ledgers / trackers (CVE, paper venues, threats)
+│   └── _completed/      completed work archive
 └── third_party/
     ├── sel4/            git submodule (seL4 15.0.0)
     ├── limine/          git submodule (Limine v12.1.0)
@@ -217,6 +220,13 @@ TRNG output format, etc.). Y4 design changes stay here.
 ## 9. Quick links
 
 - Canonical design: `docs/architecture.md`
+- VMM 아키텍처 (ARCH-II'): `docs/vmm_arch.md`
+- AMD-V 안전장치 (S1~S14 + AV1~AV20): `docs/amdv_safety.md`
+- seL4 fork 정책: `docs/sel4_fork_policy.md`
+- Verus → Isabelle/HOL 번역기: `docs/verus_to_isabelle.md`
+- Power management 안전장치 (S15~S23 + AV21~AV40): `docs/power_safety.md`
+- Power management 아키텍처: `docs/power_arch.md`
+- CPU virtualization vendor-neutrality (AMD-V ↔ Intel VT-x): `docs/cpu_virt_compat.md`
 - License policy details: `docs/licensing.md`
 - Phase plan + entry triggers: `docs/phase_plan.md`
 - Contribution rules: `CONTRIBUTING.md`

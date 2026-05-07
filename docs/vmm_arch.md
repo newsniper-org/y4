@@ -33,7 +33,7 @@ ARCH 비교 (5 candidate architectures) 및 사용자 결정 (2026-05-04).
 | **검증 기법** | **VeriSMo 의 2-layer concurrency 증명 패턴을 inversion 적용** (OSDI '24 paper §3-5).  **Upper layer = cross-tenant / cross-CPU concurrency** (다른 lease cluster 와의 isolation), **Lower layer = within-cluster capsule concurrency** (같은 lease 안 capsule 사이 cooperation).  자세한 매핑은 §3.1 |
 | 검증된 primitives | Y4 자체 작성 — VeriSMo 코드 직접 import 0, 영감만 |
 | AMD-V 코드 reference | bhyve / NVMM (BSD-2) 알고리즘 port |
-| seL4 인터페이스 | D1a 의 `CONFIG_Y4_AMDV` raw-SVM cap (변경 없음) — fork policy 의 Strictly Additive |
+| seL4 인터페이스 | D1a 의 `CONFIG_Y4_AMDV` raw-SVM cap (변경 없음) — fork policy 의 Strictly Additive.  **Intel VT-x 측은 동일 flag 가 `KernelVTX` (mainline 기존) 도 enable — vendor-neutral single-flag dispatch (`docs/cpu_virt_compat.md` §5)** |
 | upstream contribute-back | seL4 mainline (D1a 의 raw-SVM C 패치) + paper (capsule + VeriSMo 기법 통합 사례).  **paper venue TBD** (§8 unresolved 항목 7) |
 | 라이선스 | Apache-2.0 (Y4 single-license).  bhyve / NVMM 알고리즘 port 시 **BSD-2 attribution 보존** (NOTICE 갱신).  VeriSMo 코드 import 0 이라 Microsoft fork 라이선스 영향 0 |
 
@@ -466,11 +466,26 @@ member**.
 
 ### 5.4 .claude-notes 위치 정책 (I)
 
-`Y4/.claude-notes/` — **git-tracked**.  현재 `amd-v-verified-survey.md`
-(ARCH 비교 ledger, ARCH-II' 채택 결정 record 포함) 등이 보관 중.
-gitignore X — 본 repo 의 의사결정 흔적 보존이 contribute-back paper +
-미래 코드 리뷰의 reference.  설계 검토 도중 Claude Code 가 생성한
-notes 가 commit 의 일부.
+`Y4/.claude-notes/` — **git-tracked**.  gitignore X — 본 repo 의
+의사결정 흔적 보존이 contribute-back paper + 미래 코드 리뷰의 reference.
+설계 검토 도중 Claude Code 가 생성한 notes 가 commit 의 일부.
+
+#### Sub-directory 구조
+
+| 경로 | 성격 | 자세히 |
+|---|---|---|
+| `.claude-notes/` (root) | **Design memo / decision archive** — 갱신 종료된 historical record | `.claude-notes/README.md` |
+| `.claude-notes/trackers/` | **Tracker / ledger** — 지속 갱신 파일 묶음 (CVE / 학술 논문 / venue deadline / 위협 발견 등) | `.claude-notes/trackers/README.md` |
+| `.claude-notes/_completed/` | **Completed work archive** | (기존 디렉터리) |
+
+현재 root: `amd-v-verified-survey.md` (ARCH 비교 ledger, ARCH-II' 채택
+결정 record 포함, 갱신 종료된 archive).
+현재 trackers/: placeholder (Phase C 진입 후 `power-prior-art-ledger.md` /
+`power-paper-venue-tracker.md` / `power-threat-ledger.md` 등 신설).
+
+본 분리는 **`.claude-memories/` 와 별개** — `.claude-memories/` 는
+Claude Code 의 project memory 의 read-only mirror (`tools/git-hooks/`
+의 pre-commit hook 이 자동 sync, CLAUDE.md §5 + §8 정합).
 
 ---
 

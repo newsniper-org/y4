@@ -31,6 +31,12 @@ root task 가 raw cap 을 받는 즉시 host 메모리·시간·인터럽트를
 > 둘 다 직접 채택 X, **검증 기법만 영감** (`.claude-notes/amd-v-verified-
 > survey.md` ledger).
 >
+> **Vendor-neutrality**: 본 doc 의 안전장치 catalog (S1~S14) + AV1~AV20
+> Verus invariant 는 vendor-neutral abstract — AMD-V (SVM) 와 Intel
+> VT-x 양방향 적용 가능.  vendor-specific backend 분리 정책 = `docs/
+> cpu_virt_compat.md`.  본 doc 의 capsule naming (`vmm-vmcb` / `vmm-npt`
+> 등) 은 historical 잔재, semantic vendor-neutral.
+>
 > **review 진행 중**: S1–S10 ✅ (안전장치 content 그대로 보존), S11–S14
 > review 재개 + §2 ABI + §6 PR split 는 ARCH-II' 의 capsule 분해에
 > 맞춰 재정렬 (content 변경 0).  구현 미시작.
