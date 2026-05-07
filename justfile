@@ -228,6 +228,28 @@ claude-resume:
         echo "[claude-resume] resuming session $sid"; \
         exec claude --resume "$sid"
 
+# --- seL4 fork patch series ---------------------------------------------
+#
+# Y4 maintains its seL4 fork as an overlay patch directory
+# (`third_party/sel4-patches/`) — see `docs/sel4_fork_policy.md` §6.
+# These recipes drive the apply / regression-check / mainline-export
+# workflow.  `tools/sel4-{fork-apply,fork-check,mainline-export}.sh`
+# carry the actual logic.
+
+# Apply Y4 fork patch series on top of the upstream pin.
+sel4-fork-apply:
+    @tools/sel4-fork-apply.sh
+
+# Run G1~G7 regression gates (sel4_fork_policy §2 + §3.6 + power_safety §5.4).
+# v0 status: gates are STUB; real logic lands alongside the patch series.
+sel4-fork-check gate="all":
+    @tools/sel4-fork-check.sh {{gate}}
+
+# Convert the Y4 fork patch series into a seL4 mainline submission format
+# (sel4_fork_policy §6.8).  Strips Y4-specific naming.
+sel4-mainline-export output_dir:
+    @tools/sel4-mainline-export.sh {{output_dir}}
+
 # --- Stamp store maintenance ---------------------------------------------
 
 # Drop the freshness store; next `just ci` re-runs every gate.
