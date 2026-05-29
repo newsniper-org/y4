@@ -25,6 +25,7 @@
 | `power-prior-art-ledger.md` | `power_arch.md` §6.7 의 prior art ledger 의 갱신 — 새 학술 논문 / CVE / 산업 도입 발견 시 row 추가 + §6.1 의 8 학술적 차별점 의 prior art 부재 주장 재평가 | Phase C 진입 후 | `power_arch.md` §6.7 / §8.6 |
 | `power-paper-venue-tracker.md` | `power_arch.md` §6.4 의 venue 후보 (SOSP workshop / PLOS / IEEE S&P / SOSP main / OSDI / USENIX Security / EuroSys / ASPLOS / HOTOS) deadline 추적 + paper draft → submission timeline 정합 | Phase C 종반 paper draft 시점 | `power_arch.md` §6.4 / §8.7 |
 | `power-threat-ledger.md` | `power_safety.md` §1.4 의 v1.x 위협 ledger — 새 CVE / 학술 논문 발견 시 row 추가 + §1.2 의 12 항목 catalog 갱신 + §3 의 안전장치 (S15~S23) 의 mitigation 영향 재평가 | Phase C 진입 후 | `power_safety.md` §1.4 / §7.3 |
+| `adsmt-integration-tracker.md` | adsmt (`~/AD1/`, Honey-Be/adsmt) 의 v1.0 unified vision (adsmt + logicutils + OxiZ 3-way) 통합 watch + Y4 측 spec 갱신 ledger.  P5 (v0.19) decision / v1.0 release / OxiZ milestone 추적 | **2026-05-29 (active)** | adsmt 측 `~/AD1/.claude-memories/{logicutils_version_rule,oxiz_relationship}.md` + Y4 측 `power_arch.md` §6.1.8 + §6.7 + §5.2 / `vmm_arch.md` §1.1 + §3.2 / `verus_to_isabelle.md` §1.3 + §3.3 / NOTICE |
 | (추가 tracker 들 — Phase C 진입 후 발견 시 추가) | — | — | — |
 
 ## 정책
