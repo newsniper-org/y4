@@ -8,3 +8,4 @@
 - [Y4 ipc/alloc 사전점검 결정](y4_ipc_alloc_preflight.md) — SMP-first, 공통 Y4Error, ipc/alloc 독립(d), scheme+raw msgport 하이브리드, alloc=DragonFly SLAB+scudo, seL4 bare page API. Refs: /home/ybi/y4-upstream-refs/.
 - [y4-drivers + y4-hypercall + 게스트 호스팅 계획](y4_drivers_and_guest_plan.md) — 별도 repo, virtio-drivers/e1000e/AHCI/NVMe1.x/XHCI 1차, smoltcp/acpi-rs/xhci 채택, FS matrix, AMD-V 차단 이슈.
 - [Y4 sign-off 후 후속 논의 대기 항목](y4_pending_topics.md) — ARCH-II' sign-off 18 단계 완료 후 소비전력 관리 기능 논의 (S15+ 후보).
+- [adsmt v1.0 = Y4 verification workflow 재설계 trigger](feedback_adsmt_v1_verification_redesign.md) — release 전까지 verification workflow 본격 변경 X (hold), release 시 전체 재설계 진입.

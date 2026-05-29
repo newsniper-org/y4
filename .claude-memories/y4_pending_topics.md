@@ -43,6 +43,11 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 
 ## adsmt v1.0 unified vision watch (2026-05-29 추가)
 
+**Hold pattern (2026-05-29 사용자 정책)**: adsmt v1.0 정식 release 가
+Y4 verification workflow **전체 재설계** 의 trigger.  release 전까지
+verification workflow 의 본격 변경 X.  자세한 정책 = `feedback_adsmt_
+v1_verification_redesign.md`.
+
 **핵심 사실**: adsmt (`~/AD1/`, Honey-Be/adsmt, BSD-2 OR Apache-2.0 OR
 LGPL-2.1+, v0.17.0 P4 단계) 가 v1.0 에서 **3-way unification** 도달
 예정:
