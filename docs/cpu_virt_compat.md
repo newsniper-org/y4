@@ -210,3 +210,13 @@ frozen 후 변경: vmm_arch §7.4 / amdv_safety §7.4 의 v1.x patch / v2 분류
    primitive** — power_safety §S20.2 의 4-tier secure storage 와 정합
    하지만 hypervisor 측은 별도 spec.  Y4 의 multi-arch 목표 (CLAUDE.md
    §8) 에 따라 Phase D / v2 단계에서 검토
+4. **Lean4 / OxiLean 측 verification backend** — adsmt 측 `prover_emit/
+   lean` 의 OxiLean path 가 adsmt v1.1.x 도달 시점에 활성화 예정
+   (`~/AD1/.claude-memories/` 의 leo4 / OxiLean 관련 brainstorming
+   docs 참조 — adsmt commit `6fc98b2` 기준 OxiLean path "effectively
+   complete", mainline Lean 4 path 는 v1.2.x post-RC).  Y4 측 verification
+   workflow 재설계 (`feedback_adsmt_v1_verification_redesign.md`) 의
+   R1=(a') 결정으로 현 시점 deferred — adsmt v1.1.x 도달 시점에
+   reconsider (`y4-verus2isabelle` 도구 + paper artifact 측 multi-ITP
+   support 의 Lean4 backend 추가 검토).  관련 tracker:
+   `.claude-notes/trackers/adsmt-integration-tracker.md` §10.5.

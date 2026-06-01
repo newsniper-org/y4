@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Y4 unified verification toolkit pin (P-redesign.2 sign-off 2026-06-01).
+# Spec: docs/verus_to_isabelle.md §3.6.
+#
+# Channels are floating (rolling — adsmt main + testing 둘 다 rolling
+# release pattern per feedback_adsmt_testing_channel_pin).  Build-time
+# commit hashes are captured in the sibling `unified-toolkit-pin.lock`
+# for reproducible-build evidence (R2.10).
+#
+# Lean4 / OxiLean 측은 deferred (R1=a', adsmt-side Lean4/OxiLean blocker;
+# `cpu_virt_compat.md` §8 unresolved 참조).
+
+[verus]
+# 지원 Verus version range — latest verus-bin 의 stable + 1 minor 이전
+min_version = "0.x.y"
+max_version = "0.x+1.*"
+recommended = "0.x.z"
+
+[isabelle]
+# 지원 Isabelle version range — Y4 측 .thy emit 의 best-effort 호환
+min_version = "Isabelle2024"
+max_version = "Isabelle2025+1"
+recommended = "Isabelle2025"
+
+[adsmt]
+# adsmt = abductive engine (SLD + minimize + rank + workflow) +
+# HOL+HKT kernel + type-class layer + Rocq/Isabelle first-class +
+# lu-kb integration.  Lean4 backend (prover_emit/lean) 는 deferred.
+# logicutils 는 adsmt 안 absorbed (state/logicutils-frozen/, P5 option 5).
+repo    = "https://github.com/newsniper-org/adsmt"
+channel = "testing"      # rolling
+
+[adsmt-contrib]
+# adsmt-emit-rocq + adsmt-emit-isabelle (lib crates only, source-only
+# per a838525).  adsmt-emit-lean 미활용 (R1=a').
+repo    = "https://github.com/newsniper-org/adsmt-contrib"
+channel = "testing"      # rolling, adsmt 와 lockstep
+
+[oxiz]
+# OxiZ — pure-Rust Z3 reimplementation, 100% Z3 parity across 8 logics.
+# adsmt 측 fork (Honey-Be/oxiz) 의 feat/enable-writer branch 의 transitive
+# — adsmt 측 [patch.crates-io] 가 redirect, Y4 측 별도 pin 불필요.
+fork_repo   = "https://github.com/Honey-Be/oxiz"
+fork_branch = "feat/enable-writer"
+transitive  = true
