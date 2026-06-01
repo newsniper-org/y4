@@ -51,9 +51,15 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
   브랜치 = `1.0.0` lockstep, Debian channel model (main/testing/stable)
   도입.
 - Rust toolchain 의무 = **1.96** (adsmt testing v1.0.0 부터).
-- 2026-06-01 사용자 trigger: **Y4 verification workflow 재설계 논의
-  시작** (hold pattern 부분 해제 — 논의 OK, spec v1.x patch 본격 적용
-  은 stable release 도달 후).
+- 2026-06-01 사용자 trigger: **Y4 verification workflow 재설계 본격
+  진입** (P-redesign.1 sign-off — R4=(b')/R6=(b') 으로 hold pattern
+  사실상 해제).  본격 작업 (proof body / cross-validation / 도구 구현
+  / 재설계 sub-cycle) 모두 즉시 OK.  단 P-redesign.8 (Y4 spec v1.x
+  patch 일괄 마킹) 만 adsmt stable release 후 deferred.  R1=(a') 의
+  Lean4 제외 (adsmt Lean4/OxiLean blocker).
+- 2026-06-01 추가 결정: **Y4 측 dependency = adsmt + adsmt-contrib
+  둘 다 testing channel pin** (rolling release 패턴).  feedback memory:
+  `feedback_adsmt_testing_channel_pin.md`.  Tracker §10.6.
 
 **Hold pattern (2026-05-29 사용자 정책, 2026-06-01 부분 해제)**: adsmt
 v1.0 정식 release 가 Y4 verification workflow **전체 재설계** 의 trigger.

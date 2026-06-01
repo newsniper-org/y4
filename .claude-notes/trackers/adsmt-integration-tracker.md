@@ -139,3 +139,106 @@ paper artifact 의 Reproducible 자격 + 학술 차별점 evidence:
 | Y4 측 verus-bin | rolling (AUR) | unified toolkit 의 P5 결정에 따라 verus-pin 추가 |
 | Y4 측 isabelle-pin | Isabelle 2024+ | OK |
 | Y4 측 adsmt-pin (신규) | (대기) | unified toolkit v1.0 release 후 pin file 신설 (`adsmt-pin.toml` 또는 `unified-toolkit-pin.toml`) |
+
+## 10. Y4 verification workflow 재설계 ledger (P-redesign.1, 2026-06-01)
+
+### 10.1 사용자 trigger (2026-06-01)
+
+R1=(a') "Lean4 만 제외한 verifications 전체" + R4=(b') / R6=(b')
+"지금 당장 / stable release 기다리지 말고 즉시" — adsmt testing
+브랜치가 v1.0.0-rc.2 + "preparations for stable v1.0.0 release"
+단계 도달 + 13 audit findings 모두 resolved 라 hold pattern 사실상
+해제, **본격 재설계 진입**.
+
+### 10.2 11 결정 ledger (P-redesign.1)
+
+| Item | 결정 | 비고 |
+|---|---|---|
+| **R1** scope | (a') Verification 전체 — **Lean4 제외** | Lean4 / OxiLean 측이 adsmt stable v1.0.0 release blocker (사용자 명시, 2026-06-01).  adsmt 측 자체의 미해결 area 라 Y4 측에서도 deferred.  영향: R7 의 adsmt-emit-rocq + adsmt-emit-isabelle 만 활용 (adsmt-emit-lean 미활용), verus_to_isabelle §1.3 (T-iv) 의 backend 도 Lean4 direct 미선택, y4-verus2isabelle 의 multi-ITP support 도 Isabelle + Rocq 만 (Lean4 deferred) |
+| **R2** Verus Z3 backend → OxiZ | (b) **dual backend** (z3 + OxiZ, cross-validation) | paper artifact §6.5 (vii) reproducibility 강화 + supply chain diversity |
+| **R3** Verus + adsmt pin 형식 | (b) **unified-toolkit-pin.toml** single | adsmt v1.0 의 3-way unified vision 정합 |
+| **R4** AV proof body 시점 | (b') **지금 당장 sub-cluster 별 점진적** (stable release 기다리지 X) | adsmt testing v1.0.0-rc.2 가 충분히 안정적 (RC2.7 13 findings 모두 resolved).  4 sub-cluster = amdv lower / amdv upper / power lower / power upper.  순서는 P-redesign.3 sign-off 에서 결정 |
+| **R5** Rocq theory 진입 순서 | (d) **3 theory 동시** (Y4.Lease.Spec + Y4.IPC.Refinement + Y4.Sel4.Wrapper) | adsmt-emit-rocq 가 multi-theory 일괄 처리 가능 |
+| **R6** SMT cross-validation 시점 | (b') **stable release 기다리지 말고 즉시** | adsmt testing v1.0.0-rc.2 사용으로 baseline 측정 즉시 진입.  P-redesign.6 본격 |
+| **R7** y4-verus2isabelle 도구 형태 | (a) **adsmt-contrib 의 adsmt-emit-isabelle wrapper** | 분량 ~2250 → ~500 LoC wrapper.  Lean4 제외 (R1 정합) |
+| **R8** unsafe + proof 짝 lint | (a) 재설계 cycle 의 일부 (별도 sub-PR, P-redesign.7) | adsmt 의 type-class layer 활용 가능성 |
+| **R9** verus_to_isabelle §1.3 (T-iv) backend | (a) **adsmt-cli 의 lu-smt binary 통합** | logicutils CLI protocol 의 단일 entry |
+| **R10** sub-cycle 명명 | (a) **P-redesign.1~N** (sign-off cycle 패턴 정합) | — |
+| **R11** spec 의 v2 가능성 | (a) **모두 v1.x patch** (mechanism 변경 X) | adsmt 가 그대로 backend, semantic 동일 |
+
+### 10.3 Sub-cycle 분할 (P-redesign.1~8)
+
+| Cycle | 내용 | 의존 | 시점 |
+|---|---|---|---|
+| **P-redesign.1** | 재설계 scope + 11 결정 ledger (본 sub-section) | 0 | ✅ **2026-06-01 완료** |
+| **P-redesign.2** | Verus dual backend (z3 + OxiZ) integration 측 spec — `verus_to_isabelle.md` §3.6 갱신 (`unified-toolkit-pin.toml`).  Lean4 제외 명시 | P-redesign.1 | (다음 turn 후보) |
+| **P-redesign.3** | AV1~AV40 proof body 의 sub-cluster 별 작성 plan (4 cluster 순서 결정 + 분량 추정) | P-redesign.2 | 즉시 진입 (R4=b') |
+| **P-redesign.4** | Rocq theory 3 (Y4.Lease.Spec + Y4.IPC.Refinement + Y4.Sel4.Wrapper) + adsmt-emit-rocq 통합 spec | P-redesign.2 | — |
+| **P-redesign.5** | `y4-verus2isabelle` 의 adsmt-emit-isabelle wrapper 재정의 (P3.6 §3.2 갱신, Lean4 제외) | P-redesign.2 | — |
+| **P-redesign.6** | paper artifact SMT cross-validation 실험 plan (OxiZ ↔ Z3) | microbench infra | 즉시 진입 (R6=b') |
+| **P-redesign.7** | unsafe + proof 짝 lint 자동화 spec (adsmt type-class layer 활용) | P-redesign.3 | — |
+| **P-redesign.8** | Y4 spec v1.x patch 일괄 마킹 (power_arch + vmm_arch + verus_to_isabelle + cpu_virt_compat + amdv_safety + NOTICE) | adsmt stable release 도달 + P-redesign.2~7 완료 | adsmt v1.0.0 release 후 |
+
+### 10.4 hold pattern 의 변화
+
+| 시점 | 정책 |
+|---|---|
+| 2026-05-29 | adsmt v1.0 release 전까지 verification workflow 본격 변경 X (hold pattern) |
+| 2026-06-01 | 재설계 *논의* 시작 (부분 해제) |
+| **2026-06-01 (이후)** | R4=(b') + R6=(b') 로 **본격 작업도 진입** — 단 **P-redesign.8 (Y4 spec v1.x patch 일괄 마킹) 만 adsmt stable release 후 deferred**.  나머지 P-redesign.2~7 모두 즉시 진입 가능 |
+
+### 10.5 Lean4 / OxiLean 영역의 별도 watch
+
+R1=(a') 의 Lean4 제외 사유 — adsmt 측 자체 blocker:
+- Y4 측에서 본 항목 본격 진입 시점 = adsmt 측이 Lean4/OxiLean 측 blocker 해결 + adsmt stable v1.0.0 release 후
+- 본격 Y4 활용 path = §6 의 (N) Lean4 + Rocq first-class 의 Lean4 측
+- 본 영역의 watch = adsmt 측 issue tracker / OxiLean repository / adsmt-emit-lean crate 상태
+- Phase D 또는 v2 단계로 재고려
+
+### 10.6 Y4 측 dependency channel pin 정책 (2026-06-01 사용자 결정)
+
+Y4 가 adsmt + adsmt-contrib 둘 다 **testing channel pin** — rolling
+release 패턴:
+
+| Repo | Channel | Pin 형식 |
+|---|---|---|
+| **adsmt** (`~/AD1/` / `newsniper-org/adsmt`) | **testing** | branch head 또는 commit hash + branch comment.  rolling 따라가는 패턴 |
+| **adsmt-contrib** (`~/adsmt-contrib/` / `newsniper-org/adsmt-contrib`) | **testing** | 동일 |
+| OxiZ | adsmt 의 `external/oxiz/` submodule pin 의 transitive 추종 | adsmt 측이 fork (Honey-Be/oxiz) `feat/enable-writer` branch 사용, Y4 측은 adsmt 의 선택 그대로 |
+| logicutils | adsmt 의 `external/logicutils/` submodule pin 의 transitive 추종 (v1.0 통합 후 사실상 adsmt 안) | adsmt 측 통합 그대로 |
+
+**근거**: adsmt 의 main + testing 둘 다 rolling release 패턴으로 운영
+(사용자 명시 2026-06-01).  Y4 측이 testing channel 을 pin 으로 추종
+하면 adsmt 측 latest stabilisation 작업의 즉시 흡수 가능 — Y4 측
+verification workflow 의 evolve 와 정합.
+
+**Pin 파일 형식 결정 (P-redesign.2 sign-off 시점)**:
+
+```toml
+# unified-toolkit-pin.toml (예시)
+[adsmt]
+repo    = "https://github.com/newsniper-org/adsmt"
+channel = "testing"
+# rolling — branch HEAD 추종, 단 build-time 시점에 commit hash 캡쳐
+# (reproducible build 위해)
+captured_at = "(build-time stamp)"
+
+[adsmt-contrib]
+repo    = "https://github.com/newsniper-org/adsmt-contrib"
+channel = "testing"
+captured_at = "(build-time stamp)"
+```
+
+**Stable release 와의 정합**: adsmt v1.0.0 stable release 도달 시 Y4
+측 채택 path:
+- 옵션 (i) testing channel 계속 (rolling 유지) — Y4 측 work 가 항상 latest
+- 옵션 (ii) stable channel 으로 전환 — Y4 spec v1.x patch 의 freeze 보장
+- 옵션 (iii) hybrid — paper artifact submission 시점에만 stable channel,
+  development 는 testing 유지
+
+P-redesign.8 (Y4 spec v1.x patch 일괄 마킹) 시점에 (i)/(ii)/(iii) 결정
+— stable release 도달 후 sign-off 단계.
+
+**Cargo.toml 측 [patch.crates-io] 활용**: adsmt 측 fork (Honey-Be/oxiz)
+처럼 Y4 측도 `[patch.crates-io]` 로 adsmt + adsmt-contrib 의 testing
+branch 를 path 또는 git dep 으로 redirect.
