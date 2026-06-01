@@ -60,6 +60,11 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 - 2026-06-01 추가 결정: **Y4 측 dependency = adsmt + adsmt-contrib
   둘 다 testing channel pin** (rolling release 패턴).  feedback memory:
   `feedback_adsmt_testing_channel_pin.md`.  Tracker §10.6.
+- **2026-06-01 P-redesign.8 도 즉시 trigger** (사용자 결정): hold
+  pattern **완전 해제**.  P-redesign.2~8 모든 sub-cycle 이 stable
+  release 무관 즉시 진입 가능.  근거: Y4 testing channel pin (rolling)
+  이라 stable release 와 spec 마킹 timing 정합 무의미.  channel 옵션
+  (i) testing 계속 채택 (stable 전환 X, hybrid X).  실제 hold 영역 0.
 
 **Hold pattern (2026-05-29 사용자 정책, 2026-06-01 부분 해제)**: adsmt
 v1.0 정식 release 가 Y4 verification workflow **전체 재설계** 의 trigger.
