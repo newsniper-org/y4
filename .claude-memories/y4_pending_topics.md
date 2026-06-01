@@ -41,16 +41,28 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
    `power-threat-ledger.md` + `adsmt-integration-tracker.md` (2026-05-29
    신설) 갱신 활성
 
-## adsmt v1.0 unified vision watch (2026-05-29 추가)
+## adsmt v1.0 unified vision watch (2026-05-29 추가 / 2026-06-01 status 갱신)
 
-**Hold pattern (2026-05-29 사용자 정책)**: adsmt v1.0 정식 release 가
-Y4 verification workflow **전체 재설계** 의 trigger.  release 전까지
-verification workflow 의 본격 변경 X.  자세한 정책 = `feedback_adsmt_
-v1_verification_redesign.md`.
+**Status (2026-06-01)**:
+- adsmt testing 브랜치 = v1.0.0-rc.2 단계, RC2.1~RC2.7 audit cycle 모두
+  resolved.  HEAD = `450b986` "preparations for stable v1.0.0 release"
+  (2026-05-31).  **v1.0.0 stable release 매우 임박**.
+- adsmt-contrib (`~/adsmt-contrib/`, newsniper-org/adsmt-contrib) testing
+  브랜치 = `1.0.0` lockstep, Debian channel model (main/testing/stable)
+  도입.
+- Rust toolchain 의무 = **1.96** (adsmt testing v1.0.0 부터).
+- 2026-06-01 사용자 trigger: **Y4 verification workflow 재설계 논의
+  시작** (hold pattern 부분 해제 — 논의 OK, spec v1.x patch 본격 적용
+  은 stable release 도달 후).
 
-**핵심 사실**: adsmt (`~/AD1/`, Honey-Be/adsmt, BSD-2 OR Apache-2.0 OR
-LGPL-2.1+, v0.17.0 P4 단계) 가 v1.0 에서 **3-way unification** 도달
-예정:
+**Hold pattern (2026-05-29 사용자 정책, 2026-06-01 부분 해제)**: adsmt
+v1.0 정식 release 가 Y4 verification workflow **전체 재설계** 의 trigger.
+Stable release 전까지 spec v1.x patch 본격 적용 X — 단 재설계 *논의*
+는 진행.  자세한 정책 = `feedback_adsmt_v1_verification_redesign.md`.
+
+**핵심 사실**: adsmt (`~/AD1/`, newsniper-org/adsmt, BSD-2 OR Apache-2.0
+OR LGPL-2.1+, **v1.0.0-rc.2 testing**) 가 v1.0 에서 **3-way unification**
+도달 예정:
 
 ```
 adsmt v1.0 = adsmt-core + logicutils + OxiZ (integrated form)

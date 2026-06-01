@@ -5,8 +5,13 @@ type: feedback
 originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 ---
 adsmt v1.0 정식 release 가 나오면 Y4 의 verification workflow **전체**
-를 대대적으로 재설계할 예정.  그 전까지는 hold pattern — verification
-workflow 의 본격 변경 X.
+를 대대적으로 재설계할 예정.  Stable release 전까지는 hold pattern —
+spec 의 v1.x patch 본격 적용 X.
+
+**2026-06-01 부분 해제**: adsmt testing 브랜치가 v1.0.0-rc.2 + "preparations
+for stable v1.0.0 release" 단계 도달.  사용자가 **재설계 논의 시작
+trigger** 발화.  → 재설계 논의는 진행, 단 spec 의 v1.x patch 본격 적용
+은 stable release 도달 후 일괄 진입.
 
 **Why:** adsmt v1.0 = adsmt + logicutils + OxiZ 의 3-way unified
 toolkit (`.claude-notes/trackers/adsmt-integration-tracker.md`).
