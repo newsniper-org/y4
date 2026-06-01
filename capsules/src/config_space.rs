@@ -133,13 +133,7 @@ impl ConfigSpace for MockConfigSpace {
             3 => u32::from(d.header_type) << 16,
             // 0x18–0x1B: primary | secondary | subordinate | latency_timer
             // for type-1 (bridge) headers.
-            6 => {
-                if (d.header_type & 0x7F) == 0x01 {
-                    u32::from(d.secondary_bus) << 8
-                } else {
-                    0
-                }
-            }
+            6 if (d.header_type & 0x7F) == 0x01 => u32::from(d.secondary_bus) << 8,
             _ => 0,
         }
     }
