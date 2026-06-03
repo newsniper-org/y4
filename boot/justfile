@@ -23,8 +23,8 @@ deps-check:
     @command -v ninja >/dev/null || { echo "missing: ninja";   exit 1; }
     @command -v gcc   >/dev/null || { echo "missing: gcc";     exit 1; }
     @command -v nasm  >/dev/null || { echo "missing: nasm (Limine BIOS asm)"; exit 1; }
-    @command -v lu-rule >/dev/null || { echo "missing: logicutils/lu-rule"; exit 1; }
-    @command -v lu-par  >/dev/null || { echo "missing: logicutils/lu-par"; exit 1; }
+    @command -v lu-rule >/dev/null || { echo "missing: lu-rule — install via 'pacman -S adsmt-testing' (Arch) or 'cargo install --git https://github.com/newsniper-org/adsmt --branch testing lu-rule'"; exit 1; }
+    @command -v lu-par  >/dev/null || { echo "missing: lu-par — same install path as lu-rule"; exit 1; }
     @[ -f ../third_party/sel4/CMakeLists.txt ] || { echo "missing: third_party/sel4 (run 'git submodule update --init --recursive')"; exit 1; }
     @[ -f ../third_party/limine/Makefile.in  ] || [ -f ../third_party/limine/configure.ac ] || { echo "missing: third_party/limine"; exit 1; }
     @command -v xorriso >/dev/null || echo "warn:  xorriso not installed — ISO assembly will fail. install before 'just iso-build'."

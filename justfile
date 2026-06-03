@@ -8,8 +8,17 @@
 # the whole tree, Verus + Coq verification gates) live here.
 #
 # Hash-driven incremental: each recipe that produces an artifact stamps
-# it via `stamp record` and shortcuts via `freshcheck`. See
-# /home/ybi/logicutils/docs/man/{freshcheck.1,stamp.1,lu-par.1}.
+# it via `stamp record` and shortcuts via `freshcheck`.
+#
+# logicutils tools are absorbed into adsmt (P5 option 5, 2026-06-01).
+# Install path:
+#   Arch:    pacman -S adsmt-testing      # archlinux PKGBUILD (system-wide)
+#   cargo:   cargo install --git https://github.com/newsniper-org/adsmt --branch testing \
+#                          freshcheck stamp lu-par lu-rule
+# Man pages (post-install):
+#   /usr/share/man/man1/{freshcheck,stamp,lu-par,lu-rule}.1
+# Or in-tree adsmt repo:
+#   ~/AD1/state/logicutils-frozen/docs/man/  +  ~/AD1/docs/man/
 
 set shell := ["bash", "-cu"]
 set dotenv-load := false
@@ -266,9 +275,9 @@ stamps-list:
 tools-check:
     @command -v cargo      >/dev/null || { echo "missing: cargo"; exit 1; }
     @command -v just       >/dev/null || { echo "missing: just"; exit 1; }
-    @command -v freshcheck >/dev/null || { echo "missing: logicutils/freshcheck — see /home/ybi/logicutils/README.md"; exit 1; }
-    @command -v stamp      >/dev/null || { echo "missing: logicutils/stamp"; exit 1; }
-    @command -v lu-par     >/dev/null || { echo "missing: logicutils/lu-par"; exit 1; }
-    @echo "core tools OK (cargo, just, logicutils)"
+    @command -v freshcheck >/dev/null || { echo "missing: freshcheck — install via 'pacman -S adsmt-testing' (Arch) or 'cargo install --git https://github.com/newsniper-org/adsmt --branch testing freshcheck'"; exit 1; }
+    @command -v stamp      >/dev/null || { echo "missing: stamp — same install path as freshcheck"; exit 1; }
+    @command -v lu-par     >/dev/null || { echo "missing: lu-par — same install path as freshcheck"; exit 1; }
+    @echo "core tools OK (cargo, just, logicutils — adsmt absorbed)"
     @command -v verus      >/dev/null || echo "warn:  verus not installed — Verus proofs will fail. See proofs/verus/README.md"
     @command -v coqc       >/dev/null || echo "warn:  coqc not installed — Coq proofs will fail. See proofs/coq/README.md"

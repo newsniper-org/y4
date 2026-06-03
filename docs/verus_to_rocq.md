@@ -108,8 +108,14 @@ R4.1 의 작성 순서:
 [dependencies]
 adsmt-emit-rocq = { git = "https://github.com/newsniper-org/adsmt-contrib", branch = "testing" }
 adsmt-cert      = { git = "https://github.com/newsniper-org/adsmt",         branch = "testing" }
-logicutils-core = { path = "/home/ybi/logicutils", version = "0.1" }
+lu-common       = { git = "https://github.com/newsniper-org/adsmt",         branch = "testing" }  # logicutils absorbed
 ```
+
+**logicutils 11 crate 의 위치** (P5 option 5, 2026-06-01): 모두 adsmt
+안 absorbed.  `/home/ybi/logicutils/` standalone repo v0.2.0 = legacy.
+Y4 측 sibling 도구는 Rust lib dep = `lu-common` (adsmt git dep), CLI
+binary dep = adsmt PKGBUILD 또는 `cargo install --git ...adsmt` 의 system
+install.
 
 **분량**: 단일 crate ~1500 LoC + Y4 도메인 매핑 ~200 LoC + adsmt-emit-rocq
 wrapper ~100 LoC + Ltac2 indent ~100 LoC + logicutils 통합 ~150 LoC

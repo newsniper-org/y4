@@ -4,13 +4,15 @@
 # logicutils-driven verification: `freshcheck --method=hash` on this file
 # gates the proofs/ rebuild (proofs/README.md §"워크플로우" 정합).
 #
-# Pre-population baseline (P-redesign.2 sign-off, 2026-06-01):
-#   - adsmt           = 450b986 (testing HEAD, "preparations for stable
-#                                v1.0.0 release", 2026-05-31)
+# Pre-population baseline (refreshed 2026-06-03 — adsmt v1.0.0-rc.6-1):
+#   - adsmt           = 2c46803 (tag v1.0.0-rc.6-1, "fix .gitmodules",
+#                                2026-06-03; replaces 450b986 baseline of
+#                                P-redesign.2 sign-off 2026-06-01)
 #   - adsmt-contrib   = a838525 (testing HEAD, "archlinux: 3 source-only
 #                                PKGBUILDs + LICENSE files", 2026-06-01)
 #   - OxiZ (transitive) — adsmt 측 external/oxiz/ submodule pin 의
-#                          feat/enable-writer branch 의 HEAD
+#                          0.2.3-feat/enable-writer branch 의 HEAD
+#                          (submodule commit 1297944, 2026-06-03 갱신)
 #
 # Schema:
 #

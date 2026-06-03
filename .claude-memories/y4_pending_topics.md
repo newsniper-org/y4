@@ -133,14 +133,16 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 
 ## adsmt v1.0 watch (현 status 2026-06-01)
 
-**adsmt status**:
-- testing branch HEAD = `450b986` "preparations for stable v1.0.0 release"
-  (2026-05-31), v1.0.0-rc.2 (RC2.1~RC2.7 모두 resolved)
-- main branch HEAD = `7de6588` "Merge pull request #10 from newsniper-org/
-  testing" (2026-06-01) — testing → main rolling merge
-- 새 commits: `a937058` "archlinux: 9 PKGBUILDs (3 channels × 3 variants)"
-  + `6fc98b2` "3rd updates for testing before stable v1.0.0 (#7)"
-- **v1.0.0 stable release 임박**
+**adsmt status (2026-06-03 갱신)**:
+- testing + main branch HEAD = `2c46803` "fix .gitmodules" (2026-06-03)
+  + tag **`v1.0.0-rc.6-1`** = 동일 commit (첫 tag 는 `v1.0.0-rc.1`,
+  RC.2~RC.5 + RC.6 는 tag 없이 commit chain 으로 진행)
+- 이전 P-redesign.2 sign-off baseline (`450b986`) 이후 변경:
+  RC.2/3/4 typed-enum hot patch + leo4 v1.0.0-rc.1 reflection + `4cba9be`
+  oxiz fork update (branch `0.2.2` → `0.2.3-feat/enable-writer`, commit
+  `8d2ec3f` → `1297944`) + `2c46803` fix branch naming
+- **v1.0.0 stable release 임박** (RC.6-1 = 마지막 RC?)
+- `.lock` baseline adsmt commit 갱신: `450b986` → `2c46803`
 
 **adsmt-contrib status**:
 - testing HEAD = `a838525` "archlinux: 3 source-only PKGBUILDs" (2026-06-01)

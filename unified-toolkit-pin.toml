@@ -11,6 +11,14 @@
 #
 # Lean4 / OxiLean 측은 deferred (R1=a', adsmt-side Lean4/OxiLean blocker;
 # `cpu_virt_compat.md` §8 unresolved 참조).
+#
+# logicutils 11 crate 들 (lu-common / freshcheck / stamp / lu-multi / lu-
+# match / lu-expand / lu-query / lu-rule / lu-queue / lu-par / lu-deps)
+# 는 별도 sub-table 없음 — adsmt 안 absorbed (P5 option 5, 2026-06-01)
+# 의 transitive (`state/logicutils-frozen/` snapshot + 본체 workspace
+# crate).  `/home/ybi/logicutils/` standalone repo v0.2.0 은 legacy.
+# Y4 측 dep = adsmt sub-table 의 transitive (CLI binary 는 adsmt install,
+# Rust lib dep 인 lu-common 도 adsmt git dep).
 
 [verus]
 # 지원 Verus version range — latest verus-bin 의 stable + 1 minor 이전
@@ -40,8 +48,8 @@ channel = "testing"      # rolling, adsmt 와 lockstep
 
 [oxiz]
 # OxiZ — pure-Rust Z3 reimplementation, 100% Z3 parity across 8 logics.
-# adsmt 측 fork (Honey-Be/oxiz) 의 feat/enable-writer branch 의 transitive
+# adsmt 측 fork (Honey-Be/oxiz) 의 0.2.3-feat/enable-writer branch 의 transitive
 # — adsmt 측 [patch.crates-io] 가 redirect, Y4 측 별도 pin 불필요.
 fork_repo   = "https://github.com/Honey-Be/oxiz"
-fork_branch = "feat/enable-writer"
+fork_branch = "0.2.3-feat/enable-writer"
 transitive  = true
