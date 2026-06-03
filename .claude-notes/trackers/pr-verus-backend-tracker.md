@@ -88,13 +88,84 @@ adsmt 의 4번째 verdict `Abductive` 를 Verus 의 기존 3-tuple 에 어떻게
 
 ## 3. 시작 조건 (별 세션이 진입 전)
 
-1. **`~/verus-fork` clone**: 사용자가 verus-lang/verus 를 fork (GitHub
-   web UI) 후 로컬 clone — `git clone git@github.com:<user>/verus.git ~/verus-fork`
-2. **upstream remote**: `cd ~/verus-fork && git remote add upstream
-   https://github.com/verus-lang/verus.git && git fetch upstream`
-3. **branch 신설**: `git checkout -b backend-pluggable`
-4. **별 Claude Code 세션**: `cd ~/verus-fork && claude` → 본 tracker 의
-   §1 + §2 + §4 + Y4 측 cross-ref 읽기 → 작업 시작
+> **status (2026-06-03)**: 1, 1.5 단계 완료 ✅ (사용자 보고 — `vargo
+> build --release` 가 경고 0 으로 success).  2, 3, 3.5 는 별 세션 진입
+> 직전 또는 진입 후 첫 step.
+
+### 1. `~/verus-fork` clone ✅
+사용자가 verus-lang/verus 를 fork (GitHub web UI) 후 로컬 clone:
+```sh
+git clone git@github.com:<user>/verus.git ~/verus-fork
+```
+
+### 1.5. Verus toolchain + Z3 + vargo build ✅
+표준 `cargo build` 는 **작동 X** — Verus 는 자체 build wrapper `vargo`
+(rustc internals + Z3 + workspace order 의존) 가 필수.
+
+```fish
+cd ~/verus-fork/source
+./tools/get-z3.sh                           # Z3 4.12.5 binary (필수)
+rustup toolchain install 1.95.0
+rustup component add rustc-dev llvm-tools --toolchain 1.95.0
+source ../tools/activate.fish               # vargo 자체 build + PATH/env setup
+vargo build --release                       # Verus 전체 build (vstd 포함)
+```
+
+성공 시 `~/verus-fork/tools/vargo/target/release/vargo` 생성 + Verus
+`rust_verify` binary + `builtin` / `builtin_macros` / `state_machines_
+macros` / `vstd` 모두 build.
+
+### 2. upstream remote 추가
+```sh
+cd ~/verus-fork
+git remote add upstream https://github.com/verus-lang/verus.git
+git fetch upstream
+```
+
+### 3. Branch 신설
+```sh
+git checkout -b backend-pluggable
+```
+
+### 3.5. VSCode setup (별 세션 IDE 사용 시 필수)
+**원인**: `.vscode/` 에 `settings.json.template` / `launch.json.template`
+/ `tasks.json.template` 만 있고 실제 파일 없음 → VSCode 가 default
+`cargo build` 사용 → ~114 컴파일 error (Verus internal crate inter-
+dependency + rustc-dev component 미인식).
+
+**해결**:
+
+```fish
+cd ~/verus-fork
+cp .vscode/settings.json.template .vscode/settings.json
+cp .vscode/launch.json.template   .vscode/launch.json
+cp .vscode/tasks.json.template    .vscode/tasks.json
+```
+
+`.vscode/settings.json` 의 platform 정합 수정:
+- `runnables.command` 의 `[.exe]` 부분 삭제 (Linux/macOS):
+  `"../tools/vargo/target/release/vargo[.exe]"` →
+  `"../tools/vargo/target/release/vargo"`
+- (권장) `linkedProjects` 추가 — VSCode workspace root = `~/verus-fork/`
+  여도 cargo workspace 가 `source/` 안에 있음을 명시:
+  `"rust-analyzer.linkedProjects": ["source/Cargo.toml"]`
+
+**VSCode workspace 열기**:
+```sh
+code ~/verus-fork    # root = ~/verus-fork/, .vscode/ 위치와 정합
+```
+
+**verus-analyzer (선택)**: 표준 rust-analyzer 대신 [verus-lang/verus-
+analyzer](https://github.com/verus-lang/verus-analyzer) extension 사용
+시 Verus 의 `proof` / `spec` / `requires` / `ensures` keyword 인식 강화.
+설치 시 일반 rust-analyzer extension disable 필요.
+
+### 4. 별 Claude Code 세션 진입
+```sh
+cd ~/verus-fork && claude
+```
+첫 read 대상: 본 tracker §1 + §2 + §4 + Y4 측 cross-ref + 본 §3 의 3.5
+VSCode setup.
 
 ## 4. 작업 phase
 
