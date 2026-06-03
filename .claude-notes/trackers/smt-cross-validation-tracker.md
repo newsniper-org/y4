@@ -23,7 +23,7 @@
 | **R6.4** 산출물 형식 | JSON Lines (jsonl) + Apache Arrow IPC | streaming + columnar query |
 | **R6.5** Visualization | typst (paper artifact 측 typst 통합) | logicutils tutorial 의 typst 패턴 정합 |
 | **R6.6** 실행 환경 | 3-tier: native + qemu-smoke + KernelDebugBuild=ON | 3 환경 cross-comparison |
-| **R6.7** dual backend 실행 | separate runs (Z3 단독 → OxiZ 단독 → diff) | clean baseline + side-effect 없음 |
+| **R6.7** dual backend 실행 | separate runs (Z3 단독 → OxiZ 단독 → adsmt 단독 → 3-way diff) — **R3.12 sign-off (2026-06-01) 후 3-way 확장** | clean baseline + side-effect 없음.  adsmt third backend 는 R3.12 opt-in (6 invariant 후보: AV5/12/15/23/24/30, `av-proof-body-tracker.md` §7) |
 | **R6.8** logicutils-driven verification | `freshcheck --method=hash` + `stamp record` + `lu-par --transaction` + `.lu-store/` artifact tarball | paper artifact §6.5 (vii) 정합 |
 | **R6.9** 측정 결과 위치 | 본 tracker (summary) + `/home/ybi/y4-paper-artifact/microbench/` (raw data, Phase C 종반 신설) | tracker = compact summary, raw data = full |
 | **R6.10** 측정 cycle | adsmt version bump 마다 자동 + paper artifact submission 시점 1 회 | rolling testing channel 정합 |
@@ -33,16 +33,16 @@
 각 adsmt testing HEAD 시점의 51 verified invariant 의 z3 vs OxiZ 측정
 결과 summary:
 
-| Date | adsmt commit | Verus version | OxiZ version | 51 verified | Z3 평균 solve_time_us | OxiZ 평균 solve_time_us | result diff |
-|---|---|---|---|---|---|---|---|
-| (대기) | (첫 측정 시점에 row 추가) | — | — | — | — | — | — |
+| Date | adsmt commit | Verus version | OxiZ version | 51 verified | Z3 평균 solve_time_us | OxiZ 평균 solve_time_us | adsmt 평균 solve_time_us (opt-in 6 inv) | result diff |
+|---|---|---|---|---|---|---|---|---|
+| (대기) | (첫 측정 시점에 row 추가) | — | — | — | — | — | — | — |
 
 ## 3. Per-invariant detail (sample size N=30, Tukey-trimmed)
 
 `/home/ybi/y4-paper-artifact/microbench/per_invariant_<adsmt_commit>.jsonl`
 에 raw JSON Lines.  본 tracker 의 summary 는 outlier (≥ p95 diff) 만:
 
-| invariant | adsmt commit | Z3 vs OxiZ result | diff 사유 |
+| invariant | adsmt commit | Z3 vs OxiZ vs adsmt result | diff 사유 |
 |---|---|---|---|
 | (대기) | (outlier 발견 시 row 추가) | — | — |
 
@@ -73,10 +73,14 @@ just verus-cross-validate
   → 1) freshcheck --method=hash unified-toolkit-pin.lock proofs/verus/src/
        (skip if unchanged)
   → 2) for env in [native, qemu-smoke, KernelDebugBuild=ON]:
-         for backend in [z3, oxiz]:
+         for backend in [z3, oxiz]:           # default 2-way
              lu-par --transaction --jobs=N
                -- "verus --backend=$backend"
                   (capture metric → jsonl)
+         for inv in opt_in_invariants:        # R3.12 opt-in 3rd backend
+             lu-par --transaction --jobs=N
+               -- "verus --backend=adsmt --report-abductive-on-unknown --invariant=$inv"
+                  (capture metric + abductive_candidates → jsonl)
   → 3) stamp record --method=hash result.jsonl
   → 4) summary row append to this tracker
   → 5) raw data → ~/y4-paper-artifact/microbench/
@@ -97,10 +101,57 @@ artifact verification 의 input.
 
 ## 8. 갱신 path
 
-- §2 baseline row: adsmt version bump 마다 (R6.10 auto)
+- §2 baseline row: adsmt version bump 마다 (R6.10 auto) + cluster 완료 시
+  (P-redesign.3 R3.6, `av-proof-body-tracker.md` §9)
 - §3 per-invariant outlier: 본 sweep 의 outlier 발견 시
 - §4 환경 별: critical milestone 마다
-- 결과 mismatch (Z3 vs OxiZ result diff != 0) 발생 시:
+- 결과 mismatch (Z3 vs OxiZ vs adsmt result diff != 0) 발생 시:
   1. Y4 측 invariant 의 problem 분석 (specification 측 모호)
-  2. OxiZ 측 issue file (Honey-Be/oxiz / cool-japan/oxiz)
+  2. mismatch 위치 별 issue file:
+     - z3 vs OxiZ diff → OxiZ 측 issue (Honey-Be/oxiz / cool-japan/oxiz)
+     - z3/OxiZ vs adsmt diff → adsmt 측 issue (newsniper-org/adsmt) + Verus
+       본체 patch (R3.11) 의 verdict mapping 측 review
   3. tracker §3 의 row 에 mismatch 본문 + GitHub issue link
+
+## 9. R3.12 — adsmt opt-in third backend (2026-06-01)
+
+P-redesign.3 R3.12 sign-off 로 adsmt 가 Verus fork 측 third backend 로
+추가됨 (`av-proof-body-tracker.md` §1 R3.12).
+
+**Opt-in invariant 6 (abductive verdict 활용 후보)**:
+
+| AV | cluster | 활용 사유 |
+|---|---|---|
+| AV5 `parent_thread_group_pinned` | amdv upper | S6.5 (cspace ∧ vspace) higher-order |
+| AV12 `audit_per_cpu_order` | amdv lower | ∀ entry ∃ read view alternating quantifier |
+| AV15 `orphan_frame_absent` | amdv upper | ∀ frame ∃ cap alternating quantifier + revoke chain |
+| AV23 `sub_mode_transition_atomicity` | power lower | AEAD integrity + lease suspended conjunction |
+| AV24 `mode_invariant_holds` | power upper | named sub-mode polymorphic quantifier |
+| AV30 `smt_pair_power_state_sync` | power lower | SMT pair pairwise quantifier |
+
+**Verus 본체 patch dep (R3.11)**: `--backend=adsmt` + `--report-abductive-on-unknown`
+reporter flag 추가 land 후 작동.  z3/OxiZ default 측 cross-validation 은
+patch 의 z3/OxiZ trait 만 land 되면 우선 시작 가능.
+
+**Abductive verdict 처리**: z3/OxiZ 의 `unknown` 시점에 Verus 측 reporter
+가 adsmt 의 ranked hypothesis list 를 JSON 으로 emit:
+
+```json
+{
+  "invariant":  "AV15_orphan_frame_absent",
+  "backend":    "adsmt",
+  "verdict":    "unknown",
+  "abductive_candidates": [
+    {"rank": 1, "hypothesis": "∀ c, revoked(c) ⟹ ¬ alive(owner(c).frame)", "score": 0.94},
+    {"rank": 2, "hypothesis": "frame_alloc.linear_chain(host_memory)",     "score": 0.81}
+  ]
+}
+```
+
+candidates list 가 Y4 측 invariant 강화 candidate 의 input — `av-proof-body-tracker.md`
+§6 의 actual LoC 가 expected 보다 클 경우 candidate 추가 후 LoC 감소
+가능성.
+
+**Paper artifact §6.5 (vii) self-application evidence**: adsmt 가 자체
+Verus backend 의 *third option* 으로 활용 = unified toolkit 의 self-host
+조립.

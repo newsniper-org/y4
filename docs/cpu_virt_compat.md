@@ -211,12 +211,16 @@ frozen 후 변경: vmm_arch §7.4 / amdv_safety §7.4 의 v1.x patch / v2 분류
    하지만 hypervisor 측은 별도 spec.  Y4 의 multi-arch 목표 (CLAUDE.md
    §8) 에 따라 Phase D / v2 단계에서 검토
 4. **Lean4 / OxiLean 측 verification backend** — adsmt 측 `prover_emit/
-   lean` 의 OxiLean path 가 adsmt v1.1.x 도달 시점에 활성화 예정
-   (`~/AD1/.claude-memories/` 의 leo4 / OxiLean 관련 brainstorming
-   docs 참조 — adsmt commit `6fc98b2` 기준 OxiLean path "effectively
-   complete", mainline Lean 4 path 는 v1.2.x post-RC).  Y4 측 verification
-   workflow 재설계 (`feedback_adsmt_v1_verification_redesign.md`) 의
-   R1=(a') 결정으로 현 시점 deferred — adsmt v1.1.x 도달 시점에
-   reconsider (`y4-verus2isabelle` 도구 + paper artifact 측 multi-ITP
-   support 의 Lean4 backend 추가 검토).  관련 tracker:
-   `.claude-notes/trackers/adsmt-integration-tracker.md` §10.5.
+   lean` 의 OxiLean path 가 adsmt v1.1.x 도달 시점에 활성화 예정.
+   2026-06-01 추가 진척: leo4 v1.0.0-rc.1 ~ rc.4 hot patch chain (typed-
+   enum lowering 3 조건 모두 satisfied), L1/L2/L3 unblocked, adsmt-lean-
+   binding pin = `v1.0.0-rc.4` — L4 mslean4 path 의 `feat/mslean4-lecq-
+   lecr-ipcs` branch 완료만 대기 (mainline Lean 4 path 는 v1.2.x post-RC).
+   Y4 측 verification workflow 재설계 (`feedback_adsmt_v1_verification_
+   redesign.md`) 의 R1=(a') 결정으로 현 시점 deferred — adsmt v1.1.x
+   도달 시 retrofit trigger 활성: P-redesign.3 R3.10 (`av-proof-body-
+   tracker.md` §1 + §8) 에 따라 AV proof body 의 `.lean.rs` 자동 emission
+   (adsmt-emit-lean wrapper 정의 + `verus_to_isabelle.md` §3.2 file path
+   표에 `.lean.rs` 매핑 추가 + cluster sub-PR retrofit).  관련 tracker:
+   `.claude-notes/trackers/adsmt-integration-tracker.md` §10.5 +
+   `av-proof-body-tracker.md` §8.
