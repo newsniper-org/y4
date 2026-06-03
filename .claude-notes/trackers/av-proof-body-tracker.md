@@ -130,8 +130,14 @@ land 되어있어야 lower-side body 의 AEAD integrity / SMT pair 정합 본문
 각 cluster sub-PR 안에서:
 
 1. **Verus proof body 작성** (`proofs/verus/src/<domain>/<upper|lower>/<file>.rs`)
-2. **Rocq theory 통합** (P-redesign.4 의 adsmt-emit-rocq 활용, cluster 별 emission)
-3. **Isabelle theory 통합** (P-redesign.5 의 adsmt-emit-isabelle wrapper 활용)
+2. **Rocq theory 통합** (P-redesign.4 R4.2=b — `~/y4-verus2rocq/` sibling
+   도구가 adsmt-emit-rocq wrapper 로 `.v` emission; nested directory
+   naming `theories/<Domain>/<Module>.v`, R4.6; Ltac2-only enforcement,
+   R4.5; cluster 별 rolling, R4.7 — `docs/verus_to_rocq.md` 참조)
+3. **Isabelle theory 통합** (P-redesign.5 R5.2 — `~/y4-verus2isabelle/`
+   sibling 도구가 adsmt-emit-isabelle wrapper 로 `.thy` emission; flat
+   underscore naming `Y4_<Domain>_<Module>.thy`, R5.4; Lean4 backend 제외
+   R5.3 — `docs/verus_to_isabelle.md` §3.2 참조)
 4. **cross-validation row** (cluster 완료 시 smt-cross-validation-tracker §2 에 row 추가, R3.6 / R3.12)
 5. **본 tracker §6 의 진행 상태 row 갱신**
 

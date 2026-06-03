@@ -90,7 +90,7 @@ axiomatization where
 단점: trust boundary 가 Verus + Z3 + 본 도구 자체로 이동 (B 의 trust
 ledger §1.6).
 
-### 1.3 (T-iv) SMT-LIB hybrid (logicutils-augmented, v1.0 기본 강제)
+### 1.3 (T-iv) SMT-LIB hybrid (logicutils-augmented, v1.0 기본 강제, Lean4 mode 없음 — R5.3)
 
 Verus 가 Z3 에 발화하는 SMT-LIB 2 쿼리를 capture → Isabelle 의 `smt`
 method 입력으로 emit.  자동 가능한 proof obligation 은 **Isabelle 안
@@ -151,11 +151,17 @@ mode 결정의 deterministic 보장:
 | `--all-axiom` | 모든 lemma axiom (논의용 / 제안 단계, production X) | discussion |
 | `--respect-attrs` | (T-ii) axiom mode 활성 명시 (default 에 이미 활성) | legacy compat |
 
-### 1.5 AV1~AV20 catalog 와의 짝 (F)
+### 1.5 AV1~AV20 catalog 와의 짝 (F, **Lean4 backend 제외 명시 — R5.3**)
 
 `amdv_safety.md` §5.2 의 20 invariant 의 default mode 는 (T-i) sorry —
 seL4 팀이 자체 증명 권장.  단 다음 2 invariant 는 (T-ii) axiom 후보로
 attribute 부착:
+
+> **Backend scope**: Isabelle/HOL + Rocq 만.  Lean4 backend 는 R1=(a')
+> sign-off (2026-06-01) 로 제외 — adsmt 측 Lean4/OxiLean blocker (leo4
+> v1.0.0-rc.4 + adsmt-lean-binding v1.0.0-rc.4 후 unblocked, mainline
+> Lean 4 path 는 v1.2.x post-RC).  Retrofit hook = adsmt v1.1.x 도달
+> 시점, `cpu_virt_compat.md` §8 (4) + `av-proof-body-tracker.md` §8.
 
 | AV | 안전장치 | (T-ii) axiom 후보 사유 |
 |---|---|---|
@@ -326,37 +332,68 @@ Y4_AmdvSafety_Upper_Npt ...` 로 emit.
 | (B) Y4 워크스페이스 멤버 `Y4/tools/v2i/` | 시작 비용 작음, 재사용성 약간 낮음, P1.4 §5.3 sibling 정책 위배 | ✗ |
 | (C) Verus 측 backend plugin | 가장 깨끗하지만 Verus 팀과 협의 + Y4-scope 한정 보존 어려움 (general-purpose 압력) | ✗ |
 
-### 3.2 (A) 채택 시 내부 구조
+### 3.2 (A) 채택 시 내부 구조 (P-redesign.5 갱신, 2026-06-01)
 
-**Single Cargo crate `y4-verus2isabelle`** (binary + lib 분리):
+**Single Cargo crate `y4-verus2isabelle`** (binary + lib 분리).
+**Lean4 backend 제외** (R1=a' / R5.3 정합 — adsmt 측 Lean4/OxiLean
+blocker, adsmt v1.1.x 도달 시 retrofit hook).
 
 ```
 /home/ybi/y4-verus2isabelle/
 ├── Cargo.toml              # license = "Apache-2.0"
 ├── LICENSE                 # Apache-2.0 full text
-├── NOTICE
+├── NOTICE                  # logicutils BSD-2 + adsmt-emit-isabelle tri-license attribution
 ├── README.md
-├── verus-pin.toml          # 지원 Verus version range (F)
-├── isabelle-pin.toml       # 지원 Isabelle version range (G)
 ├── src/
 │   ├── lib.rs              # parser / mapper / emitter API (round-trip test 노출용)
 │   ├── main.rs             # CLI binary
 │   ├── parser/             # syn-based Verus AST parsing
 │   ├── mapper/             # §2 매핑 (도메인 type 매핑 §2.4 포함)
-│   ├── emitter/            # Isabelle Isar text emit + pretty-print
-│   └── modes/              # (T-i) / (T-ii) / (T-iv) hybrid 결정 로직 (§1.3)
+│   ├── emitter/            # Isabelle Isar text emit + adsmt-emit-isabelle wrapper (P-redesign.5)
+│   │   ├── mod.rs          # cert → Isar text glue
+│   │   ├── adsmt_wrap.rs   # adsmt-emit-isabelle cargo git dep call + Y4 domain mapping
+│   │   └── pretty.rs       # pretty-print
+│   └── modes/              # (T-i) / (T-ii) / (T-iv) hybrid 결정 로직 (§1.3, Lean4 mode 없음)
 ├── tests/
 │   ├── unit/               # 도구 자체 unit test
-│   └── fixtures/           # Y4 의 proofs/verus/src/amdv/ snapshot copy (D)
+│   └── fixtures/           # Y4 의 proofs/verus/src/{amdv,power}/ snapshot copy (D)
 └── tools/
     ├── sync-fixtures.sh    # Y4 의 proofs/ → fixtures/ 자동 sync (drift 검출)
     ├── v2i.rules           # logicutils lu-rule 형식 mode override (P3.4 §1.3.1)
     └── v2i-build.sh        # logicutils freshcheck/stamp 통합 build entry
 ```
 
-분량: 단일 crate ~1500 LoC + attribute opt-in ~100 LoC + Y4 도메인 매핑
-~200 LoC + (T-iv) SMT-LIB hybrid ~300 LoC + logicutils 통합 ~150 LoC
-≈ **~2250 LoC Rust** 추정.
+**Version pin**: 별도 `verus-pin.toml` / `isabelle-pin.toml` **삭제** —
+Y4 측 `Y4/unified-toolkit-pin.toml` 의 `[verus]` + `[isabelle]` +
+`[adsmt-contrib]` sub-tables 가 single source-of-truth (§3.6 정합).
+도구 측은 build 시 `Y4/unified-toolkit-pin.toml` 의 sub-table 을 read.
+
+**adsmt-emit-isabelle wrapper (R5.2)**:
+
+```toml
+# Cargo.toml
+[dependencies]
+adsmt-emit-isabelle = { git = "https://github.com/newsniper-org/adsmt-contrib", branch = "testing" }
+adsmt-cert          = { git = "https://github.com/newsniper-org/adsmt",         branch = "testing" }
+```
+
+`src/emitter/adsmt_wrap.rs` 가 Verus AST → adsmt cert (`canonical::Certificate`)
+변환 후 `adsmt_emit_isabelle::emit_isabelle(&cert)` 호출.  classical
+machinery 는 Isabelle `Main` 측 무효 (adsmt-emit-isabelle 의 정합).
+
+**분량**: 단일 crate ~1500 LoC + attribute opt-in ~100 LoC + Y4 도메인
+매핑 ~200 LoC + (T-iv) SMT-LIB hybrid ~300 LoC + logicutils 통합 ~150
+LoC + adsmt-emit-isabelle wrapper ~100 LoC ≈ **~2350 LoC Rust** 추정.
+
+**Theory file naming (R5.4)**: §2.6 의 frozen 형식 유지 —
+`Y4_AmdvSafety_Upper_Npt.thy` (underscore-only, Isabelle `imports` 의
+flat namespace 정합).  Rocq 측 sibling 도구 (`y4-verus2rocq`,
+`docs/verus_to_rocq.md`) 가 nested directory (`theories/AmdvSafety/Upper/
+Npt.v`) 패턴 채택 — 두 도구의 naming 분리는 의도적 (각 backend 의 module
+system 정합).
+
+**Cluster-rolling integration (R5.5)**: `av-proof-body-tracker.md` §5
+의 각 cluster sub-PR 안에 wrapper emission 활성 — cluster 별 rolling.
 
 ### 3.3 logicutils 통합 — cargo dep link
 

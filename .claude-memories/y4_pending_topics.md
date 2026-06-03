@@ -74,6 +74,32 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
       tracker §2 에 row 1 회 / cluster)
     - Lean4 retrofit hook: adsmt v1.1.x 도달 시 R3.10 activation (cpu_virt_
       compat.md §8 (4) Lean4 watch row trigger 갱신)
+11. ✅ **PR-Verus-Backend 준비** (2026-06-01) — R3.11 + R3.12 의 별도 세션
+    entry point.  `.claude-notes/trackers/pr-verus-backend-tracker.md`
+    신설 (9 phase P-vb.1~P-vb.9, 분량 ~1100 LoC).  Verus 본체 fork =
+    `~/verus-fork/` (사용자가 수동 clone — 대기).  Cross-ref: av-proof-
+    body-tracker §1 R3.11/R3.12 + smt-cross-validation-tracker §9 +
+    unified-toolkit-pin.toml [verus]
+12. ✅ **P-redesign.4** (2026-06-01) — Rocq theory 3 신설 plan +
+    adsmt-emit-rocq 통합 (R4.1~R4.7 sign-off)
+    - 신설: `docs/verus_to_rocq.md` (verus_to_isabelle 의 Rocq sibling)
+    - 갱신: `proofs/coq/README.md` (3 theory 계획 — Y4.Sel4.Wrapper →
+      Y4.IPC.Refinement → Y4.Lease.Spec bottom-up R4.1, Ltac2-only R4.5,
+      nested directory naming R4.6, adsmt-emit-rocq cargo git dep R4.2)
+    - 신설 scaffold: `~/y4-verus2rocq/` (sibling repo R4.2=b, Cargo +
+      src/{lib,main,parser,mapper,emitter/{mod,adsmt_wrap,pretty},modes}
+      + README + NOTICE + LICENSE).  실제 emit 본문은 cluster sub-PR 시점
+13. ✅ **P-redesign.5** (2026-06-01) — y4-verus2isabelle 의 adsmt-emit-
+    isabelle wrapper 재정의 (R5.1~R5.7 sign-off)
+    - 갱신: `docs/verus_to_isabelle.md` §3.2 rewrite (R5.1=b — verus-pin/
+      isabelle-pin 삭제 → unified-toolkit-pin.toml 정합, adsmt-emit-
+      isabelle wrapper `src/emitter/adsmt_wrap.rs`, Lean4 backend 제외);
+      §1.3 + §1.5 의 Lean4 제외 명시 (R5.3=d)
+    - 신설 scaffold: `~/y4-verus2isabelle/` (sibling repo R5.6=a, Cargo
+      + src 패턴 y4-verus2rocq 1:1 mirror — v2i CLI 의 --no-smt/--all-
+      sorry flag)
+    - Theory file naming: `Y4_<Domain>_<Module>.thy` flat underscore
+      유지 (R5.4=a) — Rocq 측 nested directory 와 의도적 분리
 
 ## 진행 가능한 다음 후속 주제
 
@@ -81,9 +107,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 
 | Sub-cycle | 내용 | 의존 | 비고 |
 |---|---|---|---|
-| **P-redesign.4** | Rocq theory 3 (Y4.Lease.Spec + Y4.IPC.Refinement + Y4.Sel4.Wrapper) + adsmt-emit-rocq 통합 spec | P-redesign.2 ✅ | 즉시 |
-| **P-redesign.5** | `y4-verus2isabelle` 의 adsmt-emit-isabelle wrapper 재정의 (P3.6 §3.2 갱신, Lean4 제외) | P-redesign.2 ✅ | 즉시 |
-| **PR-Verus-Backend** | Verus 본체 patch (R3.11) — z3+OxiZ+adsmt 3 backend trait 통일 + abductive verdict reporter | P-redesign.3 ✅ | 즉시 (upstream contribute-back path, ~800 LoC) |
+| **PR-Verus-Backend** | Verus 본체 patch (R3.11) — z3+OxiZ+adsmt 3 backend trait 통일 + abductive verdict reporter | P-redesign.3 ✅ | **별도 세션** (`~/verus-fork/`, 사용자 수동 clone 대기), ~1100 LoC |
 | P-redesign.7 | unsafe + proof 짝 lint 자동화 spec (adsmt type-class layer 활용) | P-redesign.3 ✅ | 즉시 (P.3 sign-off 완료) |
 | P-redesign.8 | Y4 spec v1.x patch 일괄 마킹 (power_arch + vmm_arch + verus_to_isabelle + cpu_virt_compat + amdv_safety + NOTICE) | P.2~7 완료 | (P.7 후, hold X) |
 
