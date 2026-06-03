@@ -73,13 +73,17 @@ just verus-cross-validate
   → 1) freshcheck --method=hash unified-toolkit-pin.lock proofs/verus/src/
        (skip if unchanged)
   → 2) for env in [native, qemu-smoke, KernelDebugBuild=ON]:
-         for backend in [z3, oxiz]:           # default 2-way
+         # default 2-way (z3 = no flag, oxiz = -V oxiz)
+         lu-par --transaction --jobs=N
+           -- "verus"                          # Z3 default
+              (capture metric → jsonl)
+         lu-par --transaction --jobs=N
+           -- "verus -V oxiz"                  # OxiZ backend
+              (capture metric → jsonl)
+         # R3.12 opt-in 3rd backend (adsmt, 6 invariant 한정)
+         for inv in opt_in_invariants:
              lu-par --transaction --jobs=N
-               -- "verus --backend=$backend"
-                  (capture metric → jsonl)
-         for inv in opt_in_invariants:        # R3.12 opt-in 3rd backend
-             lu-par --transaction --jobs=N
-               -- "verus --backend=adsmt --report-abductive-on-unknown --invariant=$inv"
+               -- "verus -V adsmt -V report-abductive-on-unknown --invariant=$inv"
                   (capture metric + abductive_candidates → jsonl)
   → 3) stamp record --method=hash result.jsonl
   → 4) summary row append to this tracker
@@ -113,10 +117,13 @@ artifact verification 의 input.
        본체 patch (R3.11) 의 verdict mapping 측 review
   3. tracker §3 의 row 에 mismatch 본문 + GitHub issue link
 
-## 9. R3.12 — adsmt opt-in third backend (2026-06-01)
+## 9. R3.12 — adsmt opt-in third backend (2026-06-01, flag 형식 갱신 2026-06-03)
 
 P-redesign.3 R3.12 sign-off 로 adsmt 가 Verus fork 측 third backend 로
-추가됨 (`av-proof-body-tracker.md` §1 R3.12).
+추가됨 (`av-proof-body-tracker.md` §1 R3.12).  **2026-06-03 갱신**: flag
+형식이 새 `--backend=` 가 아닌 기존 `-V <key>` extended-multi pattern
+정합 (Verus 의 `-V cvc5` 패턴 mirror) — `pr-verus-backend-tracker.md`
+§1.2 참조.
 
 **Opt-in invariant 6 (abductive verdict 활용 후보)**:
 
@@ -129,9 +136,11 @@ P-redesign.3 R3.12 sign-off 로 adsmt 가 Verus fork 측 third backend 로
 | AV24 `mode_invariant_holds` | power upper | named sub-mode polymorphic quantifier |
 | AV30 `smt_pair_power_state_sync` | power lower | SMT pair pairwise quantifier |
 
-**Verus 본체 patch dep (R3.11)**: `--backend=adsmt` + `--report-abductive-on-unknown`
-reporter flag 추가 land 후 작동.  z3/OxiZ default 측 cross-validation 은
-patch 의 z3/OxiZ trait 만 land 되면 우선 시작 가능.
+**Verus 본체 patch dep (R3.11)**: `-V adsmt` + `-V report-abductive-on-
+unknown` flag 추가 land 후 작동 (기존 `-V <key>` extended-multi mechanism
+활용, `SmtSolver` enum 에 `Adsmt` variant 추가).  z3 (default, no flag) /
+OxiZ (`-V oxiz`) default 측 cross-validation 은 patch 의 OxiZ variant +
+EXTENDED_OXIZ key 만 land 되면 우선 시작 가능.
 
 **Abductive verdict 처리**: z3/OxiZ 의 `unknown` 시점에 Verus 측 reporter
 가 adsmt 의 ranked hypothesis list 를 JSON 으로 emit:

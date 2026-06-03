@@ -100,6 +100,18 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
       sorry flag)
     - Theory file naming: `Y4_<Domain>_<Module>.thy` flat underscore
       유지 (R5.4=a) — Rocq 측 nested directory 와 의도적 분리
+14. ✅ **PR-Verus-Backend flag mechanism 갱신** (2026-06-03) — 새
+    `--backend=` flag 정의 X.  Verus 의 기존 `-V <key>` extended-multi
+    flag mechanism (`-V cvc5` 패턴 mirror) 안에 `-V oxiz` + `-V adsmt`
+    + `-V report-abductive-on-unknown` 추가.  `SmtSolver` enum 확장
+    (`Z3` / `Cvc5` + 신규 `OxiZ` + `Adsmt`).  `SmtVerdict::Abductive`
+    variant 신설 (adsmt only).  cross-validation 의 `dual` / `triple`
+    은 Verus 본체 flag X — Y4 측 `just verus-cross-validate` script 의
+    multi-invocation 로직.  Patch 분량 ~800 → **~500 LoC** (mechanism
+    신설 부담 ↓, ~300 LoC 절약).  upstream contribute-back path 자연성
+    ↑.  영향 file: docs/verus_to_isabelle.md §3.6, av-proof-body-tracker
+    §1 R3.11+R3.12, smt-cross-validation-tracker §6+§9, pr-verus-backend-
+    tracker §1+§4+§5
 
 ## 진행 가능한 다음 후속 주제
 
@@ -107,7 +119,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 
 | Sub-cycle | 내용 | 의존 | 비고 |
 |---|---|---|---|
-| **PR-Verus-Backend** | Verus 본체 patch (R3.11) — z3+OxiZ+adsmt 3 backend trait 통일 + abductive verdict reporter | P-redesign.3 ✅ | **별도 세션** (`~/verus-fork/`, 사용자 수동 clone 대기), ~1100 LoC |
+| **PR-Verus-Backend** | Verus 본체 patch (R3.11) — `-V oxiz` / `-V adsmt` / `-V report-abductive-on-unknown` 추가 + `SmtSolver` enum 확장 + abductive verdict reporter | P-redesign.3 ✅ | **별도 세션** (`~/verus-fork/` clone + vargo build ✅ 2026-06-03), ~500 LoC |
 | P-redesign.7 | unsafe + proof 짝 lint 자동화 spec (adsmt type-class layer 활용) | P-redesign.3 ✅ | 즉시 (P.3 sign-off 완료) |
 | P-redesign.8 | Y4 spec v1.x patch 일괄 마킹 (power_arch + vmm_arch + verus_to_isabelle + cpu_virt_compat + amdv_safety + NOTICE) | P.2~7 완료 | (P.7 후, hold X) |
 

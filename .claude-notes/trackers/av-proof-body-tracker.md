@@ -26,8 +26,8 @@
 | **R3.8** Tracker 위치 | (a) `.claude-notes/trackers/av-proof-body-tracker.md` 신설 (본 file) | long-running active tracker |
 | **R3.9** PR-N scope 정합 | (b) PR-2 scope = P-redesign.3 의 amdv 2 cluster, PR-5d scope = P-redesign.3 의 power 2 cluster | PR-N 와 cluster 1:1 정합 |
 | **R3.10** Lean4 backend retrofit | (a) AV proof body 의 `.lean.rs` 자동 emission, adsmt v1.1.x 도달 시 retrofit (P-redesign.4/.5 의 Rocq + Isabelle 와 짝) | `cpu_virt_compat.md` §8 (4) Lean4 watch row 의 trigger 활용 |
-| **R3.11** Verus 본체 patch 위치 | (b) Verus 본체 `--backend=` patch 는 별도 sub-PR (Y4 의 P.3 cluster 작성과 분리, upstream contribute-back path 분리) | trait abstraction land 비용 1 회만 지불 |
-| **R3.12** Verus fork 측 adsmt third backend | (b) **opt-in 3-way** — z3 + OxiZ default, adsmt 명시 시 + abductive verdict reporter (`--report-abductive-on-unknown`) | abductive verdict 이 가치 있는 invariant (AV5 / AV12 / AV15 / AV23 후보) 한정.  Patch 분량 ~600 → ~800 LoC |
+| **R3.11** Verus 본체 patch 위치 | (b) Verus 본체 patch 는 별도 sub-PR (Y4 의 P.3 cluster 작성과 분리, upstream contribute-back path 분리).  **(2026-06-03 갱신)** 새 `--backend=` flag 정의 X — 기존 `-V <key>` extended-multi flag mechanism (`-V cvc5` 패턴) 안에 `-V oxiz` + `-V adsmt` + `-V report-abductive-on-unknown` 추가.  `SmtSolver` enum 확장 (`Z3` / `Cvc5` + 신규 `OxiZ` + `Adsmt`).  Patch 분량 추정 ~800 → **~500 LoC** (mechanism 신설 부담 ↓, ~300 LoC 절약).  cross-validation 의 `dual` / `triple` 은 Verus 본체 flag X — Y4 측 `just verus-cross-validate` script 의 multi-invocation 로직 | upstream contribute-back path 자연성 ↑ (기존 flag pattern 정합) |
+| **R3.12** Verus fork 측 adsmt third backend | (b) **opt-in 3-way** — z3 (default, no flag) + OxiZ (`-V oxiz`) default, adsmt (`-V adsmt`) 명시 시 + abductive verdict reporter (`-V report-abductive-on-unknown`).  **(2026-06-03 갱신)** flag 형식이 `-V <key>` 패턴으로 갱신 (R3.11 정합) | abductive verdict 이 가치 있는 invariant (AV5 / AV12 / AV15 / AV23 / AV24 / AV30 6 후보) 한정 |
 
 ## 2. 4 cluster boundary + file layout
 

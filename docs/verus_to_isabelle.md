@@ -565,25 +565,51 @@ adsmt-emit-isabelle = { git = "https://github.com/newsniper-org/adsmt-contrib", 
 양 방식 (git dep / PKGBUILD path) 의 build 결과는 동일 (channel pin
 + commit hash capture 정합).
 
-#### Verus dual backend 활성화 메커니즘 (R2.6 / R2.7)
+#### Verus multi-backend 활성화 메커니즘 (R2.6 / R2.7, 갱신 2026-06-03)
 
-cargo feature flag — declarative + reproducible:
+**Verus 의 기존 `-V <key>` extended-multi flag mechanism** (rust_verify/
+src/config.rs `OPT_EXTENDED_MULTI: &str = "V"`) 안에 새 backend 옵션 추가
+— 기존 `-V cvc5` (EXTENDED_CVC5) 패턴 정합.  새 `--backend=` flag 정의
+**X** (Verus 본체 patch 분량 ↓, upstream contribute-back path 의 자연성 ↑).
 
 ```sh
 # 단일 backend (strict, R2.7 fallback X)
-just verus --backend=z3       # 기존 default
-just verus --backend=oxiz     # 신규 OxiZ backend (adsmt 의 oxiz-sat
-                              #   + oxiz-math + oxiz-proof 활용)
+just verus                       # 기존 default (Z3, no flag)
+just verus -- -V oxiz            # 신규 OxiZ backend (EXTENDED_OXIZ)
+just verus -- -V adsmt           # 신규 adsmt backend (EXTENDED_ADSMT,
+                                 #   R3.12 opt-in third — abductive verdict
+                                 #   reporter 와 짝)
+just verus -- -V adsmt -V report-abductive-on-unknown
+                                 # 위 + adsmt unknown 시 hypothesis JSON emit
 
-# Cross-validation (P-redesign.6 의 실험)
-just verus --backend=dual     # 두 backend 별도 실행 후 결과 diff
-                              #   (R2.7 의 separate runs 정합)
+# Cross-validation (P-redesign.6 의 실험) — Verus 본체 flag X
+# Y4 측 just verus-cross-validate script 의 multi-invocation 로직
+just verus-cross-validate        # script 가 internally 3 invocation:
+                                 # (1) verus (Z3 default)
+                                 # (2) verus -V oxiz
+                                 # (3) verus -V adsmt   (R3.12 opt-in 6
+                                 #     invariant 한정, av-proof-body-tracker §7)
+                                 # → 결과 diff + smt-cross-validation-tracker §2
 ```
 
-`proofs/verus/justfile` 의 `verify` recipe 갱신 — `--backend` flag 가
-`verus` CLI 의 SMT backend 선택 + dual 모드 시 z3 + OxiZ 각각 별도
-실행 후 결과 + cert + timing 비교 (P-redesign.6 cross-validation
-tracker 측 input).
+**Verus 본체 patch 의 영향 범위**:
+1. `source/air/src/context.rs` 의 `SmtSolver` enum 확장: `Z3` + `Cvc5`
+   + **`OxiZ`** + **`Adsmt`**
+2. `source/rust_verify/src/config.rs` 의 `EXTENDED_KEYS` 에 `EXTENDED_OXIZ`
+   + `EXTENDED_ADSMT` + `EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN` 추가 +
+   solver 선택 로직 갱신 (현 `if extended.contains_key(EXTENDED_CVC5)
+   { Cvc5 } else { Z3 }` → match 형태로)
+3. `source/air/src/smt_process.rs` (또는 동등 위치) 에 OxiZ + adsmt
+   backend impl 추가 (cvc5 impl mirror)
+4. Verdict enum 의 4번째 variant `Abductive { candidates, explain }`
+   추가 — adsmt 만 사용 가능, z3/OxiZ/cvc5 시점에 unreachable
+
+**`-V dual` / `-V triple` 추가하지 않음** — cross-validation 은 별
+backend 의 separate run + 결과 diff (R2.7 정합), Verus 본체에 의미 없는
+flag.  Y4 측 script 가 multi-invocation 로직 처리.
+
+`proofs/verus/justfile` 의 `verify` recipe 갱신 — `just verus` 가 default
+(Z3) 호출, cross-validation 은 `just verus-cross-validate` 별도 recipe.
 
 #### Proof artifact trust marker (R2.8)
 

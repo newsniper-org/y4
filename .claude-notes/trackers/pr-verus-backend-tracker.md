@@ -13,67 +13,109 @@
 > 세션 진입 대기.  사용자가 `~/verus-fork` 를 verus-lang/verus 의 fork
 > 로 clone 해두는 step 까지 완료 후 별 세션 진입.
 
-## 1. Scope (R3.11 + R3.12 의 산출물)
+## 1. Scope (R3.11 + R3.12 의 산출물, flag mechanism 갱신 2026-06-03)
 
-### 1.1 z3 + OxiZ + adsmt 3 backend trait 통일
+> **2026-06-03 결정**: 새 `--backend=` flag 정의 X — Verus 의 기존 `-V
+> <key>` extended-multi flag mechanism (`-V cvc5` 패턴) 안에 새 backend
+> 옵션 추가.  upstream contribute-back path 의 자연성 ↑ + patch 분량
+> ~300 LoC 절약.
 
-Verus 본체에 SMT backend trait 추가 — 현재 z3 가 hardcode 된 부분을
-trait abstract:
+### 1.1 `SmtSolver` enum 확장 + EXTENDED_KEYS 추가
+
+**기존 (Verus upstream)**:
+- `source/air/src/context.rs`:
+  ```rust
+  pub enum SmtSolver { Z3, Cvc5 }
+  ```
+- `source/rust_verify/src/config.rs` (`EXTENDED_KEYS`):
+  ```rust
+  const EXTENDED_CVC5: &str = "cvc5";
+  // ...
+  (EXTENDED_CVC5, "Use the cvc5 SMT solver, rather than the default (Z3)"),
+  ```
+- solver 선택 (`config.rs` line 827):
+  ```rust
+  solver: if extended.contains_key(EXTENDED_CVC5)
+              { SmtSolver::Cvc5 } else { SmtSolver::Z3 },
+  ```
+
+**Y4 측 patch (R3.11 + R3.12)** — 위 3 위치에 확장:
 
 ```rust
-// (예시 형식, 실제 Verus 본체 구조에 맞춰 patch 작성)
-pub trait SmtBackend {
-    fn solve(&self, query: SmtLibQuery) -> Verdict;
-    fn name(&self) -> &'static str;
-    fn supports_abductive(&self) -> bool { false }  // default
-}
+// source/air/src/context.rs
+pub enum SmtSolver { Z3, Cvc5, OxiZ, Adsmt }
 
-pub enum Backend { Z3, OxiZ, Adsmt }
-
-pub enum Verdict {
+// 4번째 verdict variant 추가 (adsmt-only)
+pub enum SmtVerdict {
     Sat,
     Unsat,
     Unknown { reason: String },
-    Abductive {
-        candidates: Vec<AbductiveCandidate>,
-        explain:    String,
-    },  // adsmt-only
+    Abductive { candidates: Vec<AbductiveCandidate>, explain: String },
 }
+
+// source/rust_verify/src/config.rs
+const EXTENDED_OXIZ:                       &str = "oxiz";
+const EXTENDED_ADSMT:                      &str = "adsmt";
+const EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN: &str = "report-abductive-on-unknown";
+// ... in EXTENDED_KEYS:
+(EXTENDED_OXIZ,  "Use the OxiZ SMT solver (pure-Rust Z3 reimplementation, 100% Z3 parity)"),
+(EXTENDED_ADSMT, "Use the adsmt abductive-deductive HOL+HKT solver (4th verdict 'Abductive' available)"),
+(EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN,
+    "When -V adsmt 의 verdict 가 Unknown 인 경우, ranked abductive candidate JSON 을 jsonl 에 emit"),
 ```
 
-분량 추정 ~800 LoC (trait 정의 ~150 + 3 backend impl ~450 + verdict
-mapping ~100 + reporter ~100).
+`extended.contains_key(...)` 선택 로직 → match 형태:
 
-### 1.2 `--backend=` CLI flag
+```rust
+solver: if extended.contains_key(EXTENDED_ADSMT) { SmtSolver::Adsmt }
+        else if extended.contains_key(EXTENDED_OXIZ)  { SmtSolver::OxiZ }
+        else if extended.contains_key(EXTENDED_CVC5)  { SmtSolver::Cvc5 }
+        else                                          { SmtSolver::Z3 },
+```
+
+**분량 추정 (갱신)**: ~800 LoC → **~500 LoC** (mechanism 신설 부담 ↓):
+- enum 확장 + EXTENDED keys ~50 LoC
+- OxiZ backend impl ~200 LoC (adsmt 의 `external/oxiz/` oxiz-sat 호출)
+- adsmt backend impl ~150 LoC (lu-smt 측 cert 파싱 + abductive verdict)
+- Verdict mapping (Abductive variant) + jsonl reporter ~100 LoC
+
+### 1.2 CLI 사용 형태 (`-V <key>` 패턴)
 
 ```sh
-verus --backend=z3       # default
-verus --backend=oxiz
-verus --backend=adsmt
-verus --backend=dual     # z3 + oxiz, separate runs, diff
-verus --backend=triple   # z3 + oxiz + adsmt, separate runs, 3-way diff (R3.12 활성 시)
+# 단일 backend
+verus                              # default = Z3 (no flag)
+verus -V cvc5                      # 기존 upstream
+verus -V oxiz                      # 신규
+verus -V adsmt                     # 신규
+verus -V adsmt -V report-abductive-on-unknown
+                                   # adsmt + abductive verdict reporter
 ```
 
-`just verus --backend=$BACKEND` recipe = Y4 측 `proofs/verus/justfile`
-갱신 (P-redesign.2 §3.6 정합, 이미 spec frozen).
+`just verus` recipe = default Z3.  cross-validation (`dual` / `triple`)
+은 Verus 본체 flag X — Y4 측 `just verus-cross-validate` script 의
+multi-invocation 로직 (script 가 internally `verus` / `verus -V oxiz` /
+`verus -V adsmt` 3 회 호출 후 결과 diff).
 
-### 1.3 Abductive verdict reporter
+### 1.3 Abductive verdict reporter (`-V report-abductive-on-unknown`)
 
-`--report-abductive-on-unknown` flag (adsmt backend 만 활용):
-
-- z3/OxiZ 가 `unknown` 시점에 adsmt 의 ranked hypothesis list 가 JSON 으로
-  emit (Y4 측 `smt-cross-validation-tracker.md` §9 의 example JSON)
-- Y4 측 invariant 강화 candidate 의 input
+- adsmt backend 의 `Verdict::Unknown` 시점에 ranked hypothesis list JSON
+  emit (smt-cross-validation-tracker §9 의 example JSON)
+- z3/OxiZ/cvc5 backend 측은 본 flag 무효 (warning 출력 X — invariant
+  관계없는 noise 회피)
+- Y4 측 invariant 강화 candidate 의 input — av-proof-body-tracker §6 의
+  per-cluster LoC actual 측정 시 hypothesis 활용
 
 ### 1.4 Verdict mapping
 
-adsmt 의 4번째 verdict `Abductive` 를 Verus 의 기존 3-tuple 에 어떻게
-표현?
+adsmt 의 4번째 verdict `Abductive` 의 Verus 측 표현:
 
-- Verus 내부에서는 4번째 variant 정식 추가 (위 §1.1 의 `Verdict` enum)
-- 단 z3/OxiZ 만 사용 시 `Abductive` variant 는 unreachable
+- `SmtVerdict::Abductive { candidates, explain }` variant 정식 추가 (위
+  §1.1)
+- z3/OxiZ/cvc5 backend 측 시점에서 `Abductive` variant 는 unreachable
+  (compile-time exhaustive match 강제)
 - Verus reporter (jsonl 출력) 의 schema 갱신 — `verdict: "abductive"` +
-  `abductive_candidates: [...]`
+  `abductive_candidates: [...]` (smt-cross-validation-tracker §9 의
+  example JSON 정합)
 
 ## 2. Y4 측 cross-ref (별 세션에서 읽을 dep)
 
@@ -83,7 +125,7 @@ adsmt 의 4번째 verdict `Abductive` 를 Verus 의 기존 3-tuple 에 어떻게
 | `.claude-notes/trackers/av-proof-body-tracker.md` §1 R3.12 | opt-in 3-way 결정 (z3 + OxiZ default, adsmt 명시 시 + abductive verdict reporter) |
 | `.claude-notes/trackers/av-proof-body-tracker.md` §7 | abductive verdict 활용 invariant 6 후보 (AV5/12/15/23/24/30) |
 | `.claude-notes/trackers/smt-cross-validation-tracker.md` §9 | R3.12 의 abductive verdict JSON 예시 + 측정 cycle |
-| `docs/verus_to_isabelle.md` §3.6 | unified-toolkit-pin.toml + `--backend=` flag spec |
+| `docs/verus_to_isabelle.md` §3.6 | unified-toolkit-pin.toml + `-V <key>` flag spec (2026-06-03 갱신, 기존 `--backend=` 명시 X) |
 | `Y4/unified-toolkit-pin.toml` `[verus]` sub-table | Verus version range (min/max/recommended) |
 
 ## 3. 시작 조건 (별 세션이 진입 전)
@@ -171,17 +213,18 @@ VSCode setup.
 
 | Phase | 내용 | 분량 | 의존 |
 |---|---|---|---|
-| P-vb.1 | Verus 본체 source tree 탐색 + 현 SMT backend (z3) hardcode 위치 파악 | (탐색) | 0 |
-| P-vb.2 | `SmtBackend` trait 정의 + `Backend` enum + `Verdict` enum (Abductive variant 포함) | ~150 LoC | P-vb.1 |
-| P-vb.3 | z3 backend impl (기존 코드의 trait 채택) | ~150 LoC | P-vb.2 |
-| P-vb.4 | OxiZ backend impl (adsmt 의 `external/oxiz/` 측 oxiz-sat lib 호출) | ~200 LoC | P-vb.2 |
-| P-vb.5 | adsmt backend impl (lu-smt 호출, abductive verdict 파싱) | ~200 LoC | P-vb.2 |
-| P-vb.6 | `--backend=` CLI flag + verdict mapping + jsonl reporter 갱신 | ~100 LoC | P-vb.3/4/5 |
-| P-vb.7 | `--report-abductive-on-unknown` reporter flag | ~100 LoC | P-vb.6 |
-| P-vb.8 | Test (z3 single, OxiZ single, dual diff, triple diff, abductive verdict round-trip) | ~200 LoC | P-vb.7 |
+| P-vb.1 | 현 cvc5 patch (`EXTENDED_CVC5` + `SmtSolver::Cvc5`) 의 위치 파악 — `air/src/context.rs` + `rust_verify/src/config.rs` + smt_process 측 backend dispatcher 모두 | (탐색) | 0 |
+| P-vb.2 | `SmtSolver` enum 확장 (`+ OxiZ + Adsmt`) + `SmtVerdict` enum 신설 (Abductive variant 포함) | ~50 LoC | P-vb.1 |
+| P-vb.3 | `EXTENDED_OXIZ` + `EXTENDED_ADSMT` + `EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN` 추가 + solver 선택 로직 match 변환 | ~50 LoC | P-vb.2 |
+| P-vb.4 | OxiZ backend impl (adsmt 의 `external/oxiz/` 측 oxiz-sat lib 호출) | ~200 LoC | P-vb.3 |
+| P-vb.5 | adsmt backend impl (lu-smt 호출, abductive verdict 파싱) | ~150 LoC | P-vb.3 |
+| P-vb.6 | Verdict mapping (Abductive variant) + jsonl reporter schema 갱신 | ~50 LoC | P-vb.4/5 |
+| P-vb.7 | `-V report-abductive-on-unknown` flag 의 conditional emit | ~50 LoC | P-vb.6 |
+| P-vb.8 | Test (Z3 default, `-V cvc5` 기존 회귀, `-V oxiz`, `-V adsmt`, `-V adsmt -V report-abductive-on-unknown` round-trip) | ~150 LoC | P-vb.7 |
 | P-vb.9 | Upstream PR (verus-lang/verus, optional, post-Y4-cycle) | 0 | P-vb.8 |
 
-합 ~1100 LoC (test 포함).  본체만 ~800 LoC.
+합 **~700 LoC** (test 포함).  본체만 **~500 LoC** (2026-06-03 갱신,
+기존 `-V <key>` mechanism 활용으로 새 flag 정의 부담 ~300 LoC 절약).
 
 ## 5. Y4 측 산출물 land 후 cross-validate trigger
 
@@ -189,9 +232,11 @@ VSCode setup.
 
 1. 사용자가 `cd ~/Y4 && git pull` → unified-toolkit-pin.lock 의 `[verus]`
    sub-table 갱신 (PR-Verus-Backend 의 commit sha)
-2. Y4 측 `just verus --backend=z3` (default 정합 확인)
+2. Y4 측 `just verus` (default Z3, 회귀 확인) + `just verus -- -V oxiz`
+   (OxiZ backend 정합 확인) + `just verus -- -V adsmt` (adsmt backend
+   정합 확인)
 3. Y4 측 `just verus-cross-validate` (`smt-cross-validation-tracker.md` §6
-   의 measurement command) 활성
+   의 measurement command — script 가 internally 3 invocation 처리) 활성
 4. `av-proof-body-tracker.md` §9 의 cluster 별 cross-validate 시작 가능
 
 ## 6. License (별 세션 진입 시 주의)
