@@ -45,12 +45,24 @@
 // source/air/src/context.rs
 pub enum SmtSolver { Z3, Cvc5, OxiZ, Adsmt }
 
-// 4번째 verdict variant 추가 (adsmt-only)
+// adsmt-abduce::rank::RankedCandidate 와 1:1 정합 (2026-06-03 schema 강화,
+// adsmt v1.0.0-rc.7 의 native Candidate {hypotheses, explanations, sources}
+// + Ranked{candidate, score} 정합)
+pub struct AbductiveCandidate {
+    pub rank: u32,                          // 1-based, top = 1
+    pub score: f64,                          // adsmt native: smaller = stronger
+    pub hypotheses: Vec<String>,             // adsmt Candidate.hypotheses, Display 직렬화
+    pub explanations: Vec<Option<String>>,   // adsmt Candidate.explanations 정합
+    pub sources: Vec<String>,                // adsmt Candidate.sources 정합
+}
+
+// 4번째 verdict variant (adsmt-only).  top-level `explain` field 폐기
+// (per-hypothesis explanations 와 정합 강화, 2026-06-03)
 pub enum SmtVerdict {
     Sat,
     Unsat,
     Unknown { reason: String },
-    Abductive { candidates: Vec<AbductiveCandidate>, explain: String },
+    Abductive { candidates: Vec<AbductiveCandidate> },
 }
 
 // source/rust_verify/src/config.rs
@@ -58,10 +70,10 @@ const EXTENDED_OXIZ:                       &str = "oxiz";
 const EXTENDED_ADSMT:                      &str = "adsmt";
 const EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN: &str = "report-abductive-on-unknown";
 // ... in EXTENDED_KEYS:
-(EXTENDED_OXIZ,  "Use the OxiZ SMT solver (pure-Rust Z3 reimplementation, 100% Z3 parity)"),
+(EXTENDED_OXIZ,  "Use the OxiZ SMT solver (pure-Rust Z3 reimplementation, Z3 protocol parity)"),
 (EXTENDED_ADSMT, "Use the adsmt abductive-deductive HOL+HKT solver (4th verdict 'Abductive' available)"),
 (EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN,
-    "When -V adsmt 의 verdict 가 Unknown 인 경우, ranked abductive candidate JSON 을 jsonl 에 emit"),
+    "When -V adsmt 의 verdict 가 Unknown 또는 Abductive 인 경우, ranked candidate JSON 을 jsonl 에 emit"),
 ```
 
 `extended.contains_key(...)` 선택 로직 → match 형태:
@@ -98,8 +110,13 @@ multi-invocation 로직 (script 가 internally `verus` / `verus -V oxiz` /
 
 ### 1.3 Abductive verdict reporter (`-V report-abductive-on-unknown`)
 
-- adsmt backend 의 `Verdict::Unknown` 시점에 ranked hypothesis list JSON
-  emit (smt-cross-validation-tracker §9 의 example JSON)
+- adsmt backend 의 `Verdict::Unknown` 또는 `Verdict::Abductive` 시점에
+  ranked candidate JSON emit (smt-cross-validation-tracker §9 의 갱신된
+  example JSON 정합)
+- candidate JSON 의 source = adsmt-cli (lu-smt) 가 stdout 에 emit 하는
+  single-line JSON.  Verus 측 reporter 는 그대로 forward — schema
+  invariant 는 adsmt 측 (`adsmt-abduce::rank::RankedCandidate` +
+  `Candidate {hypotheses, explanations, sources}`) 의 native shape
 - z3/OxiZ/cvc5 backend 측은 본 flag 무효 (warning 출력 X — invariant
   관계없는 noise 회피)
 - Y4 측 invariant 강화 candidate 의 input — av-proof-body-tracker §6 의
@@ -109,13 +126,15 @@ multi-invocation 로직 (script 가 internally `verus` / `verus -V oxiz` /
 
 adsmt 의 4번째 verdict `Abductive` 의 Verus 측 표현:
 
-- `SmtVerdict::Abductive { candidates, explain }` variant 정식 추가 (위
-  §1.1)
+- `SmtVerdict::Abductive { candidates: Vec<AbductiveCandidate> }`
+  variant 정식 추가 (위 §1.1).  per-hypothesis level 의 explanation /
+  source 는 candidate struct 안에 — top-level `explain` field X
 - z3/OxiZ/cvc5 backend 측 시점에서 `Abductive` variant 는 unreachable
   (compile-time exhaustive match 강제)
 - Verus reporter (jsonl 출력) 의 schema 갱신 — `verdict: "abductive"` +
-  `abductive_candidates: [...]` (smt-cross-validation-tracker §9 의
-  example JSON 정합)
+  `abductive_candidates: [{rank, score, hypotheses[], explanations[],
+  sources[]}, ...]` (smt-cross-validation-tracker §9 의 갱신된 example
+  JSON 정합)
 
 ## 2. Y4 측 cross-ref (별 세션에서 읽을 dep)
 

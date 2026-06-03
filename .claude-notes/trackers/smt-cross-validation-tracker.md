@@ -142,8 +142,10 @@ unknown` flag 추가 land 후 작동 (기존 `-V <key>` extended-multi mechanism
 OxiZ (`-V oxiz`) default 측 cross-validation 은 patch 의 OxiZ variant +
 EXTENDED_OXIZ key 만 land 되면 우선 시작 가능.
 
-**Abductive verdict 처리**: z3/OxiZ 의 `unknown` 시점에 Verus 측 reporter
-가 adsmt 의 ranked hypothesis list 를 JSON 으로 emit:
+**Abductive verdict 처리** (2026-06-03 schema 정합 강화 — adsmt
+v1.0.0-rc.7 의 native ranking layer 정합): adsmt 의 `Verdict::Unknown`
+또는 `Verdict::Abductive` 시점에 Verus 측 reporter 가 ranked
+candidate JSON 을 emit.
 
 ```json
 {
@@ -151,11 +153,35 @@ EXTENDED_OXIZ key 만 land 되면 우선 시작 가능.
   "backend":    "adsmt",
   "verdict":    "unknown",
   "abductive_candidates": [
-    {"rank": 1, "hypothesis": "∀ c, revoked(c) ⟹ ¬ alive(owner(c).frame)", "score": 0.94},
-    {"rank": 2, "hypothesis": "frame_alloc.linear_chain(host_memory)",     "score": 0.81}
+    {
+      "rank":         1,
+      "score":        1.025,
+      "hypotheses":   ["∀ c, revoked(c) ⟹ ¬ alive(owner(c).frame)"],
+      "explanations": [null],
+      "sources":      ["abducible-frame-revoke-chain"]
+    },
+    {
+      "rank":         2,
+      "score":        2.013,
+      "hypotheses":   ["frame_alloc.linear_chain(host_memory)"],
+      "explanations": [null],
+      "sources":      ["abducible-linear-chain"]
+    }
   ]
 }
 ```
+
+**Per-candidate schema** (adsmt-abduce v1.0 정합):
+
+| field | type | 의미 |
+|---|---|---|
+| `rank` | `u32` | 1-based ranking (1 = top) |
+| `score` | `f64` | `adsmt-abduce::rank::rank_candidates` 의 score — **smaller = stronger** (v0.1: `hypotheses.len() + 0.001 * depth()`; future: domain `RankPolicy` 통한 vocabulary preference / salience weights — Q17 sec 20) |
+| `hypotheses` | `[String]` | candidate 의 hypothesis list (1 candidate = N hypothesis conjunction).  adsmt 의 `Candidate.hypotheses: Vec<Term>` 를 `Display` impl 로 serialize |
+| `explanations` | `[String \| null]` | per-hypothesis explanation, optional.  adsmt 의 `Candidate.explanations: Vec<Option<String>>` 정합 |
+| `sources` | `[String]` | per-hypothesis source identifier (`abducible-...` 등).  adsmt 의 `Candidate.sources: Vec<String>` 정합 |
+
+`hypotheses` / `explanations` / `sources` 는 동일 길이 (lock-step) — 같은 index 가 같은 hypothesis 의 (term, optional explanation, source) triple.
 
 candidates list 가 Y4 측 invariant 강화 candidate 의 input — `av-proof-body-tracker.md`
 §6 의 actual LoC 가 expected 보다 클 경우 candidate 추가 후 LoC 감소
