@@ -30,8 +30,8 @@
 | **R7.8** .v (Rocq) 산출물 위치 | `<Y4>/proofs/coq/theories/Generated/.gitkeep` 신설 + `_CoqProject` glob 추가 + R4.1 manual 3 theory (theories/{Sel4,IPC,Lease}/*.v) 별도 위치 | ✅ |
 | **R7.9** Cross-check CI 통합 | proofs/verus/justfile 의 cross-check recipe + av-proof-body-tracker §5 cluster 별 batch (R3.6 정합) + smt-cross-validation-tracker §2 row 추가 | ✅ (recipe) |
 | **R7.10** L4.verified inbound contract trust marker | verus_to_isabelle.md §1.7 갱신 — PR-Verus-Backend land + adsmt rc.28+/rc.29+ 도달 후 trust 가능 명시 | ✅ |
-| **R7.11** 첫 emit milestone | Cluster 1 (amdv lower) PR-2a + AV1 `intercept_floor_holds` + `Y4_AmdvSafety_Lower_InterceptFloor.thy` | (대기, PR-Verus-Backend land 후) |
-| **R7.12** Verification end-to-end | vargo build → just verify-adsmt → just emit-isabelle → just coq → just cross-check → (manual) l4v import | (대기) |
+| **R7.11** 첫 emit milestone | Cluster 1 (amdv lower) PR-2a + AV1 `intercept_floor_holds` + `Y4_AmdvSafety_Lower_InterceptFloor.thy` | (진행 중, PR-Verus-Backend land ✅ 2026-06-03) |
+| **R7.12** Verification end-to-end | vargo build → just verify-adsmt → just emit-isabelle → just coq → just cross-check → (manual) l4v import | (진행 중, PR-Verus-Backend land ✅) |
 
 ## 2. Per-cluster emission 진행 record
 
@@ -52,9 +52,9 @@ R7.10 정합 — l4v repo 의 Y4 측 통합 X.  seL4 팀이 자체 환경에서 
 
 | Milestone | 시점 | 작업 |
 |---|---|---|
-| 1. PR-Verus-Backend land | (대기) | `<Y4>/verus-fork/` 별 세션 |
+| 1. PR-Verus-Backend land | ✅ **2026-06-03** | verus-fork backend-pluggable HEAD 가 R3.11+R3.12+R7.3 의 모든 patch + AOT + JIT + emit recipe 모두 ship.  pr-verus-backend-tracker §4 P-vb.1~P-vb.12 모두 ✅ |
 | 2. adsmt rc.28+ + rc.29+ 도달 | ✅ 2026-06-03 | rc.29 = `03f33a9` |
-| 3. 첫 emit milestone (R7.11) | (대기, 1 후) | AV1 `.thy` 생성 + l4v import 사용자 manual 확인 |
+| 3. 첫 emit milestone (R7.11) | (진행 중, 2026-06-03) | AV1 `.thy` 생성 + l4v import 사용자 manual 확인 |
 | 4. Cluster 1 (amdv lower) full emit | (대기, 3 후) | PR-2a land + 12 AV 의 `.thy` |
 | 5. Cluster 2 (amdv upper) full emit | (대기, 4 후) | PR-2b land + 9 AV 의 `.thy` |
 | 6. Cluster 3 (power upper) full emit | (대기, Phase C) | PR-5d.1 land + 11 AV 의 `.thy` |
@@ -113,7 +113,7 @@ seL4 L4.verified (https://github.com/seL4/l4v) — Y4 외, 사용자 manual
 
 - §2 cluster row: cluster sub-PR (R3.7 정합) 의 6 step 완료 시
 - §3 milestone: 사용자 명시 시점에 추가 (paper artifact 제출, l4v import 사용자 확인 등)
-- §1 R7.X 결정의 미해결 (R7.11/R7.12) 의 ✅ 마킹: PR-Verus-Backend land 후
+- §1 R7.X 결정의 미해결 (R7.11/R7.12) 의 ✅ 마킹: 첫 emit milestone 완료 시 (PR-Verus-Backend land 는 이미 ✅ 2026-06-03)
 - R7.6 baseline commit hash: rolling (사용자 명시 시점에 `.lock` 갱신)
 
 ## 7. 미해결

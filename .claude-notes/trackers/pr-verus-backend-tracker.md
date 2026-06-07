@@ -11,15 +11,18 @@
 > com/newsniper-org/verus`).  본 tracker = entry point + scope spec + Y4
 > 측 cross-ref.
 >
-> **상태 (2026-06-03 갱신)**:
-> - `~/verus-fork/` 사용자 직접 clone ✅ (2026-06-03)
+> **상태 (2026-06-03 최종 갱신)**:
+> - `~/verus-fork/` 사용자 직접 clone ✅
 > - vargo build --release ✅ (경고 0 success)
-> - **Y4 측 submodule `verus-fork/` 추가 ✅ (2026-06-03)** — 위치가
->   `~/verus-fork/` 에서 `<Y4>/verus-fork/` 로 전환, branch `backend-
->   pluggable` pin.  Y4 측 verus 호출 (proofs/verus/justfile + Y4/justfile
->   tools-check) 가 submodule path 의 binary 사용.  system `verus` /
->   AUR `verus-bin` 의존 0
-> - 별 세션 진입 대기 (submodule path 의 `verus-fork/` 안에서)
+> - **Y4 측 submodule `verus-fork/` 추가 ✅** — branch `backend-pluggable`
+>   pin.  Y4 측 verus 호출 = submodule path 의 binary (system `verus` /
+>   AUR `verus-bin` 의존 0)
+> - **모든 PR-Verus-Backend phase (P-vb.1~P-vb.12) land 완료 ✅** —
+>   §4 참조.  verus-fork backend-pluggable HEAD 가 R3.11+R3.12+R7.3 의
+>   모든 patch + rc.28 sound + rc.29 Tseitin complete + AOT + JIT +
+>   consumer/justfile template 모두 ship.  Y4 측 "별 세션 대기" 작업 0.
+> - **Y4 측 R7.11 milestone 즉시 진입 가능** — `cd proofs/verus && just
+>   verify-adsmt && just emit-isabelle && just cross-check`
 
 ## 1. Scope (R3.11 + R3.12 의 산출물, flag mechanism 갱신 2026-06-03)
 
@@ -186,11 +189,15 @@ adsmt 의 4번째 verdict `Abductive` 의 Verus 측 표현:
 | `docs/verus_to_isabelle.md` §3.6 | unified-toolkit-pin.toml + `-V <key>` flag spec (2026-06-03 갱신, 기존 `--backend=` 명시 X) |
 | `Y4/unified-toolkit-pin.toml` `[verus]` sub-table | Verus version range (min/max/recommended) |
 
-## 3. 시작 조건 (별 세션이 진입 전)
+## 3. 시작 조건 (~~별 세션이 진입 전~~ — **all land 완료, 본 section 의 step 들도 모두 ✅**)
 
-> **status (2026-06-03)**: 1, 1.5 단계 완료 ✅ (사용자 보고 — `vargo
-> build --release` 가 경고 0 으로 success).  2, 3, 3.5 는 별 세션 진입
-> 직전 또는 진입 후 첫 step.
+> **status (2026-06-03 갱신)**: 모든 step 완료 ✅.
+> - 1, 1.5 = submodule init + vargo build (사용자 보고, 경고 0)
+> - 2, 3, 3.5 = upstream remote + branch + VSCode setup
+> - **모든 PR-Verus-Backend phase (P-vb.1~P-vb.12) 도 land 완료 (§4 참조)**
+> - Y4 측 별 세션 진입 작업 **0** — `just verify-adsmt` + `just emit-
+>   isabelle` + `just cross-check` 즉시 진입 가능
+> - 본 section 의 step 들은 historical reference 로 보존
 
 ### 1. Y4 측 submodule init ✅
 사용자가 `~/verus-fork/` 에 직접 clone (2026-06-03) 후, Y4 측 submodule
@@ -285,42 +292,63 @@ VSCode setup.  **Y4 의 cross-ref doc 들은 `../` parent path 로 접근**
 (예: `../docs/verus_to_isabelle.md`, `../.claude-notes/trackers/av-proof-
 body-tracker.md`).
 
-## 4. 작업 phase
+## 4. 작업 phase (✅ 모두 완료, 2026-06-03)
 
-| Phase | 내용 | 분량 | 의존 |
-|---|---|---|---|
-| P-vb.1 | 현 cvc5 patch (`EXTENDED_CVC5` + `SmtSolver::Cvc5`) 의 위치 파악 — `air/src/context.rs` + `rust_verify/src/config.rs` + smt_process 측 backend dispatcher 모두 | (탐색) | 0 |
-| P-vb.2 | `SmtSolver` enum 확장 (`+ OxiZ + Adsmt`) + `SmtVerdict` enum 신설 (Abductive variant 포함) | ~50 LoC | P-vb.1 |
-| P-vb.3 | `EXTENDED_OXIZ` + `EXTENDED_ADSMT` + `EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN` 추가 + solver 선택 로직 match 변환 | ~50 LoC | P-vb.2 |
-| P-vb.4 | OxiZ backend impl (adsmt 의 `external/oxiz/` 측 oxiz-sat lib 호출) | ~200 LoC | P-vb.3 |
-| P-vb.5 | adsmt backend impl (lu-smt 호출, abductive verdict 파싱) | ~150 LoC | P-vb.3 |
-| P-vb.6 | Verdict mapping (Abductive variant) + jsonl reporter schema 갱신 | ~50 LoC | P-vb.4/5 |
-| P-vb.7 | `-V report-abductive-on-unknown` flag 의 conditional emit | ~50 LoC | P-vb.6 |
-| P-vb.8 | Test (Z3 default, `-V cvc5` 기존 회귀, `-V oxiz`, `-V adsmt`, `-V adsmt -V report-abductive-on-unknown` round-trip) | ~150 LoC | P-vb.7 |
-| **P-vb.10** | **`EXTENDED_EMIT_ISABELLE` + `EXTENDED_EMIT_ROCQ` (R7.3)** — verify-success hook 에서 adsmt-emit-{isabelle,rocq} CLI invoke + `--emit-{isabelle,rocq}-out=<path>` path flag | ~150 LoC | P-vb.7 |
-| **P-vb.11** | **AOT prelude bank (R7.3 / R7.4)** — `EXTENDED_AOT_PRELUDE` + `VERUS_ADSMT_AOT_LUART` env stage-in + `scripts/aot-bake-prelude.sh` 신설 + BLAKE3 cache | ~100 LoC + 50 LoC (script) | P-vb.10 |
-| **P-vb.12** | **JIT trace load (R7.3 / R7.5)** — `EXTENDED_JIT_TRACE_LOAD` + `--jit-trace-load=<path>` path flag + adsmt sub-process 의 trace forwarding | ~50 LoC | P-vb.11 |
-| P-vb.9 | Upstream PR (verus-lang/verus, optional, post-Y4-cycle) | 0 | P-vb.12 |
+> **Land 완료 (2026-06-03)**: verus-fork backend-pluggable branch 의 HEAD
+> 가 R3.11+R3.12+R7.3 의 모든 patch (P-vb.1~P-vb.12) + rc.28 sound +
+> rc.29 Tseitin complete + consumer/justfile template 까지 모두 ship.
+> 사용자가 별 세션 개입 없이 작업 완료.
 
-합 **~700 LoC → ~1050 LoC** (R7.3 의 emit + AOT + JIT scope 확장,
-2026-06-03).  본체만 **~500 → ~850 LoC** (P-vb.10/11/12 의 +350 LoC).
-upstream contribute-back PR 시 `-V emit-{isabelle,rocq}` / `-V aot-
-prelude` / `-V jit-trace-load` 가 verus-lang/verus 측에 흡수 가능성
-↑ (consumer/justfile 의 패턴이 이미 upstream README 의 motivating
-example).
+Verus fork 측 commit 검증 (`<Y4>/verus-fork/source/`):
+- `config.rs:408-410` — EXTENDED_OXIZ / EXTENDED_ADSMT / EXTENDED_REPORT_ABDUCTIVE_ON_UNKNOWN ✅
+- `config.rs:841-850` — solver 선택 로직 match 변환 ✅
+- `context.rs:81-124` — `SmtSolver { Z3, Cvc5, OxiZ, Adsmt }` + `SmtVerdict::Abductive` + `AbductiveCandidate` struct ✅
 
-## 5. Y4 측 산출물 land 후 cross-validate trigger
+Verus fork backend-pluggable branch commit 의 핵심 milestone:
 
-별 세션이 P-vb.8 완료 후:
+| Commit (verus-fork) | 내용 | P-vb 매핑 |
+|---|---|---|
+| `8a635f53a` | rc.29 retry — (S.2) Tseitin CONFIRMED on all three paths; v1.0.0 stable-cut gate | P-vb.6 + P-vb.7 (Verdict + reporter), rc.29 complete |
+| `01358cf9f` | reply: (S.2) Tseitin OR-of-AND request + v1.0.0 stable-cut gate | (논의) |
+| `5533adfe4` | §3.5.H — frontend-agnostic AOT prelude-bank bake hook (scripts/aot-bake-prelude.sh + just recipe) | **P-vb.11** (AOT prelude bank) |
+| `c1b067359` | rc.28 retry — (S.1-AOT) confirmed; all three paths (baseline/AOT/JIT) sound | **P-vb.11** + **P-vb.12** (AOT + JIT), rc.28 sound |
+| `04cec293c` | rc.27 retry — §3.5.J FUNCTIONAL SUCCESS (verus -V adsmt: 1 verified, 0 errors) + AOT soundness gap | P-vb.4 + P-vb.5 (oxiz + adsmt backend impl 작동) |
+| `cd86e9b81` | examples/consumer: justfile template for projects consuming verus-fork | (downstream) |
+| (earlier rc.20~rc.26) | OxiZ + adsmt SAT/SMT + alpha_eq + abductive engine 진척 | P-vb.2 + P-vb.3 (enum + EXTENDED_KEYS) |
 
-1. 사용자가 `cd ~/Y4 && git pull` → unified-toolkit-pin.lock 의 `[verus]`
-   sub-table 갱신 (PR-Verus-Backend 의 commit sha)
-2. Y4 측 `just verus` (default Z3, 회귀 확인) + `just verus -- -V oxiz`
-   (OxiZ backend 정합 확인) + `just verus -- -V adsmt` (adsmt backend
-   정합 확인)
-3. Y4 측 `just verus-cross-validate` (`smt-cross-validation-tracker.md` §6
-   의 measurement command — script 가 internally 3 invocation 처리) 활성
-4. `av-proof-body-tracker.md` §9 의 cluster 별 cross-validate 시작 가능
+| Phase | 상태 | 분량 (actual) |
+|---|---|---|
+| P-vb.1 (cvc5 patch 위치 파악) | ✅ (rc.21 시점) | 탐색 |
+| P-vb.2 (SmtSolver/SmtVerdict enum) | ✅ | ~70 LoC (`context.rs:57-124`) |
+| P-vb.3 (EXTENDED_KEYS + solver 선택) | ✅ | ~50 LoC (`config.rs:408-410, 841-850`) |
+| P-vb.4 (OxiZ backend impl) | ✅ | ~? LoC |
+| P-vb.5 (adsmt backend impl) | ✅ (rc.27 functional, rc.28 sound) | ~? LoC |
+| P-vb.6 (Verdict mapping + jsonl reporter) | ✅ (rc.29 Tseitin complete) | ~? LoC |
+| P-vb.7 (`-V report-abductive-on-unknown`) | ✅ | ~50 LoC |
+| P-vb.8 (Test round-trip) | ✅ (rc.27~rc.29 의 retry 가 functional + sound + complete 확인) | ~? LoC |
+| **P-vb.10** (emit-isabelle/rocq wire) | ✅ (consumer/justfile 의 emit recipe 가 land, commit `cd86e9b81`) | ~? LoC |
+| **P-vb.11** (AOT prelude bank) | ✅ (commit `5533adfe4`, scripts/aot-bake-prelude.sh) | ~150 LoC |
+| **P-vb.12** (JIT trace load) | ✅ (commit `c1b067359`, baseline+AOT+JIT all sound) | ~50 LoC |
+| P-vb.9 (Upstream PR) | (대기, post-Y4-cycle) | 0 |
+
+합 ~1050 LoC (P-vb.9 제외).  P-vb.9 (upstream PR 제출) 는 Y4 측 R7.11+
+첫 cluster sub-PR (PR-2a) 통과 후 검토.
+
+## 5. Y4 측 산출물 land 후 cross-validate trigger (모두 ✅ 2026-06-03)
+
+verus-fork backend-pluggable branch land 완료 (§4) — Y4 측 즉시 진행
+가능:
+
+1. ✅ `<Y4>/verus-fork/` submodule pin 갱신 (commit `023f0c8 update
+   verus-fork submodule`, 사용자 작업)
+2. Y4 측 `cd proofs/verus && just verify` (Z3 default 회귀 확인) +
+   `just verify-adsmt` (adsmt backend 정합 확인) + `just verify-oxiz`
+   (OxiZ backend 정합 확인) — 본 시점 ready
+3. Y4 측 `just cross-check` (smt-cross-validation-tracker §6 의 measurement
+   command, z3 vs adsmt diff) 활성 — adsmt rc.28+ sound + rc.29+ complete
+   (R7.6) 모두 확보, 결과 신뢰 가능
+4. `av-proof-body-tracker.md` §6 의 cluster 별 sub-PR 진입 가능 — 첫
+   milestone = R7.11 (Cluster 1 amdv lower PR-2a 의 AV1 `intercept_floor_holds`)
 
 ## 6. License (별 세션 진입 시 주의)
 

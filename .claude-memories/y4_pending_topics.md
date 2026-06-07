@@ -132,7 +132,11 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
       `docs/verus_to_rocq.md` 삭제, `docs/verus_to_isabelle.md` §3
       supersede note (§3.6 unified-toolkit-pin 만 유지)
     - **PR-Verus-Backend scope 확장 (R7.3)**: ~500 → ~850 LoC, 12 phase
-      (P-vb.10 emit + P-vb.11 AOT + P-vb.12 JIT 신규)
+      (P-vb.10 emit + P-vb.11 AOT + P-vb.12 JIT 신규).  **모든 phase
+      land 완료 ✅ (2026-06-03)** — verus-fork backend-pluggable HEAD 가
+      patch 모두 ship (rc.28 sound + rc.29 Tseitin complete + consumer/
+      justfile template).  Y4 측 PR-Verus-Backend 별 세션 진입 작업 0,
+      R7.11 milestone 즉시 진입 가능
     - **`proofs/isabelle/` 신설 (R7.7)**: 2-layer imports chain (Layer 1
       cluster sub-grouping `Y4_AmdvSafety.thy` + `Y4_PowerSafety.thy` +
       Layer 2 per-AV flat list + top-level `Y4.thy` 가 양 layer 모두
@@ -161,7 +165,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 
 | Sub-cycle | 내용 | 의존 | 비고 |
 |---|---|---|---|
-| **PR-Verus-Backend** | Verus 본체 patch (R3.11) — `-V oxiz` / `-V adsmt` / `-V report-abductive-on-unknown` 추가 + `SmtSolver` enum 확장 + abductive verdict reporter | P-redesign.3 ✅ | **별도 세션** (`~/verus-fork/` clone + vargo build ✅ 2026-06-03), ~500 LoC |
+| ~~PR-Verus-Backend~~ | ~~Verus 본체 patch~~ | — | ✅ **모두 land 완료 (2026-06-03)** — verus-fork backend-pluggable HEAD ship.  Y4 측 즉시 verify-adsmt + emit-isabelle + cross-check 가능 |
 | P-redesign.7 | unsafe + proof 짝 lint 자동화 spec (adsmt type-class layer 활용) | P-redesign.3 ✅ | 즉시 (P.3 sign-off 완료) |
 | P-redesign.8 | Y4 spec v1.x patch 일괄 마킹 (power_arch + vmm_arch + verus_to_isabelle + cpu_virt_compat + amdv_safety + NOTICE) | P.2~7 완료 | (P.7 후, hold X) |
 
