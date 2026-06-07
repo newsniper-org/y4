@@ -3,15 +3,23 @@
 
 # PR-Verus-Backend tracker (2026-06-01)
 
-> **목적:** Verus 본체 patch (`--backend=z3|oxiz|adsmt` + abductive
-> verdict reporter) — P-redesign.3 의 R3.11 + R3.12 sign-off 의 산출물.
-> 본 작업은 **별도 Claude Code 세션** 에서 진행 (로컬: `~/verus-fork`,
-> Y4 의 sibling repo 패턴).  본 tracker = entry point + scope spec + Y4
+> **목적:** Verus 본체 patch (`-V oxiz` / `-V adsmt` / `-V report-
+> abductive-on-unknown` + `SmtSolver` enum 확장 + abductive verdict
+> reporter) — P-redesign.3 의 R3.11 + R3.12 sign-off 의 산출물.  본
+> 작업은 **별도 Claude Code 세션** 에서 진행 (위치: `<Y4>/verus-fork/`
+> **git submodule**, branch `backend-pluggable`, remote `https://github.
+> com/newsniper-org/verus`).  본 tracker = entry point + scope spec + Y4
 > 측 cross-ref.
 >
-> **상태 (2026-06-01)**: 준비 단계.  `~/verus-fork` 디렉터리 신설 + 별
-> 세션 진입 대기.  사용자가 `~/verus-fork` 를 verus-lang/verus 의 fork
-> 로 clone 해두는 step 까지 완료 후 별 세션 진입.
+> **상태 (2026-06-03 갱신)**:
+> - `~/verus-fork/` 사용자 직접 clone ✅ (2026-06-03)
+> - vargo build --release ✅ (경고 0 success)
+> - **Y4 측 submodule `verus-fork/` 추가 ✅ (2026-06-03)** — 위치가
+>   `~/verus-fork/` 에서 `<Y4>/verus-fork/` 로 전환, branch `backend-
+>   pluggable` pin.  Y4 측 verus 호출 (proofs/verus/justfile + Y4/justfile
+>   tools-check) 가 submodule path 의 binary 사용.  system `verus` /
+>   AUR `verus-bin` 의존 0
+> - 별 세션 진입 대기 (submodule path 의 `verus-fork/` 안에서)
 
 ## 1. Scope (R3.11 + R3.12 의 산출물, flag mechanism 갱신 2026-06-03)
 
@@ -153,10 +161,23 @@ adsmt 의 4번째 verdict `Abductive` 의 Verus 측 표현:
 > build --release` 가 경고 0 으로 success).  2, 3, 3.5 는 별 세션 진입
 > 직전 또는 진입 후 첫 step.
 
-### 1. `~/verus-fork` clone ✅
-사용자가 verus-lang/verus 를 fork (GitHub web UI) 후 로컬 clone:
+### 1. Y4 측 submodule init ✅
+사용자가 `~/verus-fork/` 에 직접 clone (2026-06-03) 후, Y4 측 submodule
+로 통합:
+
 ```sh
-git clone git@github.com:<user>/verus.git ~/verus-fork
+cd <Y4-root>
+git submodule add -b backend-pluggable https://github.com/newsniper-org/verus verus-fork
+# 또는 fresh clone 시:
+git submodule update --init verus-fork
+```
+
+`.gitmodules` 의 entry:
+```
+[submodule "verus-fork"]
+    path   = verus-fork
+    url    = https://github.com/newsniper-org/verus
+    branch = backend-pluggable
 ```
 
 ### 1.5. Verus toolchain + Z3 + vargo build ✅
@@ -164,7 +185,7 @@ git clone git@github.com:<user>/verus.git ~/verus-fork
 (rustc internals + Z3 + workspace order 의존) 가 필수.
 
 ```fish
-cd ~/verus-fork/source
+cd <Y4-root>/verus-fork/source
 ./tools/get-z3.sh                           # Z3 4.12.5 binary (필수)
 rustup toolchain install 1.95.0
 rustup component add rustc-dev llvm-tools --toolchain 1.95.0
@@ -172,21 +193,24 @@ source ../tools/activate.fish               # vargo 자체 build + PATH/env setu
 vargo build --release                       # Verus 전체 build (vstd 포함)
 ```
 
-성공 시 `~/verus-fork/tools/vargo/target/release/vargo` 생성 + Verus
-`rust_verify` binary + `builtin` / `builtin_macros` / `state_machines_
-macros` / `vstd` 모두 build.
+성공 시 `<Y4>/verus-fork/tools/vargo/target/release/vargo` 생성 + Verus
+`rust_verify` binary (`<Y4>/verus-fork/source/target-verus/release/verus`)
++ `builtin` / `builtin_macros` / `state_machines_macros` / `vstd` 모두
+build.
 
-### 2. upstream remote 추가
+### 2. upstream remote (이미 fork repo 측에 존재, push 권한 명시)
+fork repo (`newsniper-org/verus`) 가 이미 upstream (`verus-lang/verus`)
+fork 라 자동 정합.  접근 권한 확인용:
 ```sh
-cd ~/verus-fork
-git remote add upstream https://github.com/verus-lang/verus.git
-git fetch upstream
+cd <Y4-root>/verus-fork
+git remote -v
+# origin    = https://github.com/newsniper-org/verus (push 권한 명시)
+# upstream  = https://github.com/verus-lang/verus.git (선택 — fork 측에서 보존)
 ```
 
-### 3. Branch 신설
-```sh
-git checkout -b backend-pluggable
-```
+### 3. Branch — 이미 `backend-pluggable` ✅
+`.gitmodules` 의 `branch = backend-pluggable` 명시.  submodule init 시
+이 branch 가 checkout.
 
 ### 3.5. VSCode setup (별 세션 IDE 사용 시 필수)
 **원인**: `.vscode/` 에 `settings.json.template` / `launch.json.template`
@@ -197,7 +221,7 @@ dependency + rustc-dev component 미인식).
 **해결**:
 
 ```fish
-cd ~/verus-fork
+cd <Y4-root>/verus-fork
 cp .vscode/settings.json.template .vscode/settings.json
 cp .vscode/launch.json.template   .vscode/launch.json
 cp .vscode/tasks.json.template    .vscode/tasks.json
@@ -213,7 +237,7 @@ cp .vscode/tasks.json.template    .vscode/tasks.json
 
 **VSCode workspace 열기**:
 ```sh
-code ~/verus-fork    # root = ~/verus-fork/, .vscode/ 위치와 정합
+code <Y4-root>/verus-fork    # root = submodule directory, .vscode/ 위치와 정합
 ```
 
 **verus-analyzer (선택)**: 표준 rust-analyzer 대신 [verus-lang/verus-
@@ -223,10 +247,12 @@ analyzer](https://github.com/verus-lang/verus-analyzer) extension 사용
 
 ### 4. 별 Claude Code 세션 진입
 ```sh
-cd ~/verus-fork && claude
+cd <Y4-root>/verus-fork && claude
 ```
 첫 read 대상: 본 tracker §1 + §2 + §4 + Y4 측 cross-ref + 본 §3 의 3.5
-VSCode setup.
+VSCode setup.  **Y4 의 cross-ref doc 들은 `../` parent path 로 접근**
+(예: `../docs/verus_to_isabelle.md`, `../.claude-notes/trackers/av-proof-
+body-tracker.md`).
 
 ## 4. 작업 phase
 

@@ -279,5 +279,5 @@ tools-check:
     @command -v stamp      >/dev/null || { echo "missing: stamp — same install path as freshcheck"; exit 1; }
     @command -v lu-par     >/dev/null || { echo "missing: lu-par — same install path as freshcheck"; exit 1; }
     @echo "core tools OK (cargo, just, logicutils — adsmt absorbed)"
-    @command -v verus      >/dev/null || echo "warn:  verus not installed — Verus proofs will fail. See proofs/verus/README.md"
+    @[ -x verus-fork/source/target-verus/release/verus ] || echo "warn:  verus-fork submodule binary 없음 (verus-fork/source/target-verus/release/verus) — Verus proofs will fail. Build: git submodule update --init verus-fork && cd verus-fork/source && ./tools/get-z3.sh && source ../tools/activate.fish && vargo build --release"
     @command -v coqc       >/dev/null || echo "warn:  coqc not installed — Coq proofs will fail. See proofs/coq/README.md"

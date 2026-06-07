@@ -100,6 +100,21 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
       sorry flag)
     - Theory file naming: `Y4_<Domain>_<Module>.thy` flat underscore
       유지 (R5.4=a) — Rocq 측 nested directory 와 의도적 분리
+15. ✅ **Verus submodule integration** (2026-06-03) — system verus 호출
+    완전 폐기, `<Y4>/verus-fork/` git submodule (newsniper-org/verus
+    fork, branch `backend-pluggable`) 의 binary 호출로 전환
+    - `git submodule add -b backend-pluggable https://github.com/newsniper-org/verus verus-fork`
+    - `.gitmodules` entry 추가
+    - `proofs/verus/justfile`: `verus_bin := ".../verus-fork/source/target-
+      verus/release/verus"`, install 안내 → submodule init + vargo build
+    - `Y4/justfile` tools-check: `command -v verus` → submodule path
+      `[ -x verus-fork/.../verus ]` check
+    - `CLAUDE.md` §5 repository layout: `verus-fork/` (submodule) 추가
+    - `NOTICE`: Verus entry 갱신 — newsniper-org fork + branch backend-
+      pluggable + R3.11/R3.12 의 작업 위치 명시
+    - `pr-verus-backend-tracker.md` §3: clone path `~/verus-fork/` → `<Y4>/
+      verus-fork/`, VSCode setup + 별 세션 진입 path 갱신, Y4 cross-ref
+      doc 의 `../` parent path 명시
 14. ✅ **PR-Verus-Backend flag mechanism 갱신** (2026-06-03) — 새
     `--backend=` flag 정의 X.  Verus 의 기존 `-V <key>` extended-multi
     flag mechanism (`-V cvc5` 패턴 mirror) 안에 `-V oxiz` + `-V adsmt`

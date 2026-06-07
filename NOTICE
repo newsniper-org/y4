@@ -77,9 +77,15 @@ LLVM scudo, via the on-demand vendoring described in
 
 Verification toolchain (build-time, not redistributed):
 
-  * Verus                  https://verus-lang.github.io/verus/
+  * Verus                  https://github.com/newsniper-org/verus
                            (MIT)
-                           Arch Linux: `verus-bin` AUR package
+                           Y4 측 fork (upstream: verus-lang/verus),
+                           branch `backend-pluggable` — submodule
+                           `verus-fork/` 으로 import.  PR-Verus-Backend
+                           (R3.11+R3.12) 의 작업 위치 — `-V oxiz` /
+                           `-V adsmt` / `-V report-abductive-on-unknown`
+                           + SmtSolver enum 확장 (Z3/Cvc5+OxiZ+Adsmt).
+                           system 측 `verus-bin` AUR 호출 X.
   * Rocq (formerly Coq)    https://rocq-prover.org/
                            (LGPL-2.1)
                            pinned: 9.x via system package

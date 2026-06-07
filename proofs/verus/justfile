@@ -9,27 +9,35 @@
 
 set shell := ["bash", "-cu"]
 
-verus_repo := "https://github.com/verus-lang/verus"
+# Y4 가 verus-fork (backend-pluggable branch) 를 submodule 로 import —
+# system verus 호출 X.  submodule path: <Y4>/verus-fork/source/target-
+# verus/release/verus.  PR-Verus-Backend tracker §3 (.claude-notes/
+# trackers/pr-verus-backend-tracker.md) 참조.
+verus_bin := justfile_directory() + "/../../verus-fork/source/target-verus/release/verus"
 
 default: verify
 
-# Verify all specs in this crate. Errors helpfully if `verus` is missing.
+# Verify all specs in this crate. Errors helpfully if submodule verus
+# binary가 build되지 않은 상태면.
 verify:
-    @if ! command -v verus >/dev/null; then \
+    @if [ ! -x "{{verus_bin}}" ]; then \
         echo ""; \
-        echo "  ✗ verus not installed."; \
+        echo "  ✗ verus-fork submodule binary 없음: {{verus_bin}}"; \
         echo ""; \
-        echo "  Y4 uses Verus for Rust-native specs (CLAUDE.md §6.6)."; \
-        echo "  Install:"; \
-        echo "    git clone {{verus_repo}} ~/verus"; \
-        echo "    cd ~/verus/source && ./tools/get-z3.sh && ./tools/local-install.sh"; \
-        echo "    export PATH=~/verus/source/target-verus/release:\$PATH"; \
+        echo "  Y4 가 verus-fork (backend-pluggable branch) 를 submodule"; \
+        echo "  로 import (PR-Verus-Backend, R3.11+R3.12).  Build:"; \
+        echo "    cd verus-fork/source"; \
+        echo "    ./tools/get-z3.sh"; \
+        echo "    rustup toolchain install 1.95.0"; \
+        echo "    rustup component add rustc-dev llvm-tools --toolchain 1.95.0"; \
+        echo "    source ../tools/activate.fish     # or .sh / .bat / .ps1"; \
+        echo "    vargo build --release"; \
         echo ""; \
-        echo "  Then re-run:  just verus"; \
+        echo "  Or first init: git submodule update --init verus-fork"; \
         echo ""; \
         exit 1; \
     fi
-    verus --crate-type=lib src/lib.rs
+    {{verus_bin}} --crate-type=lib src/lib.rs
 
 # Note: `cargo build` of this crate does NOT work and is not expected
 # to — `vstd` is not on crates.io.  See Cargo.toml header.

@@ -124,10 +124,15 @@ Y4/
 ├── .claude-notes/       design memos + decision archives (git-tracked)
 │   ├── trackers/        active ledgers / trackers (CVE, paper venues, threats)
 │   └── _completed/      completed work archive
-└── third_party/
-    ├── sel4/            git submodule (seL4 15.0.0)
-    ├── limine/          git submodule (Limine v12.1.0)
-    └── scudo/           pinned standalone (PIN.toml + materialised on demand)
+├── third_party/
+│   ├── sel4/            git submodule (seL4 15.0.0)
+│   ├── limine/          git submodule (Limine v12.1.0)
+│   └── scudo/           pinned standalone (PIN.toml + materialised on demand)
+└── verus-fork/         git submodule — newsniper-org/verus, branch
+                         `backend-pluggable` (PR-Verus-Backend land 위치,
+                         R3.11+R3.12).  Y4 가 system verus 호출 X — submodule
+                         path 의 `source/target-verus/release/verus` binary
+                         호출 (proofs/verus/justfile)
 ```
 
 `hiu/` is the one Phase B subsystem still missing — blocked on
