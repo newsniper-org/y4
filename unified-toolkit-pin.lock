@@ -4,15 +4,28 @@
 # logicutils-driven verification: `freshcheck --method=hash` on this file
 # gates the proofs/ rebuild (proofs/README.md §"워크플로우" 정합).
 #
-# Pre-population baseline (refreshed 2026-06-03 — adsmt v1.0.0-rc.6-1):
-#   - adsmt           = 2c46803 (tag v1.0.0-rc.6-1, "fix .gitmodules",
-#                                2026-06-03; replaces 450b986 baseline of
-#                                P-redesign.2 sign-off 2026-06-01)
-#   - adsmt-contrib   = a838525 (testing HEAD, "archlinux: 3 source-only
-#                                PKGBUILDs + LICENSE files", 2026-06-01)
+# Pre-population baseline (refreshed 2026-06-03 — adsmt v1.0.0-rc.29):
+#   - adsmt           = 03f33a9 (tag v1.0.0-rc.29, "docs/memory: refine
+#                                the stable release-channel model")
+#                       — Sound (rc.28+, all paths) + Complete (rc.29+,
+#                       OR-of-AND via Tseitin) 모두 확보
+#   - adsmt-contrib   = 33349dc (testing HEAD, "rc.28: migrate backends
+#                                to the post-rc.10 Term(Arc<TermInner>)
+#                                API"; lockstep with adsmt rc.28+)
 #   - OxiZ (transitive) — adsmt 측 external/oxiz/ submodule pin 의
 #                          0.2.3-feat/enable-writer branch 의 HEAD
 #                          (submodule commit 1297944, 2026-06-03 갱신)
+#
+# Soundness milestone:
+#   - rc.28 (sound): opaque-assert-masks-`false` P0 fix + AOT-path extension
+#   - rc.29 (complete OR-of-AND): Tseitin transformation
+#   - 두 RC 모두 도달 ✅ — cross-check (z3 vs adsmt) sound + complete 확정
+#   - 본 baseline 채택 후 Y4 측 cross-check 신뢰 가능 (R7.6 정합)
+#
+# Branch pin policy (R7.6):
+#   - testing branch (rolling) — Y4 측 dependency policy
+#   - 향후 adsmt stable v1.0.0 release 시 stable-v1 channel 로 전환 예정
+#     (사용자 결정, 본 plan 외)
 #
 # Schema:
 #

@@ -80,26 +80,20 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
     `~/verus-fork/` (사용자가 수동 clone — 대기).  Cross-ref: av-proof-
     body-tracker §1 R3.11/R3.12 + smt-cross-validation-tracker §9 +
     unified-toolkit-pin.toml [verus]
-12. ✅ **P-redesign.4** (2026-06-01) — Rocq theory 3 신설 plan +
-    adsmt-emit-rocq 통합 (R4.1~R4.7 sign-off)
-    - 신설: `docs/verus_to_rocq.md` (verus_to_isabelle 의 Rocq sibling)
-    - 갱신: `proofs/coq/README.md` (3 theory 계획 — Y4.Sel4.Wrapper →
-      Y4.IPC.Refinement → Y4.Lease.Spec bottom-up R4.1, Ltac2-only R4.5,
-      nested directory naming R4.6, adsmt-emit-rocq cargo git dep R4.2)
-    - 신설 scaffold: `~/y4-verus2rocq/` (sibling repo R4.2=b, Cargo +
-      src/{lib,main,parser,mapper,emitter/{mod,adsmt_wrap,pretty},modes}
-      + README + NOTICE + LICENSE).  실제 emit 본문은 cluster sub-PR 시점
-13. ✅ **P-redesign.5** (2026-06-01) — y4-verus2isabelle 의 adsmt-emit-
-    isabelle wrapper 재정의 (R5.1~R5.7 sign-off)
-    - 갱신: `docs/verus_to_isabelle.md` §3.2 rewrite (R5.1=b — verus-pin/
-      isabelle-pin 삭제 → unified-toolkit-pin.toml 정합, adsmt-emit-
-      isabelle wrapper `src/emitter/adsmt_wrap.rs`, Lean4 backend 제외);
-      §1.3 + §1.5 의 Lean4 제외 명시 (R5.3=d)
-    - 신설 scaffold: `~/y4-verus2isabelle/` (sibling repo R5.6=a, Cargo
-      + src 패턴 y4-verus2rocq 1:1 mirror — v2i CLI 의 --no-smt/--all-
-      sorry flag)
-    - Theory file naming: `Y4_<Domain>_<Module>.thy` flat underscore
-      유지 (R5.4=a) — Rocq 측 nested directory 와 의도적 분리
+12. ⚠️ **P-redesign.4** (2026-06-01) — **superseded by R7 sign-off
+    (2026-06-03, item 16)**.  sibling repo (`~/y4-verus2rocq/`) wrapper
+    가정이 wrong — Verus fork (R7.3) 가 `-V emit-rocq` 자동 emit + adsmt-
+    emit-rocq CLI 가 cert→.v 직접 변환.  R4.1 의 manual 3 theory plan +
+    R4.5 Ltac2-only + R4.6 nested naming 은 유지 (Verus 표현 못하는 high-
+    level), `~/y4-verus2rocq/` sibling 도구 + `docs/verus_to_rocq.md` 는
+    폐기
+13. ⚠️ **P-redesign.5** (2026-06-01) — **superseded by R7 sign-off
+    (2026-06-03, item 16)**.  sibling repo (`~/y4-verus2isabelle/`)
+    wrapper 가정이 wrong — Verus fork (R7.3) 가 `-V emit-isabelle` 자동
+    emit + adsmt-emit-isabelle CLI 가 cert→.thy 직접 변환.  R5.3 Lean4
+    제외 + R5.4 theory file naming `Y4_<Domain>_<Module>.thy` 는 유지
+    (R7.7 정합), `~/y4-verus2isabelle/` sibling 도구 + verus_to_isabelle.md
+    §3 의 sibling 측 본문은 superseded (§3.6 unified-toolkit-pin 만 유지)
 15. ✅ **Verus submodule integration** (2026-06-03) — system verus 호출
     완전 폐기, `<Y4>/verus-fork/` git submodule (newsniper-org/verus
     fork, branch `backend-pluggable`) 의 binary 호출로 전환
@@ -127,6 +121,39 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
     ↑.  영향 file: docs/verus_to_isabelle.md §3.6, av-proof-body-tracker
     §1 R3.11+R3.12, smt-cross-validation-tracker §6+§9, pr-verus-backend-
     tracker §1+§4+§5
+16. ✅ **R7 sign-off — Y4 Verus ↔ seL4 Isabelle/HOL 통합 plan** (2026-
+    06-03, R7.1~R7.12)
+    - `verus-fork/examples/consumer/justfile` 의 의도 발견: Verus fork
+      (PR-Verus-Backend, R3.11+R3.12+R7.3 scope) 가 `-V adsmt` + `-V
+      emit-isabelle` / `-V emit-rocq` + AOT prelude bank + JIT trace
+      load 모두 직접 wire → Y4 측 wrapper 도구 의미 0
+    - **P-redesign.4 + P-redesign.5 superseded** (item 12 + 13).
+      sibling repo `~/y4-verus2rocq/` + `~/y4-verus2isabelle/` 폐기.
+      `docs/verus_to_rocq.md` 삭제, `docs/verus_to_isabelle.md` §3
+      supersede note (§3.6 unified-toolkit-pin 만 유지)
+    - **PR-Verus-Backend scope 확장 (R7.3)**: ~500 → ~850 LoC, 12 phase
+      (P-vb.10 emit + P-vb.11 AOT + P-vb.12 JIT 신규)
+    - **`proofs/isabelle/` 신설 (R7.7)**: 2-layer imports chain (Layer 1
+      cluster sub-grouping `Y4_AmdvSafety.thy` + `Y4_PowerSafety.thy` +
+      Layer 2 per-AV flat list + top-level `Y4.thy` 가 양 layer 모두
+      imports).  README + Y4.thy + Layer 1 cluster .thy placeholder 신설
+    - **`proofs/coq/theories/Generated/` 신설 (R7.8)** — `_CoqProject`
+      에 glob + R4.1 manual 3 theory 와 별도 위치 (nested directory)
+    - **L4.verified inbound = 사용자 manual (R7.10)** — Y4 측 통합 X,
+      seL4 팀이 자체 l4v 환경에서 `proofs/isabelle/` import.  trust 가능
+      조건 = PR-Verus-Backend land + adsmt rc.28+/rc.29+ 도달 (모두 충족)
+    - **adsmt baseline 갱신 (R7.6)**: rc.6-1 → **rc.29** (`03f33a9`, sound
+      + complete 확보) + adsmt-contrib **rc.28** (`33349dc`).  branch =
+      testing (rolling), stable v1.0.0 release 시 stable-v1 channel 전환
+      예정
+    - **`proofs/verus/justfile` consumer pattern adapt (R7.2)** — 8
+      recipes (verify / verify-adsmt / verify-cvc5 / verify-oxiz /
+      verify-adsmt-fast / aot-bake / cross-check / emit-isabelle /
+      emit-rocq)
+    - **신설 tracker**: `.claude-notes/trackers/y4-sel4-integration-
+      tracker.md` (R7 ledger + per-cluster emission record + l4v
+      milestone watch)
+    - Plan ledger: `~/.claude/plans/jazzy-gliding-puppy.md`
 
 ## 진행 가능한 다음 후속 주제
 

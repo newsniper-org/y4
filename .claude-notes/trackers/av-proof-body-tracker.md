@@ -127,19 +127,27 @@ land 되어있어야 lower-side body 의 AEAD integrity / SMT pair 정합 본문
 
 ## 5. Per-cluster sub-PR 내부 작업 항목 (R3.7 정합)
 
-각 cluster sub-PR 안에서:
+각 cluster sub-PR 안에서 (**R7 sign-off 2026-06-03 갱신 — Y4 측 wrapper
+도구 작성 X, Verus fork + adsmt-emit-* CLI 가 처리**):
 
 1. **Verus proof body 작성** (`proofs/verus/src/<domain>/<upper|lower>/<file>.rs`)
-2. **Rocq theory 통합** (P-redesign.4 R4.2=b — `~/y4-verus2rocq/` sibling
-   도구가 adsmt-emit-rocq wrapper 로 `.v` emission; nested directory
-   naming `theories/<Domain>/<Module>.v`, R4.6; Ltac2-only enforcement,
-   R4.5; cluster 별 rolling, R4.7 — `docs/verus_to_rocq.md` 참조)
-3. **Isabelle theory 통합** (P-redesign.5 R5.2 — `~/y4-verus2isabelle/`
-   sibling 도구가 adsmt-emit-isabelle wrapper 로 `.thy` emission; flat
-   underscore naming `Y4_<Domain>_<Module>.thy`, R5.4; Lean4 backend 제외
-   R5.3 — `docs/verus_to_isabelle.md` §3.2 참조)
-4. **cross-validation row** (cluster 완료 시 smt-cross-validation-tracker §2 에 row 추가, R3.6 / R3.12)
-5. **본 tracker §6 의 진행 상태 row 갱신**
+2. **Verify + cert 생성** — `cd proofs/verus && just verify-adsmt` (Verus
+   fork 의 `-V adsmt` flag 가 cert JSON 자동 생성, PR-Verus-Backend
+   R3.11+R3.12 land 후 + adsmt rc.28+ 도달 후, R7.6 정합)
+3. **Rocq theory 산출** — `just emit-rocq` (adsmt-emit-rocq CLI 가 cert
+   → `proofs/coq/theories/Generated/<file>.v` 자동 emit, R7.8) +
+   `_CoqProject` glob 자동 detect (R7.8 정합)
+4. **Isabelle theory 산출** — `just emit-isabelle` (adsmt-emit-isabelle
+   CLI 가 cert → `proofs/isabelle/Y4_<Domain>_<Module>.thy` 자동 emit,
+   R7.7) + Layer 1 cluster sub-grouping (`Y4_AmdvSafety.thy` /
+   `Y4_PowerSafety.thy`) imports 갱신 + top-level `Y4.thy` 갱신
+5. **cross-validation row** — `just cross-check` (z3 vs adsmt diff,
+   smt-cross-validation-tracker §2 에 row 추가, R3.6 / R3.12 / R7.9)
+6. **본 tracker §6 의 진행 상태 row 갱신**
+
+**핵심 변화 (R7 sign-off)**: Y4 측 sibling repo (`~/y4-verus2rocq/` +
+`~/y4-verus2isabelle/`) 폐기 — Verus fork (R3.11+R3.12+R7.3) + adsmt-
+emit-* CLI 가 전체 emission pipeline 처리.  Y4 측 wrapper Rust 코드 0.
 
 ## 6. Per-cluster 진행 상태
 

@@ -130,6 +130,37 @@ multi-invocation 로직 (script 가 internally `verus` / `verus -V oxiz` /
 - Y4 측 invariant 강화 candidate 의 input — av-proof-body-tracker §6 의
   per-cluster LoC actual 측정 시 hypothesis 활용
 
+### 1.5 Emit-isabelle / Emit-rocq wire (R7.3 신규, 2026-06-03)
+
+R7 sign-off 로 PR-Verus-Backend scope 확장 — verify 성공 시 adsmt cert
+JSON 을 그대로 `adsmt-emit-isabelle` / `adsmt-emit-rocq` CLI 측 invoke
+하여 `.thy` / `.v` 자동 생성:
+
+- `EXTENDED_EMIT_ISABELLE = "emit-isabelle"` — binary flag, `-V emit-
+  isabelle` 시 verify-success hook 에서 `adsmt-emit-isabelle <cert>.json`
+  invoke 후 `.thy` emit
+- `EXTENDED_EMIT_ROCQ = "emit-rocq"` — 동일 패턴 `.v` 생성
+- Output path 결정: `--emit-isabelle-out=<path>` / `--emit-rocq-out=<path>`
+  flag (path-taking flag, `-V` binary 와 별도).  default = `target-verus/
+  release/emit/<crate>.{thy,v}`
+- adsmt-contrib testing branch pin (R7.6) — Y4 측 cargo install 또는
+  PKGBUILD system install 가정
+
+### 1.6 AOT prelude bank + JIT trace load (R7.3 신규)
+
+- `EXTENDED_AOT_PRELUDE = "aot-prelude"` — `-V aot-prelude` 시 env var
+  `VERUS_ADSMT_AOT_LUART` 의 path 를 자동 read + adsmt 측 sub-process
+  invoke 시 stage in.  사전 `scripts/aot-bake-prelude.sh` 호출이 bank
+  의 BLAKE3 hash 기준 cache 처리
+- `EXTENDED_JIT_TRACE_LOAD = "jit-trace-load"` — binary flag + `--jit-
+  trace-load=<path>` path flag.  `<path>` 의 trace 파일을 adsmt 측 sub-
+  process 에 전달, JIT compilation 단축
+- Cache directory = `$VERUS_ADSMT_AOT_CACHE_DIR` (default = `<verus-fork>/
+  target-verus/aot-cache/`, R7.4)
+- **scripts/aot-bake-prelude.sh** 신설 — Verus fork 측 자체 ship (PR-
+  Verus-Backend 의 산출물).  Y4 측 `proofs/verus/justfile` 의 `aot-bake`
+  recipe 가 본 script 호출
+
 ### 1.4 Verdict mapping
 
 adsmt 의 4번째 verdict `Abductive` 의 Verus 측 표현:
@@ -266,10 +297,17 @@ body-tracker.md`).
 | P-vb.6 | Verdict mapping (Abductive variant) + jsonl reporter schema 갱신 | ~50 LoC | P-vb.4/5 |
 | P-vb.7 | `-V report-abductive-on-unknown` flag 의 conditional emit | ~50 LoC | P-vb.6 |
 | P-vb.8 | Test (Z3 default, `-V cvc5` 기존 회귀, `-V oxiz`, `-V adsmt`, `-V adsmt -V report-abductive-on-unknown` round-trip) | ~150 LoC | P-vb.7 |
-| P-vb.9 | Upstream PR (verus-lang/verus, optional, post-Y4-cycle) | 0 | P-vb.8 |
+| **P-vb.10** | **`EXTENDED_EMIT_ISABELLE` + `EXTENDED_EMIT_ROCQ` (R7.3)** — verify-success hook 에서 adsmt-emit-{isabelle,rocq} CLI invoke + `--emit-{isabelle,rocq}-out=<path>` path flag | ~150 LoC | P-vb.7 |
+| **P-vb.11** | **AOT prelude bank (R7.3 / R7.4)** — `EXTENDED_AOT_PRELUDE` + `VERUS_ADSMT_AOT_LUART` env stage-in + `scripts/aot-bake-prelude.sh` 신설 + BLAKE3 cache | ~100 LoC + 50 LoC (script) | P-vb.10 |
+| **P-vb.12** | **JIT trace load (R7.3 / R7.5)** — `EXTENDED_JIT_TRACE_LOAD` + `--jit-trace-load=<path>` path flag + adsmt sub-process 의 trace forwarding | ~50 LoC | P-vb.11 |
+| P-vb.9 | Upstream PR (verus-lang/verus, optional, post-Y4-cycle) | 0 | P-vb.12 |
 
-합 **~700 LoC** (test 포함).  본체만 **~500 LoC** (2026-06-03 갱신,
-기존 `-V <key>` mechanism 활용으로 새 flag 정의 부담 ~300 LoC 절약).
+합 **~700 LoC → ~1050 LoC** (R7.3 의 emit + AOT + JIT scope 확장,
+2026-06-03).  본체만 **~500 → ~850 LoC** (P-vb.10/11/12 의 +350 LoC).
+upstream contribute-back PR 시 `-V emit-{isabelle,rocq}` / `-V aot-
+prelude` / `-V jit-trace-load` 가 verus-lang/verus 측에 흡수 가능성
+↑ (consumer/justfile 의 패턴이 이미 upstream README 의 motivating
+example).
 
 ## 5. Y4 측 산출물 land 후 cross-validate trigger
 

@@ -118,7 +118,14 @@ Y4/
 ├── kernel/              y4-roottask (bare-metal x86_64-unknown-none)
 ├── scudo-sys/           y4-scudo-sys (LLVM scudo C++ FFI)
 ├── boot/                Limine config + seL4 cmake rules + ISO assembly
-├── proofs/{verus,coq}/  Verus + Rocq specifications + CI gate
+├── proofs/{verus,coq,isabelle}/
+│                        Verus + Rocq + Isabelle/HOL specifications.
+│                        - verus/ + coq/ = Y4 측 작성 spec (1st-tier
+│                          + reserved 2nd-tier)
+│                        - isabelle/ = adsmt-emit-isabelle 의 자동 emit
+│                          산출물 위치 (R7.7, 2026-06-03) — seL4 팀 측
+│                          L4.verified inbound contract entry (`verus_to_
+│                          isabelle.md` §1.7), `imports Main` 만 의존
 ├── tools/{git-hooks,scudo-fetch.sh}
 ├── .claude-memories/    read-only mirror of Claude Code's project memory
 ├── .claude-notes/       design memos + decision archives (git-tracked)
@@ -130,9 +137,15 @@ Y4/
 │   └── scudo/           pinned standalone (PIN.toml + materialised on demand)
 └── verus-fork/         git submodule — newsniper-org/verus, branch
                          `backend-pluggable` (PR-Verus-Backend land 위치,
-                         R3.11+R3.12).  Y4 가 system verus 호출 X — submodule
-                         path 의 `source/target-verus/release/verus` binary
-                         호출 (proofs/verus/justfile)
+                         R3.11+R3.12+R7.3 scope 확장).  Y4 가 system verus
+                         호출 X — submodule path 의 `source/target-verus/
+                         release/verus` binary 호출 (proofs/verus/justfile).
+                         **R7.3 scope (2026-06-03)**: `-V adsmt` (verify)
+                         + `-V emit-isabelle` / `-V emit-rocq` (자동 emit)
+                         + AOT prelude bank + JIT trace load 모두 직접
+                         wire — Y4 측 wrapper Rust 코드 0 (sibling repo
+                         `y4-verus2{isabelle,rocq}` 폐기, P-redesign.4/.5
+                         superseded by R7.1)
 ```
 
 `hiu/` is the one Phase B subsystem still missing — blocked on

@@ -1,31 +1,67 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
 #
-# Verus verification subtree.
+# Verus verification subtree (R7 sign-off 2026-06-03 — consumer pattern).
 #
-# `just verify` (the default) runs the Verus CLI on this crate's lib
-# root. If `verus` is not installed, it prints actionable install
-# instructions and exits non-zero — never silently passes.
+# `verus-fork/examples/consumer/justfile` 패턴 adapt — Verus fork (PR-
+# Verus-Backend, R3.11+R3.12+R7.3 의 scope) 가 `-V adsmt` flag + `-V
+# emit-isabelle` / `-V emit-rocq` + AOT prelude bank + JIT trace load
+# 모두 직접 wire.  Y4 측 wrapper 도구 0 (P-redesign.4/.5 산출물 superseded).
+#
+# 8 recipes:
+#   verify              — default Z3 backend
+#   verify-adsmt        — `-V adsmt` (sound from rc.28, complete from rc.29)
+#   verify-cvc5         — `-V cvc5` (upstream)
+#   verify-oxiz         — `-V oxiz` (pure-Rust Z3 reimpl)
+#   verify-adsmt-fast   — AOT prelude bank + `-V adsmt`
+#   aot-bake            — bank 재 build + activation line print
+#   cross-check         — z3 vs adsmt diff (differential soundness audit)
+#   emit-isabelle       — adsmt cert → `.thy` (proofs/isabelle/)
+#   emit-rocq           — adsmt cert → `.v` (proofs/coq/theories/Generated/)
+#
+# Cross-ref:
+# - PR-Verus-Backend tracker (.claude-notes/trackers/pr-verus-backend-tracker.md)
+# - y4-sel4-integration tracker (.claude-notes/trackers/y4-sel4-integration-tracker.md)
+# - smt-cross-validation tracker §6 measurement command
 
 set shell := ["bash", "-cu"]
 
-# Y4 가 verus-fork (backend-pluggable branch) 를 submodule 로 import —
-# system verus 호출 X.  submodule path: <Y4>/verus-fork/source/target-
-# verus/release/verus.  PR-Verus-Backend tracker §3 (.claude-notes/
-# trackers/pr-verus-backend-tracker.md) 참조.
-verus_bin := justfile_directory() + "/../../verus-fork/source/target-verus/release/verus"
+# --- Paths --------------------------------------------------------------
 
-default: verify
+# Verus fork submodule (backend-pluggable branch, R7.3 scope).
+_verus_fork := justfile_directory() + "/../../verus-fork"
+_verus      := _verus_fork + "/source/target-verus/release/verus"
+_aot_bake   := _verus_fork + "/scripts/aot-bake-prelude.sh"
 
-# Verify all specs in this crate. Errors helpfully if submodule verus
-# binary가 build되지 않은 상태면.
-verify:
-    @if [ ! -x "{{verus_bin}}" ]; then \
+# adsmt lu-smt binary (사용자 환경, ~/AD1/ build 결과).
+_lu_smt := env_var_or_default("VERUS_ADSMT_PATH", env_var("HOME") + "/AD1/target/release/lu-smt")
+
+# OxiZ binary (사용자 환경 또는 PATH).
+_oxiz := env_var_or_default("VERUS_OXIZ_PATH", "oxiz")
+
+# Verus source crate root.
+_src := env_var_or_default("VERUS_SRC", "src/lib.rs")
+
+# Extra verus flags.
+_flags := env_var_or_default("VERUS_FLAGS", "--rlimit 30")
+
+# adsmt cert output directory (verify 시 자동 생성).
+_cert_dir := env_var_or_default("ADSMT_CERT_DIR", "target/adsmt-cert")
+
+# Generated `.thy` / `.v` 산출물 위치 (R7.7 + R7.8).
+_thy_dir := justfile_directory() + "/../isabelle"
+_v_dir   := justfile_directory() + "/../coq/theories/Generated"
+
+# --- Pre-flight ---------------------------------------------------------
+
+# Verify the verus-fork submodule binary exists.
+_check-verus:
+    @if [ ! -x "{{_verus}}" ]; then \
         echo ""; \
-        echo "  ✗ verus-fork submodule binary 없음: {{verus_bin}}"; \
+        echo "  ✗ verus-fork submodule binary 없음: {{_verus}}"; \
         echo ""; \
-        echo "  Y4 가 verus-fork (backend-pluggable branch) 를 submodule"; \
-        echo "  로 import (PR-Verus-Backend, R3.11+R3.12).  Build:"; \
+        echo "  Build (한번만):"; \
+        echo "    git submodule update --init verus-fork"; \
         echo "    cd verus-fork/source"; \
         echo "    ./tools/get-z3.sh"; \
         echo "    rustup toolchain install 1.95.0"; \
@@ -33,11 +69,94 @@ verify:
         echo "    source ../tools/activate.fish     # or .sh / .bat / .ps1"; \
         echo "    vargo build --release"; \
         echo ""; \
-        echo "  Or first init: git submodule update --init verus-fork"; \
-        echo ""; \
         exit 1; \
     fi
-    {{verus_bin}} --crate-type=lib src/lib.rs
+
+default: verify
+
+# --- 1. verify with a chosen backend -----------------------------------
+
+# Verify with the default z3 backend.
+verify: _check-verus
+    {{_verus}} --crate-type=lib {{_flags}} {{_src}}
+
+# Verify with the adsmt backend (lu-smt).
+# - Sound (rc.28+): all paths (baseline / --aot-load / --jit-trace-load)
+# - Complete (rc.29+): OR-of-AND structure via Tseitin
+# - Pin: unified-toolkit-pin.lock [adsmt] (testing branch rolling, R7.6)
+verify-adsmt: _check-verus
+    VERUS_ADSMT_PATH={{_lu_smt}} \
+        {{_verus}} --crate-type=lib -V adsmt {{_flags}} {{_src}}
+
+verify-cvc5: _check-verus
+    {{_verus}} --crate-type=lib -V cvc5 {{_flags}} {{_src}}
+
+verify-oxiz: _check-verus
+    VERUS_OXIZ_PATH={{_oxiz}} \
+        {{_verus}} --crate-type=lib -V oxiz {{_flags}} {{_src}}
+
+# --- 2. adsmt AOT prelude bank (§3.5.H) --------------------------------
+
+# Bake the AOT prelude bank, then verify with it activated.
+# Cache: $VERUS_ADSMT_AOT_CACHE_DIR (override for shared bank across projects).
+verify-adsmt-fast: _check-verus
+    #!/usr/bin/env bash
+    set -euo pipefail
+    eval "$(VERUS_ADSMT_PATH={{_lu_smt}} {{_aot_bake}} --quiet)"
+    echo "bank: $VERUS_ADSMT_AOT_LUART"
+    VERUS_ADSMT_PATH={{_lu_smt}} VERUS_ADSMT_AOT_LUART="$VERUS_ADSMT_AOT_LUART" \
+        {{_verus}} --crate-type=lib -V adsmt {{_flags}} {{_src}}
+
+# (Re)bake the bank + print activation line (eval-able).
+aot-bake:
+    @VERUS_ADSMT_PATH={{_lu_smt}} {{_aot_bake}}
+
+# --- 3. differential audit (z3 vs adsmt) -------------------------------
+
+# Verify with z3 AND adsmt and diff the verdict.  smt-cross-validation
+# tracker §2 의 row 추가는 본 recipe 의 출력을 read 하는 wrapper script
+# (cluster sub-PR 단위, av-proof-body-tracker §5).
+cross-check: _check-verus
+    #!/usr/bin/env bash
+    set -uo pipefail
+    z3_out=$({{_verus}} --crate-type=lib {{_flags}} {{_src}} 2>&1; echo "exit=$?")
+    ad_out=$(VERUS_ADSMT_PATH={{_lu_smt}} {{_verus}} --crate-type=lib -V adsmt {{_flags}} {{_src}} 2>&1; echo "exit=$?")
+    z3_res=$(echo "$z3_out" | grep -oE '[0-9]+ verified, [0-9]+ errors' || echo "?")
+    ad_res=$(echo "$ad_out" | grep -oE '[0-9]+ verified, [0-9]+ errors' || echo "?")
+    echo "z3:    $z3_res"
+    echo "adsmt: $ad_res"
+    if [ "$z3_res" = "$ad_res" ] && [ "$z3_res" != "?" ]; then
+        echo "✓ backends agree"
+    else
+        echo "✗ DIVERGENCE — soundness bug.  file minrepro at adsmt issue tracker."
+        exit 1
+    fi
+
+# --- 4. cert emit to proof assistant (~/adsmt-contrib) -----------------
+
+# `adsmt-emit-isabelle` / `adsmt-emit-rocq` CLI install (한번만, system):
+#   cargo install --git https://github.com/newsniper-org/adsmt-contrib \
+#                 --branch testing adsmt-emit-isabelle adsmt-emit-rocq
+# Or Arch:
+#   pacman -S adsmt-contrib-testing
+
+# Emit the adsmt cert as Isabelle/HOL .thy (proofs/isabelle/).
+emit-isabelle:
+    @echo "Run 'just verify-adsmt' with VERUS_ADSMT_CERT_DIR={{_cert_dir}}, then:"
+    @echo "  mkdir -p {{_thy_dir}}"
+    @echo "  for cert in {{_cert_dir}}/*.cert.json; do"
+    @echo "    name=\$(basename \$cert .cert.json)"
+    @echo "    adsmt-emit-isabelle \$cert > {{_thy_dir}}/Y4_\${name}.thy"
+    @echo "  done"
+
+# Emit the adsmt cert as Rocq .v (proofs/coq/theories/Generated/).
+emit-rocq:
+    @echo "Run 'just verify-adsmt' with VERUS_ADSMT_CERT_DIR={{_cert_dir}}, then:"
+    @echo "  mkdir -p {{_v_dir}}"
+    @echo "  for cert in {{_cert_dir}}/*.cert.json; do"
+    @echo "    name=\$(basename \$cert .cert.json)"
+    @echo "    adsmt-emit-rocq \$cert > {{_v_dir}}/\${name}.v"
+    @echo "  done"
 
 # Note: `cargo build` of this crate does NOT work and is not expected
 # to — `vstd` is not on crates.io.  See Cargo.toml header.

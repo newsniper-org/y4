@@ -64,28 +64,35 @@ R4.1 의 작성 순서 (bottom-up) — 의존 graph 정합:
 `Y4.Placeholder` (`theories/Placeholder.v`) 는 위 첫 theory (Sel4.Wrapper)
 land 시 삭제 — R4.4 정합.
 
-## adsmt-emit-rocq 통합 (R4.2, 2026-06-01)
+## adsmt-emit-rocq 통합 (R4.2 → R7.2 갱신, 2026-06-03)
 
-3 theory 의 cert 산출물 emission 은 별도 sibling repo
-**`~/y4-verus2rocq/`** 가 처리 (verus_to_isabelle 의 §3.1 (A) 패턴 정합).
-설계 spec: `docs/verus_to_rocq.md`.
+> **R7 sign-off supersede**: 이전 sibling repo (`~/y4-verus2rocq/`) 측
+> wrapper 패턴은 superseded.  Verus fork (PR-Verus-Backend, R7.3) 의
+> `-V emit-rocq` flag 가 자동 emit + `adsmt-emit-rocq` CLI binary 가
+> cert → `.v` 직접 변환.  Y4 측 sibling 도구 의미 0.
 
-도구 측 의존:
+Generated `.v` 의 위치 = `<Y4>/proofs/coq/theories/Generated/` (R7.8) —
+Verus 갱신 시 `just emit-rocq` 가 재생성, `_CoqProject` 가 `theories/
+Generated/` glob 포함하므로 `just verify` 측 build 검증.
 
-```toml
-# ~/y4-verus2rocq/Cargo.toml
-[dependencies]
-adsmt-emit-rocq = { git = "https://github.com/newsniper-org/adsmt-contrib", branch = "testing" }
-adsmt-cert      = { git = "https://github.com/newsniper-org/adsmt",         branch = "testing" }
+`adsmt-emit-rocq` CLI install (한번만, sysem-wide):
+
+```sh
+# adsmt-contrib testing branch pin (R7.6 정합)
+cargo install --git https://github.com/newsniper-org/adsmt-contrib \
+              --branch testing adsmt-emit-rocq
+
+# 또는 Arch:
+pacman -S adsmt-contrib-testing
 ```
 
 `av-proof-body-tracker.md` §5 의 각 cluster sub-PR 안에 `.v` emission
-활성 (cluster 별 rolling, R4.7).
+활성 (cluster 별 rolling, R4.7 정합 — 새 model 에서도 유지).
 
 ## 현 상태
 
 - 환경: Rocq 9.1.1 설치 확인 (2026-05-04, `/usr/bin/rocq`).
 - theory: `Y4.Placeholder` (`theories/Placeholder.v`) — `1 + 1 = 2` 의
   trivial 정리.  R4.1 의 첫 theory (`Y4.Sel4.Wrapper`) land 시 삭제.
-- 도구: `~/y4-verus2rocq/` (P-redesign.4 sign-off 후 신설, R4.2=b sibling
-  repo).
+- 도구: ~~`~/y4-verus2rocq/`~~ **R7 sign-off 로 폐기 (2026-06-03)** —
+  Verus fork 의 `-V emit-rocq` + `adsmt-emit-rocq` CLI binary 가 처리.

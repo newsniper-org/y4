@@ -68,26 +68,30 @@
 ## 6. Reproducibility 보장 (R6.8)
 
 ```
-sample measurement command (Phase C 진입 후):
-just verus-cross-validate
-  → 1) freshcheck --method=hash unified-toolkit-pin.lock proofs/verus/src/
-       (skip if unchanged)
-  → 2) for env in [native, qemu-smoke, KernelDebugBuild=ON]:
-         # default 2-way (z3 = no flag, oxiz = -V oxiz)
-         lu-par --transaction --jobs=N
-           -- "verus"                          # Z3 default
-              (capture metric → jsonl)
-         lu-par --transaction --jobs=N
-           -- "verus -V oxiz"                  # OxiZ backend
-              (capture metric → jsonl)
-         # R3.12 opt-in 3rd backend (adsmt, 6 invariant 한정)
-         for inv in opt_in_invariants:
-             lu-par --transaction --jobs=N
-               -- "verus -V adsmt -V report-abductive-on-unknown --invariant=$inv"
-                  (capture metric + abductive_candidates → jsonl)
-  → 3) stamp record --method=hash result.jsonl
-  → 4) summary row append to this tracker
-  → 5) raw data → ~/y4-paper-artifact/microbench/
+sample measurement command (R7 sign-off 2026-06-03 갱신 — consumer pattern):
+
+# Y4 측 proofs/verus/justfile (R7.2) 의 cross-check + AOT recipe 활용.
+# Verus fork (R3.11+R3.12+R7.3) + adsmt rc.28+ + rc.29+ 도달 후 작동.
+
+cd proofs/verus
+
+# Single-backend verify (per-env / per-backend)
+just verify                  # Z3 default
+just verify-adsmt            # -V adsmt (sound rc.28+, complete rc.29+)
+just verify-oxiz             # -V oxiz
+just verify-adsmt-fast       # -V adsmt + AOT prelude bank (R7.4)
+
+# Differential audit (z3 vs adsmt — R7.9, cluster 별 batch R3.6)
+just cross-check             # 출력 = "z3: <z3-res>" / "adsmt: <ad-res>"
+                             # diff 0 시 ✓ backends agree, mismatch 시 ✗ DIVERGENCE
+
+# R3.12 opt-in (6 invariant — AV5/12/15/23/24/30) — abductive verdict
+just verify-adsmt -- -V report-abductive-on-unknown
+                             # adsmt 측 Unknown 시 ranked hypothesis JSON emit
+
+# Per-env (R6.6 — native / qemu-smoke / KernelDebugBuild=ON) 는 wrapper
+# script 가 위 recipe 를 env 별로 invoke.  본 tracker §2 의 row 추가는
+# wrapper script 의 후속 step.
 ```
 
 ## 7. 학술 paper §6.1.8 evidence link

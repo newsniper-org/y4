@@ -2,7 +2,19 @@
 # SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
 #
 # Y4 Coq theories.  Used by `coq_makefile -f _CoqProject -o Makefile`.
+#
+# Layout (R7.8 갱신, 2026-06-03):
+# - theories/Placeholder.v       — `1 + 1 = 2` trivial (R4.1 첫 theory land 시 삭제)
+# - theories/<Domain>/<Module>.v — R4.1 의 manual 3 theory (Sel4/Wrapper.v,
+#                                   IPC/Refinement.v, Lease/Spec.v) —
+#                                   Verus 표현 못하는 high-level (R4.6 nested naming)
+# - theories/Generated/*.v       — adsmt-emit-rocq 의 자동 emit 산출물 (R7.8) —
+#                                   `just emit-rocq` 가 cert → .v 변환 후 본 디렉터리에
 
 -Q theories Y4
 
 theories/Placeholder.v
+
+# Generated files (rolling, av-proof-body-tracker §6 cluster 진행 따라 갱신).
+# Build script (R7.8) 가 `theories/Generated/` 의 *.v 를 detect 후 본 file 에
+# 자동 추가 — 본 entry list 가 build 직전 generated content 정합.
