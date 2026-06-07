@@ -33,8 +33,10 @@ _verus_fork := justfile_directory() + "/../../verus-fork"
 _verus      := _verus_fork + "/source/target-verus/release/verus"
 _aot_bake   := _verus_fork + "/scripts/aot-bake-prelude.sh"
 
-# adsmt lu-smt binary (사용자 환경, ~/AD1/ build 결과).
-_lu_smt := env_var_or_default("VERUS_ADSMT_PATH", env_var("HOME") + "/AD1/target/release/lu-smt")
+# adsmt lu-smt binary — default = system PKGBUILD install (adsmt-cli-
+# testing, in-process OxiZ).  사용자 cargo build 측은 env override:
+#   VERUS_ADSMT_PATH=$HOME/AD1/target/release/lu-smt
+_lu_smt := env_var_or_default("VERUS_ADSMT_PATH", "/usr/bin/lu-smt")
 
 # OxiZ binary (사용자 환경 또는 PATH).
 _oxiz := env_var_or_default("VERUS_OXIZ_PATH", "oxiz")

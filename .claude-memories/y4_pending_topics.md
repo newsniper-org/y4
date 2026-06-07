@@ -158,6 +158,34 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
       tracker.md` (R7 ledger + per-cluster emission record + l4v
       milestone watch)
     - Plan ledger: `~/.claude/plans/jazzy-gliding-puppy.md`
+17. ✅ **R7.11 first emit milestone — verify-adsmt unblocked + AOT functional**
+    (2026-06-08, adsmt v1.0.0-rc.30)
+    - **rc.30 baseline 갱신**: adsmt `e2951a8` (declare-datatypes
+      parameterized + bit-vectors + let + indexed-identifier + canonical
+      reason-unknown + OxiZ delegation 모두 land).  adsmt-contrib =
+      `33349dc` (unchanged, lockstep)
+    - **OxiZ delegation = in-process (사용자 PKGBUILD)**: `/usr/bin/lu-
+      smt` (adsmt-cli-testing) 가 OxiZ build-in.  `ADSMT_OXIZ_PATH` env
+      var 불필요 (in-process build)
+    - **AV1 `intercept_floor_holds` verify ✅**: `just verify-adsmt` =
+      `54 verified, 0 errors` (Z3 backend 와 동일).  in-process OxiZ
+      delegation 측 unknown operator `ite` 자동 처리
+    - **AOT ✅ functional**: `just verify-adsmt-fast` = bank generated
+      (`<verus-fork>/target-verus/release/aot/prelude-<sha>-1.0.0-rc.30.
+      luart-cdcl`) + `54 verified, 0 errors`
+    - **JIT ⏳ v0 stub only**: lu-smt 측 `--jit-trace-emit` / `--jit-
+      trace-load` flag ✅ (§3.5.G), 단 replay machinery 미land (§3.5.F
+      follow-up) + Verus 본체 측 `-V jit-trace-load` flag 부재 (R7.5 의
+      verus 측 wire patch 후속 cycle)
+    - **emit-isabelle / emit-rocq cert mechanism = 별도 cycle**: `lu-
+      smt --help` 에 explicit `--emit-cert` flag 부재.  adsmt-contrib
+      (adsmt-emit-isabelle / adsmt-emit-rocq) binary 도 system install
+      안 됨.  R7.12 의 emit + cross-check step 보류
+    - **proofs/verus/justfile**: `_lu_smt` default = `/usr/bin/lu-smt`
+      (system PKGBUILD 우선)
+    - Tracker: y4-sel4-integration §1 R7.11 verify-adsmt ✅, §7 #1 close
+      + #1a 신규 (cert mechanism), pr-verus-backend §1.6 + §4 P-vb.12 ⚠️,
+      adsmt-integration §7 watch row 2개 추가
 
 ## 진행 가능한 다음 후속 주제
 

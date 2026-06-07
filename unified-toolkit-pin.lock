@@ -4,23 +4,33 @@
 # logicutils-driven verification: `freshcheck --method=hash` on this file
 # gates the proofs/ rebuild (proofs/README.md §"워크플로우" 정합).
 #
-# Pre-population baseline (refreshed 2026-06-03 — adsmt v1.0.0-rc.29):
-#   - adsmt           = 03f33a9 (tag v1.0.0-rc.29, "docs/memory: refine
-#                                the stable release-channel model")
-#                       — Sound (rc.28+, all paths) + Complete (rc.29+,
-#                       OR-of-AND via Tseitin) 모두 확보
+# Pre-population baseline (refreshed 2026-06-08 — adsmt v1.0.0-rc.30):
+#   - adsmt           = e2951a8 (tag v1.0.0-rc.30, "further fix PKGBUILDs")
+#                       — rc.30 핵심: lu-smt 의 declare-datatypes
+#                       parameterized constructors + bit-vectors + let +
+#                       indexed-identifier applications + canonical
+#                       reason-unknown + OxiZ delegation (ADSMT_OXIZ_PATH
+#                       env, opt-in, sound).  Y4 R7.11 milestone unblocked.
 #   - adsmt-contrib   = 33349dc (testing HEAD, "rc.28: migrate backends
 #                                to the post-rc.10 Term(Arc<TermInner>)
-#                                API"; lockstep with adsmt rc.28+)
-#   - OxiZ (transitive) — adsmt 측 external/oxiz/ submodule pin 의
-#                          0.2.3-feat/enable-writer branch 의 HEAD
-#                          (submodule commit 1297944, 2026-06-03 갱신)
+#                                API"; lockstep — rc.30 변경 없음)
+#   - OxiZ            — 사용자 PKGBUILD 측 in-process OxiZ 통합 (lu-smt
+#                       binary 안 build-in, 별도 binary X — adsmt
+#                       PKGBUILD 의 default profile).  /usr/bin/lu-smt
+#                       (adsmt-cli-testing 1.0.0.rc.r386.e2951a8e-1) 가
+#                       system entry
 #
 # Soundness milestone:
 #   - rc.28 (sound): opaque-assert-masks-`false` P0 fix + AOT-path extension
 #   - rc.29 (complete OR-of-AND): Tseitin transformation
-#   - 두 RC 모두 도달 ✅ — cross-check (z3 vs adsmt) sound + complete 확정
-#   - 본 baseline 채택 후 Y4 측 cross-check 신뢰 가능 (R7.6 정합)
+#   - rc.30 (Verus interop complete): declare-datatypes parameterized +
+#                       bit-vectors + let + indexed-identifier + canonical
+#                       reason-unknown + OxiZ delegation → Y4 측 verus
+#                       -V adsmt 가 `54 verified, 0 errors` (Z3 backend
+#                       와 동일).  R7.11 first emit milestone unblocked
+#   - 본 baseline 채택 후 Y4 측 R7.11/R7.12 milestone 의 verify-adsmt
+#     ✅, emit-isabelle/rocq + cross-check 는 cert mechanism 확정 후
+#     (별도 cycle)
 #
 # Branch pin policy (R7.6):
 #   - testing branch (rolling) — Y4 측 dependency policy

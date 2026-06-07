@@ -149,20 +149,28 @@ JSON 을 그대로 `adsmt-emit-isabelle` / `adsmt-emit-rocq` CLI 측 invoke
 - adsmt-contrib testing branch pin (R7.6) — Y4 측 cargo install 또는
   PKGBUILD system install 가정
 
-### 1.6 AOT prelude bank + JIT trace load (R7.3 신규)
+### 1.6 AOT prelude bank + JIT trace load (R7.3 신규, 2026-06-08 갱신)
 
-- `EXTENDED_AOT_PRELUDE = "aot-prelude"` — `-V aot-prelude` 시 env var
-  `VERUS_ADSMT_AOT_LUART` 의 path 를 자동 read + adsmt 측 sub-process
-  invoke 시 stage in.  사전 `scripts/aot-bake-prelude.sh` 호출이 bank
-  의 BLAKE3 hash 기준 cache 처리
-- `EXTENDED_JIT_TRACE_LOAD = "jit-trace-load"` — binary flag + `--jit-
-  trace-load=<path>` path flag.  `<path>` 의 trace 파일을 adsmt 측 sub-
-  process 에 전달, JIT compilation 단축
+**AOT ✅ functional (rc.30, 2026-06-08 테스트)**:
+- `scripts/aot-bake-prelude.sh` ✅ land (verus-fork commit `5533adfe4`)
+- Y4 측 `just verify-adsmt-fast` 작동 — bank 생성 (`<verus-fork>/target-
+  verus/release/aot/prelude-<sha>-1.0.0-rc.30.luart-cdcl`) + verify
+  result `54 verified, 0 errors`
 - Cache directory = `$VERUS_ADSMT_AOT_CACHE_DIR` (default = `<verus-fork>/
   target-verus/aot-cache/`, R7.4)
-- **scripts/aot-bake-prelude.sh** 신설 — Verus fork 측 자체 ship (PR-
-  Verus-Backend 의 산출물).  Y4 측 `proofs/verus/justfile` 의 `aot-bake`
-  recipe 가 본 script 호출
+- env var `VERUS_ADSMT_AOT_LUART` = activation line (`aot-bake-prelude.sh
+  --quiet` 출력의 eval-able shell snippet)
+
+**JIT ⏳ v0 stub (rc.30, 2026-06-08 갱신)**:
+- **lu-smt 측 `--jit-trace-emit` / `--jit-trace-load` flag ✅** (§3.5.G,
+  rc.30 의 `lu-smt --help` 확인)
+- 단 **replay machinery 미land** — v0 = file header + zero events,
+  §3.5.F follow-up 대기 (event recorder 가 CDCL loop 측 hook 필요)
+- **Verus 본체 측 `-V jit-trace-load` flag 부재** — verus-fork 의
+  `config.rs` 에 jit/JIT keyword 0 (R7.5 의 의도된 `EXTENDED_JIT_TRACE_
+  LOAD` 가 verus 측 wire 안 됨, **명시적 patch 후속 cycle 필요** —
+  현 시점 lu-smt 측 flag 직접 사용 가능 단 functional benefit 0)
+- R7.5 정합 (default off, optional manual)
 
 ### 1.4 Verdict mapping
 
@@ -327,8 +335,8 @@ Verus fork backend-pluggable branch commit 의 핵심 milestone:
 | P-vb.7 (`-V report-abductive-on-unknown`) | ✅ | ~50 LoC |
 | P-vb.8 (Test round-trip) | ✅ (rc.27~rc.29 의 retry 가 functional + sound + complete 확인) | ~? LoC |
 | **P-vb.10** (emit-isabelle/rocq wire) | ✅ (consumer/justfile 의 emit recipe 가 land, commit `cd86e9b81`) | ~? LoC |
-| **P-vb.11** (AOT prelude bank) | ✅ (commit `5533adfe4`, scripts/aot-bake-prelude.sh) | ~150 LoC |
-| **P-vb.12** (JIT trace load) | ✅ (commit `c1b067359`, baseline+AOT+JIT all sound) | ~50 LoC |
+| **P-vb.11** (AOT prelude bank) | ✅ (commit `5533adfe4`, scripts/aot-bake-prelude.sh; Y4 verify-adsmt-fast 2026-06-08 ✅ 54 verified) | ~150 LoC |
+| **P-vb.12** (JIT trace load) | ⚠️ lu-smt 측 `--jit-trace-{emit,load}` ✅ v0 stub (§3.5.G), 단 Verus 측 `-V jit-trace-load` flag 부재 + replay machinery 미land (§3.5.F follow-up).  2026-06-08 부분 ✅ | ~50 LoC (verus 측 wire only) |
 | P-vb.9 (Upstream PR) | (대기, post-Y4-cycle) | 0 |
 
 합 ~1050 LoC (P-vb.9 제외).  P-vb.9 (upstream PR 제출) 는 Y4 측 R7.11+
