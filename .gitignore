@@ -52,6 +52,14 @@ proofs/verus/lib*.rlib
 .claude-notes/_completed/
 *.local.md
 
+# Cross-project request / reply scratch (local mirror to sibling repos)
+# - .local-requests-to/<peer>/  = Y4 outbound (mirror to <peer>/.local-requests-from/Y4/)
+# - .local-replies-from/<peer>/ = inbound reply (mirror from <peer>/.local-replies-to/Y4/)
+.local-requests-to/
+.local-requests-from/
+.local-replies-to/
+.local-replies-from/
+
 # Claude Code per-user state (settings.local.json holds machine-local allowlists)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock

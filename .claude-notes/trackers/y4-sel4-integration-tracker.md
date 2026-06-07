@@ -30,14 +30,14 @@
 | **R7.8** .v (Rocq) 산출물 위치 | `<Y4>/proofs/coq/theories/Generated/.gitkeep` 신설 + `_CoqProject` glob 추가 + R4.1 manual 3 theory (theories/{Sel4,IPC,Lease}/*.v) 별도 위치 | ✅ |
 | **R7.9** Cross-check CI 통합 | proofs/verus/justfile 의 cross-check recipe + av-proof-body-tracker §5 cluster 별 batch (R3.6 정합) + smt-cross-validation-tracker §2 row 추가 | ✅ (recipe) |
 | **R7.10** L4.verified inbound contract trust marker | verus_to_isabelle.md §1.7 갱신 — PR-Verus-Backend land + adsmt rc.28+/rc.29+ 도달 후 trust 가능 명시 | ✅ |
-| **R7.11** 첫 emit milestone | Cluster 1 (amdv lower) PR-2a + AV1 `intercept_floor_holds` + `Y4_AmdvSafety_Lower_InterceptFloor.thy` | (진행 중, PR-Verus-Backend land ✅ 2026-06-03) |
-| **R7.12** Verification end-to-end | vargo build → just verify-adsmt → just emit-isabelle → just coq → just cross-check → (manual) l4v import | (진행 중, PR-Verus-Backend land ✅) |
+| **R7.11** 첫 emit milestone | Cluster 1 (amdv lower) PR-2a + AV1 `intercept_floor_holds` + `Y4_AmdvSafety_Lower_InterceptFloor.thy` | ⚠️ **blocked by adsmt declare-datatypes (2026-06-04)** — AV1 proof body 작성 + Z3 verify (54 verified, 0 errors) ✅, 단 `just verify-adsmt` 가 lu-smt 의 parameterized constructor 미지원으로 fail.  Request 신설: `.local-requests-to/adsmt/2026-06-04-declare-datatypes-parameterized.md` |
+| **R7.12** Verification end-to-end | vargo build → just verify-adsmt → just emit-isabelle → just coq → just cross-check → (manual) l4v import | ⚠️ R7.11 block 으로 일부 step 보류 (`just verify` Z3 default ✅) |
 
 ## 2. Per-cluster emission 진행 record
 
 | Cluster | sub-PR | Verus proof body | `.thy` emit | `.v` emit | cross-check |
 |---|---|---|---|---|---|
-| Cluster 1 (amdv lower) | PR-2a | (대기) | (대기) | (대기) | (대기) |
+| Cluster 1 (amdv lower) | PR-2a | AV1 ✅ (intercept_floor.rs, Z3 54 verified) | ⚠️ block (adsmt declare-datatypes) | ⚠️ block | ⚠️ block |
 | Cluster 2 (amdv upper) | PR-2b | (대기) | (대기) | (대기) | (대기) |
 | Cluster 3 (power upper) | PR-5d.1 | (대기) | (대기) | (대기) | (대기) |
 | Cluster 4 (power lower) | PR-5d.2 | (대기) | (대기) | (대기) | (대기) |
@@ -118,7 +118,15 @@ seL4 L4.verified (https://github.com/seL4/l4v) — Y4 외, 사용자 manual
 
 ## 7. 미해결
 
-1. **paper artifact 첨부 메커니즘** — `proofs/isabelle/*.thy` snapshot +
+1. **adsmt declare-datatypes parameterized constructors (active, 2026-06-04)**
+   — Y4 R7.11 milestone block.  lu-smt v1.0.0-rc.29 의 SMT-LIB parser
+   가 nullary constructor 만 지원.  Verus vstd 가 발화하는 parameterized
+   `(declare-datatypes ...)` parse fail.  Request 신설: `.local-requests-
+   to/adsmt/2026-06-04-declare-datatypes-parameterized.md` (mirror:
+   `~/AD1/.local-requests-from/Y4/2026-06-04-declare-datatypes-
+   parameterized.md`).  reply 도달 + lu-smt patch land 후 `.lock` baseline
+   갱신 + R7.11 milestone 재시도
+2. **paper artifact 첨부 메커니즘** — `proofs/isabelle/*.thy` snapshot +
    verus-fork submodule pin + adsmt commit pin 의 hash chain (Phase C
    종반 sub-cycle)
 2. **L4.verified 측 spec 과의 explicit connection** — Y4 의 AV invariant
