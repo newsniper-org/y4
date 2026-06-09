@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Y4 adsmt-emit manifest (R7.7 / R7.8 / R7.11, 2026-06-09).
+#
+# Declares which emitter packages this Y4 verus subtree consumes —
+# `adsmt-emit install` (one-time per project root) builds the wasm
+# artifacts + content-addresses into `.adsmt-emitters/` + writes
+# `adsmt-emit.lock` (commit lockfile).
+#
+# Versions follow adsmt-contrib testing branch (R7.6 channel pin, R7.10
+# inbound contract).  Source = ~/adsmt-contrib/ (사용자 환경 측 clone,
+# rc.33 base rebuild 필요 — `cargo build --release --target wasm32-
+# wasip1 -p adsmt-emit-isabelle-wasm -p adsmt-emit-rocq-wasm`).
+#
+# Cross-ref:
+# - ~/.claude/plans/jazzy-gliding-puppy.md (R7.11 end-to-end pipeline)
+# - <Y4>/.claude-notes/trackers/y4-sel4-integration-tracker.md
+# - .local-replies-from/adsmt/2026-06-08-emit-cert-resolved-plus-wasm-emitter-redesign.md
+# - .local-replies-from/verus-fork/2026-06-09-R7.11-unblocked-full-emit-pipeline-end-to-end.md
+
+[emitters]
+isabelle = { version = "1.0.0-rc.31", path = "/home/ybi/adsmt-contrib/adsmt-emit-isabelle-wasm/isabelle.adsmt-emit" }
+rocq     = { version = "1.0.0-rc.31", path = "/home/ybi/adsmt-contrib/adsmt-emit-rocq-wasm/rocq.adsmt-emit" }
+# Lean4 emitter는 R1=(a') sign-off로 deferred (adsmt v1.1.x retrofit hook,
+# cpu_virt_compat.md §8 (4)).  본 시점 manifest 측 X.

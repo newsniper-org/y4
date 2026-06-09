@@ -149,9 +149,9 @@ JSON 을 그대로 `adsmt-emit-isabelle` / `adsmt-emit-rocq` CLI 측 invoke
 - adsmt-contrib testing branch pin (R7.6) — Y4 측 cargo install 또는
   PKGBUILD system install 가정
 
-### 1.6 AOT prelude bank + JIT trace load (R7.3 신규, 2026-06-08 갱신)
+### 1.6 AOT prelude bank + JIT trace load (R7.3 신규, 2026-06-09 갱신)
 
-**AOT ✅ functional (rc.30, 2026-06-08 테스트)**:
+**AOT ✅ functional (rc.30+, 2026-06-08 테스트)**:
 - `scripts/aot-bake-prelude.sh` ✅ land (verus-fork commit `5533adfe4`)
 - Y4 측 `just verify-adsmt-fast` 작동 — bank 생성 (`<verus-fork>/target-
   verus/release/aot/prelude-<sha>-1.0.0-rc.30.luart-cdcl`) + verify
@@ -161,16 +161,22 @@ JSON 을 그대로 `adsmt-emit-isabelle` / `adsmt-emit-rocq` CLI 측 invoke
 - env var `VERUS_ADSMT_AOT_LUART` = activation line (`aot-bake-prelude.sh
   --quiet` 출력의 eval-able shell snippet)
 
-**JIT ⏳ v0 stub (rc.30, 2026-06-08 갱신)**:
-- **lu-smt 측 `--jit-trace-emit` / `--jit-trace-load` flag ✅** (§3.5.G,
-  rc.30 의 `lu-smt --help` 확인)
+**JIT ⚠️ wire ✅ but inert (verus-fork `22e10f196`, 2026-06-09)**:
+- **verus-fork `22e10f196` 의 `-V jit-trace-load=<path>` ✅ land** —
+  이전 cycle 의 추정 (verus 측 wire 부재) 정정.  R7.5 / P-vb.12 정합
+- **lu-smt 측 `--jit-trace-emit` / `--jit-trace-load` flag ✅** (§3.5.G)
 - 단 **replay machinery 미land** — v0 = file header + zero events,
   §3.5.F follow-up 대기 (event recorder 가 CDCL loop 측 hook 필요)
-- **Verus 본체 측 `-V jit-trace-load` flag 부재** — verus-fork 의
-  `config.rs` 에 jit/JIT keyword 0 (R7.5 의 의도된 `EXTENDED_JIT_TRACE_
-  LOAD` 가 verus 측 wire 안 됨, **명시적 patch 후속 cycle 필요** —
-  현 시점 lu-smt 측 flag 직접 사용 가능 단 functional benefit 0)
+- 즉 wire 정합은 ✅, functional benefit 0 (until adsmt §3.5.F lands)
 - R7.5 정합 (default off, optional manual)
+
+**Emit-isabelle / Emit-rocq end-to-end ✅ (verus-fork `22e10f196` + adsmt rc.33, 2026-06-09)**:
+- verus-fork `-V emit-isabelle[=<dir>]` + `-V emit-rocq[=<dir>]` wire ✅
+- `ADSMT_CERT_DIR → --emit-cert-dir` forward ✅ (R7.3 / P-vb.10)
+- adsmt 측 rc.33 의 delegated-unsat cert + flat serde + B' wasmi stack
+  → real obligation prelude-scale cert (1.0 MB) → `.thy` (192 KB) +
+  `.v` (173 KB) 정상 emit (verus-fork 측 reply validated)
+- Y4 측 `proofs/verus/adsmt-emit.toml` 신설 — contrib package manifest
 
 ### 1.4 Verdict mapping
 
@@ -334,9 +340,9 @@ Verus fork backend-pluggable branch commit 의 핵심 milestone:
 | P-vb.6 (Verdict mapping + jsonl reporter) | ✅ (rc.29 Tseitin complete) | ~? LoC |
 | P-vb.7 (`-V report-abductive-on-unknown`) | ✅ | ~50 LoC |
 | P-vb.8 (Test round-trip) | ✅ (rc.27~rc.29 의 retry 가 functional + sound + complete 확인) | ~? LoC |
-| **P-vb.10** (emit-isabelle/rocq wire) | ✅ (consumer/justfile 의 emit recipe 가 land, commit `cd86e9b81`) | ~? LoC |
+| **P-vb.10** (emit-isabelle/rocq wire) | ✅ **end-to-end (2026-06-09)** — verus-fork `22e10f196` 에 `-V emit-isabelle[=<dir>]` + `-V emit-rocq[=<dir>]` + `ADSMT_CERT_DIR → --emit-cert-dir` forward.  adsmt 측 rc.32 의 WASM emitter ecosystem + rc.33 의 delegated-cert + flat serde 와 정합.  contrib `isabelle.adsmt-emit` / `rocq.adsmt-emit` package | ~? LoC (verus-fork land) |
 | **P-vb.11** (AOT prelude bank) | ✅ (commit `5533adfe4`, scripts/aot-bake-prelude.sh; Y4 verify-adsmt-fast 2026-06-08 ✅ 54 verified) | ~150 LoC |
-| **P-vb.12** (JIT trace load) | ⚠️ lu-smt 측 `--jit-trace-{emit,load}` ✅ v0 stub (§3.5.G), 단 Verus 측 `-V jit-trace-load` flag 부재 + replay machinery 미land (§3.5.F follow-up).  2026-06-08 부분 ✅ | ~50 LoC (verus 측 wire only) |
+| **P-vb.12** (JIT trace load) | ⚠️ verus-fork `22e10f196` 에 `-V jit-trace-load=<path>` ✅ wire (2026-06-09).  단 lu-smt 측 `--jit-trace-{emit,load}` 가 v0 stub (§3.5.G), replay machinery §3.5.F 미land → wire ✅ but inert (functional benefit 0 until §3.5.F lands) | ~50 LoC (verus 측 wire ✅) |
 | P-vb.9 (Upstream PR) | (대기, post-Y4-cycle) | 0 |
 
 합 ~1050 LoC (P-vb.9 제외).  P-vb.9 (upstream PR 제출) 는 Y4 측 R7.11+

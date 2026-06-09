@@ -134,31 +134,37 @@ cross-check: _check-verus
         exit 1
     fi
 
-# --- 4. cert emit to proof assistant (~/adsmt-contrib) -----------------
+# --- 4. cert emit to proof assistant (adsmt-emit WASM runtime, rc.32+) ---
 
-# `adsmt-emit-isabelle` / `adsmt-emit-rocq` CLI install (한번만, system):
-#   cargo install --git https://github.com/newsniper-org/adsmt-contrib \
-#                 --branch testing adsmt-emit-isabelle adsmt-emit-rocq
-# Or Arch:
-#   pacman -S adsmt-contrib-testing
+# adsmt-emit ecosystem (rc.32+):
+# - System install (Arch): `pacman -S adsmt-cli-testing` provides
+#   /usr/bin/{lu-smt, adsmt-emit, adsmt-env} (rc.32.1+, R7.6 정합)
+# - Contrib emitter wasm: ~/adsmt-contrib/{adsmt-emit-rocq-wasm,
+#   adsmt-emit-isabelle-wasm}/ — rc.33 base rebuild 필요:
+#     cd ~/adsmt-contrib && cargo update -p adsmt-cert
+#     cargo build --release --target wasm32-wasip1 \
+#                 -p adsmt-emit-rocq-wasm -p adsmt-emit-isabelle-wasm
+# - One-time per Y4: `just emit-install` (adsmt-emit.toml 측 manifest)
 
-# Emit the adsmt cert as Isabelle/HOL .thy (proofs/isabelle/).
-emit-isabelle:
-    @echo "Run 'just verify-adsmt' with VERUS_ADSMT_CERT_DIR={{_cert_dir}}, then:"
-    @echo "  mkdir -p {{_thy_dir}}"
-    @echo "  for cert in {{_cert_dir}}/*.cert.json; do"
-    @echo "    name=\$(basename \$cert .cert.json)"
-    @echo "    adsmt-emit-isabelle \$cert > {{_thy_dir}}/Y4_\${name}.thy"
-    @echo "  done"
+# Install the adsmt-emit WASM emitters (one-time per project root).
+emit-install:
+    cd {{justfile_directory()}} && adsmt-emit install
 
-# Emit the adsmt cert as Rocq .v (proofs/coq/theories/Generated/).
-emit-rocq:
-    @echo "Run 'just verify-adsmt' with VERUS_ADSMT_CERT_DIR={{_cert_dir}}, then:"
-    @echo "  mkdir -p {{_v_dir}}"
-    @echo "  for cert in {{_cert_dir}}/*.cert.json; do"
-    @echo "    name=\$(basename \$cert .cert.json)"
-    @echo "    adsmt-emit-rocq \$cert > {{_v_dir}}/\${name}.v"
-    @echo "  done"
+# Verify with adsmt AND auto-emit Isabelle/HOL (.thy) per discharged cert.
+# Requires: ADSMT_OXIZ_PATH set (delegated-unsat 측 cert 생성, in-process
+# OxiZ 면 자동), emit-install ✅, adsmt-emit on PATH.
+emit-isabelle: _check-verus
+    ADSMT_CERT_DIR={{_cert_dir}} VERUS_ADSMT_PATH={{_lu_smt}} \
+        {{_verus}} --crate-type=lib -V adsmt -V emit-isabelle {{_flags}} {{_src}}
+    @echo "Isabelle sources -> {{_cert_dir}}/emit-isabelle/*.thy"
+    @echo "Copy to {{_thy_dir}}/ as Y4_AmdvSafety_*.thy per R7.7 layout."
+
+# Verify with adsmt AND auto-emit Rocq (.v) per discharged cert.
+emit-rocq: _check-verus
+    ADSMT_CERT_DIR={{_cert_dir}} VERUS_ADSMT_PATH={{_lu_smt}} \
+        {{_verus}} --crate-type=lib -V adsmt -V emit-rocq {{_flags}} {{_src}}
+    @echo "Rocq sources -> {{_cert_dir}}/emit-rocq/*.v"
+    @echo "Copy to {{_v_dir}}/ per R7.8 layout."
 
 # Note: `cargo build` of this crate does NOT work and is not expected
 # to — `vstd` is not on crates.io.  See Cargo.toml header.

@@ -29,6 +29,13 @@ build.bk/
 .crusti_caesar/
 *.proof
 *.smt2.cache
+
+# adsmt-emit WASM package manager (rc.32+, R7 sign-off 2026-06-09):
+# .adsmt-emitters/ = content-addressed wasm artifact store (gitignored).
+# adsmt-emit.toml + adsmt-emit.lock 는 committed (reproducibility).
+.adsmt-emitters/
+# adsmt cert JSON output (per-(check-sat) certificates) + emit output dir
+target/adsmt-cert/
 # Rocq generated build files
 Makefile.rocq
 Makefile.rocq.conf

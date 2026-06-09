@@ -30,14 +30,14 @@
 | **R7.8** .v (Rocq) 산출물 위치 | `<Y4>/proofs/coq/theories/Generated/.gitkeep` 신설 + `_CoqProject` glob 추가 + R4.1 manual 3 theory (theories/{Sel4,IPC,Lease}/*.v) 별도 위치 | ✅ |
 | **R7.9** Cross-check CI 통합 | proofs/verus/justfile 의 cross-check recipe + av-proof-body-tracker §5 cluster 별 batch (R3.6 정합) + smt-cross-validation-tracker §2 row 추가 | ✅ (recipe) |
 | **R7.10** L4.verified inbound contract trust marker | verus_to_isabelle.md §1.7 갱신 — PR-Verus-Backend land + adsmt rc.28+/rc.29+ 도달 후 trust 가능 명시 | ✅ |
-| **R7.11** 첫 emit milestone | Cluster 1 (amdv lower) PR-2a + AV1 `intercept_floor_holds` + `Y4_AmdvSafety_Lower_InterceptFloor.thy` | ✅ **verify-adsmt unblocked (2026-06-08, adsmt rc.30 + in-process OxiZ delegation)** — `just verify-adsmt` = 54 verified, 0 errors (Z3 backend 와 동일).  emit-isabelle / cross-check 는 cert mechanism + adsmt-contrib install 확정 후 (별도 cycle) |
-| **R7.12** Verification end-to-end | vargo build → just verify-adsmt → just emit-isabelle → just coq → just cross-check → (manual) l4v import | ⏳ verify-adsmt ✅, emit/cross-check 후속 (cert flag + adsmt-contrib PKGBUILD install) |
+| **R7.11** 첫 emit milestone | Cluster 1 (amdv lower) PR-2a + AV1 `intercept_floor_holds` + `Y4_AmdvSafety_Lower_InterceptFloor.thy` | ✅ **end-to-end pipeline land 완료 (2026-06-09)** — adsmt rc.33 (Gap A delegated-unsat cert + Gap B flat serde + B' wasmi stack ceiling) + verus-fork `22e10f196` (`-V emit-{isabelle,rocq}[=<dir>]` + `ADSMT_CERT_DIR` hook) + WASM emitter ecosystem (`adsmt-emit` PM, contrib `isabelle.adsmt-emit` / `rocq.adsmt-emit`).  Y4 측 `proofs/verus/{justfile,adsmt-emit.toml}` 갱신.  사용자 실제 실행 시점에 milestone 완료 (실제 `.thy`/`.v` artifact land) |
+| **R7.12** Verification end-to-end | vargo build → just verify-adsmt → just emit-isabelle → just coq → just cross-check → (manual) l4v import | ⏳ pipeline land ✅, AV1 실제 emit + cross-check 는 사용자 실행 시점 (`just emit-install && just emit-isabelle && just cross-check`) |
 
 ## 2. Per-cluster emission 진행 record
 
 | Cluster | sub-PR | Verus proof body | `.thy` emit | `.v` emit | cross-check |
 |---|---|---|---|---|---|
-| Cluster 1 (amdv lower) | PR-2a | AV1 ✅ (intercept_floor.rs, Z3 + adsmt rc.30 모두 54 verified) | ⏳ cert mechanism 확정 후 | ⏳ adsmt-contrib install 후 | ⏳ cert + emit 후 |
+| Cluster 1 (amdv lower) | PR-2a | AV1 ✅ (intercept_floor.rs, Z3 + adsmt rc.30/33 모두 54 verified) | ⏳ pipeline land ✅, 사용자 실행 시점에 .thy artifact | ⏳ pipeline land ✅, 사용자 실행 시점에 .v artifact | ⏳ emit 후 |
 | Cluster 2 (amdv upper) | PR-2b | (대기) | (대기) | (대기) | (대기) |
 | Cluster 3 (power upper) | PR-5d.1 | (대기) | (대기) | (대기) | (대기) |
 | Cluster 4 (power lower) | PR-5d.2 | (대기) | (대기) | (대기) | (대기) |
@@ -126,12 +126,23 @@ seL4 L4.verified (https://github.com/seL4/l4v) — Y4 외, 사용자 manual
    08-declare-datatypes-resolved-plus-vstd-surface-and-oxiz-delegation.md`
    참조.  `.lock` baseline = `e2951a8` (rc.30) 갱신 완료.  `just verify-
    adsmt` = `54 verified, 0 errors` ✅
-1a. **emit-isabelle / emit-rocq cert mechanism (active, 2026-06-08)** —
-    `lu-smt --help` 에 explicit `--emit-cert` flag 부재 (`--audit-json`
-    가 가장 근접).  adsmt-contrib (`adsmt-emit-isabelle` / `adsmt-emit-
-    rocq`) binary 도 system install 안 됨 (`adsmt-contrib-testing`
-    PKGBUILD 미설치).  본 두 step 의 mechanism 확정 + binary install
-    필요 — 별도 cycle
+1a. ~~emit-isabelle / emit-rocq cert mechanism (active, 2026-06-08)~~
+    **✅ resolved by adsmt rc.32+rc.32.1+rc.33 + verus-fork `22e10f196`
+    (2026-06-09)**.
+    - rc.32 = `lu-smt --emit-cert{,-dir,-format}` flag + WASM emitter
+      ecosystem (`adsmt-emit-{contract,pm,runtime,cli}` + `adsmt-env`)
+    - rc.32.1 = `adsmt-cli-testing` PKGBUILD 측 adsmt-emit + adsmt-env
+      binary system install
+    - rc.33 = Gap A (delegated-unsat cert) + Gap B (flat serde 6.8MB→
+      1.0MB) + B' (wasmi stack)
+    - verus-fork `22e10f196` = `-V emit-{isabelle,rocq}[=<dir>]` wire +
+      `ADSMT_CERT_DIR → --emit-cert-dir` forward + `-V jit-trace-load`
+      wire (inert until §3.5.F)
+    - Y4 측 `proofs/verus/adsmt-emit.toml` 신설 (contrib `isabelle.
+      adsmt-emit` / `rocq.adsmt-emit` package pointer) + `justfile` 측
+      emit-* recipe rewrite (real flow)
+    - 사용자 실행: `just emit-install` (one-time) → `just emit-isabelle`
+      / `just emit-rocq` (per-cluster) → R7.11 milestone artifact
 2. **paper artifact 첨부 메커니즘** — `proofs/isabelle/*.thy` snapshot +
    verus-fork submodule pin + adsmt commit pin 의 hash chain (Phase C
    종반 sub-cycle)

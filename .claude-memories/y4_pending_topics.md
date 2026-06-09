@@ -186,6 +186,47 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
     - Tracker: y4-sel4-integration §1 R7.11 verify-adsmt ✅, §7 #1 close
       + #1a 신규 (cert mechanism), pr-verus-backend §1.6 + §4 P-vb.12 ⚠️,
       adsmt-integration §7 watch row 2개 추가
+18. ✅ **R7.11 end-to-end emit pipeline land** (2026-06-09, adsmt v1.0.0-
+    rc.33 + verus-fork `22e10f196`)
+    - 6 reply file (.local-replies-from/{adsmt/4 + verus-fork/2})
+      종합: rc.32 emit-cert flag + WASM emitter ecosystem 신설, rc.32.1
+      adsmt-cli-testing PKGBUILD 측 adsmt-emit/adsmt-env binary install,
+      rc.33 Gap A (delegated-unsat cert) + Gap B (flat hash-cons serde,
+      6.8MB→1.0MB) + B' (wasmi stack ceiling), verus-fork `-V emit-
+      {isabelle,rocq}[=<dir>]` + `ADSMT_CERT_DIR → --emit-cert-dir`
+      hook + `-V jit-trace-load=<path>` wire 모두 land
+    - **Validated by verus-fork**: real obligation 측 `.thy` (192 KB) +
+      `.v` (173 KB) 정상 emit (`oxiz-delegation` opaque witness 측
+      axiomatization, `imports Main` only)
+    - **Baseline 갱신**:
+      - adsmt = `5a1a6ee` (rc.33) + emit-runtime fix `c043287`
+      - OxiZ = `0.2.4-feat/streaming-stdin` (rc.32.2 simplex sound fix)
+      - adsmt-contrib = `cbf7a46` (rc.31-era wasm packages, rc.33 base
+        rebuild 필요)
+      - verus-fork submodule pin = `22e10f196` (이전 `55cb8316e`)
+    - **Y4 측 변경**:
+      - `unified-toolkit-pin.lock` rc.33 baseline + Verus fork pin
+      - `proofs/verus/justfile` emit-{isabelle,rocq,install} recipe
+        rewrite (consumer/justfile pattern real flow + `-V emit-*` 활용)
+      - `proofs/verus/adsmt-emit.toml` 신설 (contrib package manifest —
+        `~/adsmt-contrib/adsmt-emit-{isabelle,rocq}-wasm/{isabelle,rocq}.
+        adsmt-emit`)
+      - `.gitignore`: `.adsmt-emitters/` + `target/adsmt-cert/` 추가
+        (단 `adsmt-emit.toml` + `adsmt-emit.lock` 는 committed)
+    - **Caveats** (verus-fork reply §):
+      - cert ⇔ obligation mapping = `<seq>.cert.<ext>` (Verus function
+        이름 X, per-(check-sat) sequence).  per-AV `.thy` 위해 `--verify-
+        function` / per-module run 필요
+      - `oxiz-delegation` witness = axiomatization (OxiZ proof 재구성
+        X) — R7.11 의 "expressible in same logic" milestone 충족, 단
+        fully-reconstructed kernel proof 는 별도 ask (proof-carrying
+        delegation)
+      - `-V jit-trace-load` = wire ✅ but inert (lu-smt 측 §3.5.F land
+        후 functional)
+    - **사용자 실행 시점 R7.11 완료**: `just emit-install` (one-time) →
+      `just emit-isabelle` (per AV1 module) → `Y4_AmdvSafety_Lower_
+      InterceptFloor.thy` artifact land → R7.11 milestone 완료 + `just
+      cross-check` (z3 vs adsmt) 활성
 
 ## 진행 가능한 다음 후속 주제
 
