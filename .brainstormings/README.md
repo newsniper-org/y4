@@ -38,4 +38,4 @@ contribute-back paper / 코드 리뷰 / 산업 도입 시 audit reference.
 
 | 파일 | topic | 생성 (KST) | status |
 |---|---|---|---|
-| [20260618-212218-alloc-frontend-improvements.md](20260618-212218-alloc-frontend-improvements.md) | alloc front-end 개선 8 방향 (capability allocator + small hardening + verification) | 2026-06-18 21:22 | brainstorming |
+| [20260618-212218-alloc-frontend-improvements.md](20260618-212218-alloc-frontend-improvements.md) | DragonFly SLAB(최종 목표) 의 atomic-free SLUB-style 현대화 — §0.5 atomic 배제(불가침) / SLUB 데이터 구조만(unqueued+metadata-in-page) / cross-CPU free=IPC 위임 / Verus-only verified / freelist 미결(§2.9) / capability layer | 2026-06-18 21:22 (rev 21:57) | brainstorming |
