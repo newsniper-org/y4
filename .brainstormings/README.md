@@ -39,3 +39,4 @@ contribute-back paper / 코드 리뷰 / 산업 도입 시 audit reference.
 | 파일 | topic | 생성 (KST) | status |
 |---|---|---|---|
 | [20260618-212218-alloc-frontend-improvements.md](20260618-212218-alloc-frontend-improvements.md) | DragonFly SLAB(최종 목표) 의 atomic-free SLUB-style 현대화 — §0.5 atomic 배제(불가침) / SLUB 데이터 구조만(unqueued+metadata-in-page) / cross-CPU free=IPC 위임 / Verus-only verified / freelist 미결(§2.9) / capability layer | 2026-06-18 21:22 (rev 21:57) | brainstorming |
+| [20260618-221518-pluggable-alloc-frontend-contract.md](20260618-221518-pluggable-alloc-frontend-contract.md) | Pluggable allocator front-end + 규약 — 2-tier trait(`AllocFrontend`+`Freelist` 분리) + Verus contract(C1~C4 / FL1~FL3) / generic-first 선택(dyn 보류) / C2 atomic-free=lint+Verus / reference+custom(form-factor) / Linux 대비 contract-by-construction 우위 | 2026-06-18 22:15 (rev 22:24) | brainstorming |
