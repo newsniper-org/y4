@@ -378,8 +378,8 @@ Y4-VMM 의 2-layer concurrency 증명 기법은 다음 paper 의 영감:
 | 자료 | 출처 / venue | 라이선스 | 차용 형태 | 위치 |
 |---|---|---|---|---|
 | VeriSMo | USENIX OSDI '24 (Best Paper) | (paper) | 검증 기법 영감 (§3.1, §3.3) — 코드 import 0 | NOTICE Acknowledgements + 본 §3 |
-| bhyve (FreeBSD AMD-V VMM) | FreeBSD `sys/amd64/vmm/` | BSD-2 | AMD-V 알고리즘 reference | NOTICE reuse manifest, `~/y4-upstream-refs/bhyve/` (TBD) |
-| NVMM (NetBSD AMD-V) | NetBSD `sys/dev/nvmm/` | BSD-2 | AMD-V 알고리즘 reference | NOTICE reuse manifest, `~/y4-upstream-refs/nvmm/` (TBD) |
+| bhyve (FreeBSD AMD-V VMM) | FreeBSD `sys/amd64/vmm/` | BSD-2 | AMD-V 알고리즘 reference (+ arm64/riscv vmm 도 보유 → multi-ISA reference) | NOTICE reuse manifest, `~/y4-upstream-refs/bhyve/` **확보 ✅ (2026-06-19, blobless sparse: amd64+arm64+riscv/vmm)** |
+| NVMM (NetBSD AMD-V) | NetBSD `sys/dev/nvmm/` | BSD-2 | AMD-V 알고리즘 reference (x86 only — NetBSD portability ≠ NVMM virt) | NOTICE reuse manifest, `~/y4-upstream-refs/nvmm/` **확보 ✅ (2026-06-19, blobless sparse: x86 svm+vmx)** |
 | Atmosphere | mars-research/atmosphere (SOSP '25 artifact) | MIT | "Verus + AMD-V 가능성 시연" 으로 영감 (직접 채택 X — AMD-V 코드 publicly 0) | NOTICE Acknowledgements |
 | seL4 | `third_party/sel4` | BSD-2 | binary as-is + D1a 패치 | NOTICE reuse manifest |
 | Tock | crate 일부 + capsule pattern | MIT/Apache-2 | algorithmic reuse | NOTICE reuse manifest |
@@ -713,8 +713,14 @@ passthrough / IOMMU programming capsule 도입 시 fault recovery 의 의미가
 
 ### 8.6 (이전 5) — VeriSMo 이외 영감 자료 read-only refs
 
-**~/y4-upstream-refs/{bhyve,nvmm}/ 추가 필요** — Phase C 진입 직전
-실행할 작업, sign-off 종속 0.  메모: Phase C 진입 전에 실행.
+**닫힘 (2026-06-19 확보 완료).**  `~/y4-upstream-refs/{bhyve,nvmm}/`
+blobless sparse clone (dragonfly/redox 동일 방식):
+- bhyve = `sys/{amd64,arm64,riscv}/vmm/` (multi-ISA virt reference)
+- nvmm = `sys/dev/nvmm/x86/` (x86 svm+vmx only)
+
+multi-arch virt port 가능성 + bhyve/nvmm 외 non-GPL 대안 (경로 A
+permissive hv / 경로 B spec clean-room / 경로 C rust-vmm) 은
+`.brainstormings/20260618-231936-cross-platform-strategy.md` §3.1~§3.3.
 
 ### 8.7 (이전 7) — Contribute-back paper 게시 venue
 
