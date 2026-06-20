@@ -198,8 +198,15 @@ POWER/ARC (bhyve/nvmm 부재) + 일반 대안.  **경로 3가지**:
     / POWER DEC) — vmrun_terminates_within 은 arch-neutral
 - `Y4_AMDV` master flag → `Y4_VIRT` arch-neutral flag (runtime arch+vendor
   감지).
-
-### 4.C endianness (POWER BE 도전)
+- **★ soft-MMU / soft-virt fallback 명시적 배제** (vkernel drop 교훈,
+  `20260620-153653-dragonfly-vkernel-y4-reinterpretation.md` §3.2):
+  하드웨어 virt 부재 환경에서 *소프트웨어 nested page* (DragonFly
+  vkernel 의 `MAP_VPAGETABLE` 류) 로 production 격리를 흉내내는 fallback
+  은 **채택 X**.  근거 = vkernel 이 정확히 그 이유로 6.0 에서 drop
+  (소프트웨어 MMU 가 VM 코어 강결합 → 유지보수 부담 + verification
+  복잡).  Y4 는 모든 arch 에서 **하드웨어 nested page (NPT/EPT/stage-2/
+  G-stage/radix) 전제**.  HW virt 부재 환경 = production 대상 아님
+  (오직 dev/test mode → Y4 dev mode 문서, soft backend 는 test 전용).
 - AArch64/RISC-V/ARCv3 = LE.  **POWER 만 LE + BE 둘 다** (POWER8+ LE
   주류, BE legacy/특정 workload).
 - Y4 = **LE 우선** (x86/ARM/RISC-V 다 LE), POWER BE 는 특수 처리.
