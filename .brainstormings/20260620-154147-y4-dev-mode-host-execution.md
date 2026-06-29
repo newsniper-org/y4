@@ -4,7 +4,8 @@
 ---
 topic: Y4 dev mode — host-execution (vkernel 개발 가치의 Y4 흡수)
 created: 2026-06-20T15:41:47+09:00   # KST (UTC+9)
-status: brainstorming (결정 X — 옵션 탐색)
+revised: 2026-06-29T10:26:30+09:00   # 디버거 = lldb 채택 (§3.7, 사용자 보충)
+status: brainstorming (§3.7 디버거 결정 / 나머지 미결)
 scope: Y4 capsule + orchestrator + lease 로직을 seL4/QEMU 없이 host
        user-space process 로 실행 (dev/test 전용).  vkernel 의 개발/
        디버깅 가치 흡수.  production 격리 아님
@@ -37,7 +38,7 @@ production 격리는 항상 하드웨어 virt** (cross-platform §4.B soft-MMU
 - **qemu-smoke** — 실제 seL4 + QEMU + Limine.  production-like 통합.
 - 사이가 비어있음 — capsule + orchestrator + lease *통합 로직* 을 seL4/
   QEMU 없이 빠르게 디버그할 계층 부재.  qemu-smoke 는 무겁고 (빌드+부팅)
-  gdb 디버그 불편 (커널 내부).
+  커널 내부 디버그 불편 (Tier 2 의 lldb `gdb-remote`, §3.7).
 
 ## 2. vkernel 의 dev 가치 (흡수 대상)
 
@@ -54,7 +55,7 @@ production 격리는 항상 하드웨어 virt** (cross-platform §4.B soft-MMU
 | Tier | 내용 | 격리 | 용도 |
 |---|---|---|---|
 | 0 unit test (현) | MockPageBackend + `cargo test` | 없음 | 로직 단위 |
-| **1 host-Y4 (신규)** | capsule + orchestrator + lease 를 host process 로 (mock seL4 + soft backend) | host process/thread (약함, test 전용) | **통합 디버그 + 빠른 iteration + gdb** |
+| **1 host-Y4 (신규)** | capsule + orchestrator + lease 를 host process 로 (mock seL4 + soft backend) | host process/thread (약함, test 전용) | **통합 디버그 + 빠른 iteration + `rust-lldb`** (§3.7) |
 | 2 qemu-smoke (현) | 실제 seL4 + QEMU + Limine | seL4 (production-like) | 통합 검증 |
 | 3 실HW (Phase D+) | 실제 AMD-V / NPT | 하드웨어 | production |
 
@@ -84,7 +85,7 @@ Tier 1 = vkernel 의 "커널을 process 로" 를 Y4 capsule 에 적용.
 - vendor backend (`vcb_amd.rs` 등) 의 HW 의존 부분은 mock (또는 bhyve/
   nvmm reference 와 대조 — algorithm 검증).
 - → CapsuleMsg dispatch / 7-step atomic sequence / AV invariant 로직을
-  gdb 로 step 디버그.
+  `rust-lldb` 로 step 디버그 (§3.7).
 
 ### 3.5 경계 — dev 전용 (★ vkernel 교훈)
 - dev mode 는 **production 격리 X** — host process 격리는 약함 (capability
@@ -104,6 +105,41 @@ Tier 1 = vkernel 의 "커널을 process 로" 를 Y4 capsule 에 적용.
   `Y4Core<K: Kernel>` → `Y4Core<MockKernel>` (dev) / `Y4Core<RealSeL4>`
   (production).  compile-time 분기, 런타임 비용 0.
 
+### 3.7 디버거 = lldb (gdb 대신) — 사용자 보충 (2026-06-29)
+
+**lldb 를 Y4 기본 디버거로 채택** (gdb 대신).  근거:
+
+1. **★ license 정합** — lldb = **Apache-2.0 (LLVM exception)** ↔ Y4
+   single-license **Apache-2.0** (CLAUDE.md §3).  gdb = **GPL-3** → Y4
+   의 GPL 격리 철학 (`licensing.md`, GPL-capsule isolation) 과 충돌.
+   디버거는 dev tool 이라 직접 link X (license 강제 아님) 이나, **권장
+   도구의 license 일관성** 이 Y4 의 Apache-2 생태계 정합.
+2. **LLVM 생태계 정합** — Rust (LLVM) + scudo (LLVM compiler-rt) +
+   ARCv3 (LLVM backend 필요, cross-platform §3) 모두 LLVM → lldb 가 같은
+   토대.  `rust-lldb` 공식 wrapper (rustup 제공).
+3. **BSD 정합** — bhyve/nvmm reference (FreeBSD/NetBSD) 작업 시 lldb
+   (FreeBSD base system 기본 디버거).  Y4 의 BSD/Redox/Tock 생태계 지향
+   (CLAUDE.md §4 reuse manifest) 정합.
+4. **cross-platform** — lldb multi-arch (LLVM arch backend 정합) —
+   AArch64/RISC-V/POWER 디버깅 일관.
+
+**Tier 별 적용**:
+| Tier | 디버거 |
+|---|---|
+| 0 unit test | `rust-lldb` (host process) |
+| **1 host-Y4** | `rust-lldb` (host process — lldb 명확 우위: license + LLVM + Rust) |
+| 2 qemu-smoke | lldb `gdb-remote` (QEMU gdbstub = gdb remote protocol → lldb 연결).  단 QEMU+lldb 의 일부 호환성 이슈 (hw breakpoint 등) 시 **gdb fallback** 허용 |
+| 3 실HW | lldb + JTAG/probe (arch 별) |
+
+**gdb 병용 정책**: **lldb 기본** + gdb 는 Tier 2 (QEMU gdbstub) 의 특정
+seL4 디버그 기능에서 lldb 호환성 부족 시 *옵션 fallback*.  개인 선호
+허용 (강제 X), 단 Y4 **공식 권장 + 문서/CI 예시 = lldb**.
+
+> 솔직한 nuance: Tier 0/1 (host process) 는 lldb 명확 우위 (license +
+> rust-lldb).  Tier 2 (QEMU+seL4) 는 전통적으로 gdb 가 더 검증됨 (QEMU
+> gdbstub 친화) → lldb `gdb-remote` 우선 시도하되 막히면 gdb.  즉 "lldb
+> 기본, Tier 2 에서 실용적 gdb fallback".
+
 ## 4. vkernel 과의 대조 (Y4 dev mode 가 교훈 지킴)
 
 | | DragonFly vkernel | Y4 dev mode |
@@ -121,8 +157,9 @@ Tier 1 = vkernel 의 "커널을 process 로" 를 Y4 capsule 에 적용.
 
 - **iteration 속도** — capsule/orchestrator 로직 변경 → host process 재실행
   (seL4 빌드 + QEMU 부팅 불필요).  초 단위 iteration.
-- **gdb 디버그** — capsule 내부 (CapsuleMsg dispatch, AV 로직, lease
-  lifecycle) 를 host gdb 로 step / breakpoint / core dump.  qemu-smoke
+- **lldb 디버그** (§3.7) — capsule 내부 (CapsuleMsg dispatch, AV 로직,
+  lease lifecycle) 를 host `rust-lldb` 로 step / breakpoint / core dump.
+  qemu-smoke
   의 커널 내부 디버그 난이도 회피.
 - **CI** — host-Y4 통합 test (qemu 보다 빠름) → CI 단계 추가 (cargo
   test = Tier 0, host-Y4 = Tier 1, qemu-smoke = Tier 2).
@@ -130,6 +167,11 @@ Tier 1 = vkernel 의 "커널을 process 로" 를 Y4 capsule 에 적용.
   host 에서 대조 (contribute-back §2.B 의 Verus 발견물 토대).
 
 ## 6. 결정 / 미결
+
+### 확정 (사용자)
+- **디버거 = lldb 기본 (§3.7)** — license 정합 (lldb Apache-2 ↔ Y4
+  Apache-2, gdb GPL-3 회피) + LLVM 생태계 (Rust/scudo/ARCv3) + BSD 정합.
+  Tier 0/1 = `rust-lldb`, Tier 2 = lldb `gdb-remote` (gdb fallback 허용)
 
 ### 방향 (잠정)
 - Tier 1 host-Y4 dev mode 신설 — `Kernel` trait mock + soft page backend
