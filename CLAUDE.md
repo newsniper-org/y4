@@ -29,7 +29,7 @@ if a change crosses into WaveTensor's RTL ABI.
 capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로 격리.
 
 5개 Phase B 단계 모두 그린:
-1. `proofs/` Verus + Rocq 하네스 (50 verified, 0 errors)
+1. `proofs/` Verus + Rocq + Isabelle 하네스 (54 verified, 0 errors)
 2. `boot/` Limine v12.1.0 + seL4 15.0.0 → QEMU `qemu-smoke` PASS
 3. `ipc/` (18 tests) + `alloc/` (22 tests, +2 with `--features scudo`)
    Rust 크레이트 + Verus refinement proof

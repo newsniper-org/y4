@@ -56,15 +56,17 @@ team.
 | Memory allocator (front) | algorithm port | DragonFlyBSD lock-free SLAB — `alloc/src/slab.rs` |
 | Memory allocator (back) | C++ via FFI **+** Rust contract twin | LLVM scudo (Apache-2.0, vendored on demand from `third_party/scudo/PIN.toml`) — `scudo-sys/`, `alloc/src/scudo_ffi.rs`, `alloc/src/hardened.rs` |
 | Driver / device isolation | Tock-style capability typing | `capsules/src/isolation.rs` |
-| Verification toolchain | build-time | Verus (Rust-native, AUR `verus-bin`), Rocq 9.x (formerly Coq) |
+| Verification toolchain | build-time | Verus (Rust-native) — **`verus-fork/` git submodule** (branch `backend-pluggable`; Y4 backend patch 포함, AUR `verus-bin` 미사용), Rocq 9.x (formerly Coq), Isabelle/HOL (seL4-facing emit) |
 
 Self-written by Y4 (Phase B already shipped):
 
-- `proofs/verus/` — 50 machine-checked invariants across error /
-  ipc / alloc / capsules; 10 of them discharged constructively
-  (refinement proofs in each module's `refinement.rs`).
+- `proofs/verus/` — 54 machine-checked invariants across error /
+  ipc / alloc / capsules / amdv (AV1); 9 of them discharged
+  constructively (refinement proofs in each module's `refinement.rs`).
 - `proofs/coq/` — Rocq theories for high-level invariants Verus
-  cannot express.
+  cannot express (Y4-side; independent of seL4's own Isabelle proofs).
+- `proofs/isabelle/` — Isabelle/HOL `.thy` emit (Verus → adsmt cert →
+  Isabelle) for the seL4-team inbound contract (R7).
 - `boot/` — Limine + seL4 chain harness (`logicutils`-driven cmake
   invocation per [`MEMORY/y4_build_decisions.md`](./.claude-memories/y4_build_decisions.md)).
 - `kernel/` — root task (`Hello, Y4` milestone).
@@ -103,8 +105,9 @@ Y4/
 ├── scudo-sys/                    y4-scudo-sys — LLVM scudo C++ FFI (4 link-smoke tests)
 ├── boot/                         Limine config + seL4 cmake rules (logicutils-driven)
 ├── proofs/
-│   ├── verus/                    Verus specs (50 verified) — alloc / capsules / error / ipc
-│   └── coq/                      Rocq theories
+│   ├── verus/                    Verus specs (54 verified) — alloc / capsules / error / ipc / amdv
+│   ├── coq/                      Rocq theories (Verus-inexpressible, Y4-side)
+│   └── isabelle/                 Isabelle/HOL emit — seL4 inbound (R7)
 ├── tools/
 │   ├── git-hooks/                pre-commit (memory mirror)
 │   └── scudo-fetch.sh            materialise scudo source from PIN.toml
@@ -115,7 +118,10 @@ Y4/
 │       ├── PIN.toml              upstream coordinate (commit SHA)
 │       ├── README.md             vendoring policy
 │       └── standalone/           materialised by `just scudo-fetch` (gitignored)
+├── verus-fork/                   Verus fork (git submodule, backend-pluggable) — Y4 backend patch
 ├── .claude-memories/             read-only mirror of Claude Code's project memory
+├── .claude-notes/                design memos + trackers (git-tracked)
+├── .brainstormings/              design 탐색 기록 (git-tracked)
 └── .vscode/settings.json         editor exclusions for vendored sources
 ```
 
@@ -123,7 +129,7 @@ Subsystem status:
 
 | Subsystem | Status | First milestone |
 |-----------|--------|-----------------|
-| `proofs/` | ✅ harness green, 50 invariants verified | placeholder + scaffold |
+| `proofs/` | ✅ harness green, 54 invariants verified | placeholder + scaffold + amdv AV1 |
 | `boot/`   | ✅ qemu-smoke PASS                       | Limine → seL4 → "Boot config" |
 | `ipc/`    | ✅ 18 tests, Verus refinement proofs     | scheme verbs + LWKT msgport hybrid |
 | `alloc/`  | ✅ 22+2 tests, Verus refinement proofs   | DragonFly SLAB + hardened backend |
@@ -137,9 +143,12 @@ Set up a fresh clone:
 
 ```sh
 git clone <repo> Y4 && cd Y4
-git submodule update --init --recursive    # sel4, limine
+git submodule update --init --recursive    # sel4, limine, verus-fork
 just install-hooks                         # wire core.hooksPath = tools/git-hooks
 just scudo-fetch                           # materialise pinned scudo source (~1 MB)
+# Verus is the verus-fork submodule (not AUR verus-bin) — build the toolchain once:
+#   cd verus-fork/source && ./tools/get-z3.sh && source ../tools/activate && vargo build --release
+#   (full steps + IDE setup: .claude-notes/trackers/pr-verus-backend-tracker.md §3)
 ```
 
 Run the workspace gate (cargo + Verus + Rocq, all hash-stamped via
@@ -167,7 +176,7 @@ cargo test -p y4-alloc            # 22 tests (24 with --features scudo)
 cargo test -p y4-capsules         # 16 tests
 cargo test -p y4-ipc              # 18 tests
 cargo test -p y4-scudo-sys        # 4 C++ link-smoke tests
-just verus                        # 50 verified, 0 errors
+just verus                        # 54 verified, 0 errors (verus-fork submodule)
 just coq                          # Rocq theories
 ```
 
