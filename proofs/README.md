@@ -4,8 +4,8 @@
 # Y4 Verification Harness
 
 본 디렉터리는 Y4 의 **formal-first** 원칙을 강제하는 빌드/CI 게이트다.
-모든 신규 privileged 코드 경로는 같은 PR 안에 Verus 또는 Coq 명세를
-동반해야 머지된다 (CONTRIBUTING.md §5).
+모든 신규 privileged 코드 경로는 같은 PR 안에 Verus 또는 Rocq 명세를
+동반해야 머지된다 (CONTRIBUTING.md §5. "Verification expectations").
 
 ## 도구 분담
 
@@ -17,19 +17,27 @@
 
 원칙은 CLAUDE.md §6.6 ("Formal-first verification") 참조.
 
-## 현황 (2026-05-04)
+## 현황 (2026-06-29 기준 — Phase B 완료 + R7 emit pipeline 반영)
 
-- **Verus:** AUR `verus-bin` 설치됨 (`/usr/bin/verus`). vstd 는
-  `/opt/verus/libvstd.rlib` 에서 자동 link.
-- **Rocq:** 시스템 패키지 9.x 설치됨 (`/usr/bin/rocq` 신규 + `/usr/bin/coqc`
-  legacy 호환).
-- **명세:** **`just verus` → 50 verified, 0 errors** (alloc 13 + ipc 13 +
-  capsules 11 + error 1 + 모듈 top-level + refinement 10 + placeholder 등).
-  **`just coq` → Rocq 9.1.1 trivial theorem placeholder 통과**.
-- **Refinement:** alloc/ipc 각 모듈에 `refinement.rs` 추가 — 10개
-  invariant 가 `assume()` 대신 executable spec function + 귀납 증명으로
-  discharge. 자세한 내역은 [`./verus/src/alloc/refinement.rs`](./verus/src/alloc/refinement.rs)
-  와 [`./verus/src/ipc/refinement.rs`](./verus/src/ipc/refinement.rs).
+- **Verus:** **`verus-fork/` git submodule** (branch `backend-pluggable`)
+  의 빌드 산출물 사용 — `verus-fork/source/target-verus/release/verus`
+  (`vargo build --release`). system `verus-bin` (AUR) / `/usr/bin/verus`
+  **미사용**: submodule 이 Y4 backend patch (`-V oxiz` / `-V adsmt` /
+  emit-isabelle/rocq 등, PR-Verus-Backend) 를 포함해야 하기 때문. vstd 는
+  submodule 빌드에서 link. 설치·빌드 절차는 `proofs/verus/justfile` 및
+  `.claude-notes/trackers/pr-verus-backend-tracker.md` §3 참조.
+- **Rocq:** opam 설치 (`~/.opam/default/bin/rocq` 신규 CLI + `coqc`
+  legacy 호환), version **9.1.1**.
+- **명세:** **`just verus` → 54 verified, 0 errors** (alloc + ipc +
+  capsules + **amdv (AV1 `intercept_floor` + top-level `vmrun_safe`)** +
+  error + 모듈 top-level + refinement). 개수는 proof 추가마다 변하므로
+  **`just verus` 출력이 authoritative** — 본 숫자는 스냅샷.
+  **`just coq` → Rocq 9.1.1 trivial theorem placeholder 통과**
+  (`theories/Placeholder.v`; R4.1 의 첫 실제 theory land 시 삭제 예정).
+- **Refinement:** alloc/ipc 각 `refinement.rs` — **9개** proof fn
+  (alloc 4 + ipc 5) 가 `assume()` 대신 executable spec function + 귀납
+  증명으로 discharge. [`./verus/src/alloc/refinement.rs`](./verus/src/alloc/refinement.rs)
+  + [`./verus/src/ipc/refinement.rs`](./verus/src/ipc/refinement.rs).
 
 ## 워크플로우
 
@@ -55,6 +63,7 @@ just coq                     # = just proofs/coq
 
 1. `kernel/`, `hiu/`, `ipc/`, `alloc/`, `capsules/` 의 새 함수가 `unsafe`
    를 도입하면 `proofs/verus/` 의 대응 spec 파일이 같은 PR 에 없으면 lint
-   gate 가 reject (Phase B 후반에 lint plugin 으로 자동화).
+   gate 가 reject.  (자동화 lint plugin 은 **P-redesign.7 로 예정 — 현재
+   미구현**, 그때까지는 CONTRIBUTING.md §5 reviewer 수동 확인으로 강제.)
 2. CONTRIBUTING.md §5 의 reviewer checklist 가 명시적으로 "proof 산출물
    머지 여부" 를 확인.
