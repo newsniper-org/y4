@@ -12,7 +12,8 @@
 | 도구 | 역할 | 위치 |
 |------|------|------|
 | **Verus** | Rust-native 명세 + 증명. lease capability invariant, allocator 안전성, IPC 타입 안전성 등 Rust 코드와 직접 정렬되는 모든 증명 | [`./verus/`](./verus/) |
-| **Rocq** (formerly Coq) | Verus 가 표현 못 하는 high-level invariant. cross-component 보안 정리, 비-Rust 컴포넌트(seL4 wrapper 등)의 모델링 | [`./coq/`](./coq/) |
+| **Rocq** (formerly Coq) | Verus 가 표현 못 하는 **Y4 자체** high-level invariant — cross-component 보안 정리, inductive cap derivation chain 등. 예: `Y4.Sel4.Wrapper` = Y4 가 seL4 syscall 경계에 씌우는 **wrapper** 의 불변식이며, **seL4 자체 proof (Isabelle/HOL) 와는 독립** (seL4 를 Rocq 로 모델링하는 것이 아님) | [`./coq/`](./coq/) |
+| **Isabelle/HOL** | seL4 대면 전용 — Y4 의 Verus 증명을 seL4 팀이 소비하도록 `.thy` 로 emit (seL4 mainline verification 트랙이 Isabelle/HOL 이므로). L4.verified inbound contract. R7 emit pipeline (`verus_to_isabelle.md` §1.7) 산출물 | [`./isabelle/`](./isabelle/) |
 
 원칙은 CLAUDE.md §6.6 ("Formal-first verification") 참조.
 
