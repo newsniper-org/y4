@@ -3,7 +3,8 @@
 
 # Y4 Isabelle/HOL theory 산출물
 
-Y4 가 Verus invariant (AV1~AV40 + alloc/ipc/capsules 51 verified) 를
+Y4 가 Verus invariant (AV1~AV40 + alloc/ipc/capsules; 54 verified, 스냅샷;
+`just verus` 권위) 를
 adsmt cert 측으로 verify 한 후 `adsmt-emit-isabelle` CLI 가 cert →
 `.thy` 변환한 결과.
 

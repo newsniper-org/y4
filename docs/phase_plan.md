@@ -37,7 +37,7 @@
 
 | Step | 영역 | 마일스톤 | 결과 |
 |---|---|---|---|
-| 1 | `proofs/` Verus + Rocq 하네스 + CI gate | placeholder + 모듈 트리 | **50 verified, 0 errors** |
+| 1 | `proofs/` Verus + Rocq 하네스 + CI gate | placeholder + 모듈 트리 | **54 verified, 0 errors** (스냅샷; `just verus` 권위) |
 | 2 | `boot/` Limine → seL4 QEMU | seL4 boot path reached | qemu boot OK |
 | 3a | `ipc/` Rust 크레이트 — scheme + LWKT msgport hybrid | open/send/wait/forward/abort/priority | **18 tests** |
 | 3b | `alloc/` Rust 크레이트 — DragonFly SLAB + hardened backend | bump + slab + scudo contract + integrated | **22 tests** |

@@ -17,7 +17,7 @@
 
 | Item | 결정 | 비고 |
 |---|---|---|
-| **R6.1** invariant 범위 | 51 verified 전체 (alloc 18 + ipc 18 + capsules 11 + amdv 1 + error 1 + top-level 2) | 현 시점 verifiable 모두.  AV catalog (statement-only frozen) 는 proof body 채움 (P-redesign.3 후) 추가 |
+| **R6.1** invariant 범위 | verifiable 전체 (결정 시점 스냅샷 51: alloc 18 + ipc 18 + capsules 11 + amdv 1 + error 1 + top-level 2; **현재 54, `just verus` 권위**) | 현 시점 verifiable 모두.  AV catalog (statement-only frozen) 는 proof body 채움 (P-redesign.3 후) 추가 |
 | **R6.2** 측정 metric | 6 metric: `solve_time_us` / `proof_cert_size_bytes` / `peak_memory_mib` / `parallelism` (single vs N-thread) / `cache_miss_rate` / `result` (sat/unsat/timeout) | 통계 + 성능 + reproducibility evidence 동시 |
 | **R6.3** sample size | N=30 per invariant, Tukey-trimmed mean + p95 + std-dev | 통계적 유의성 |
 | **R6.4** 산출물 형식 | JSON Lines (jsonl) + Apache Arrow IPC | streaming + columnar query |
@@ -30,10 +30,10 @@
 
 ## 2. Baseline 추적 — adsmt testing channel HEAD 별
 
-각 adsmt testing HEAD 시점의 51 verified invariant 의 z3 vs OxiZ 측정
-결과 summary:
+각 adsmt testing HEAD 시점의 verified invariant (스냅샷 54, `just verus`
+권위) 의 z3 vs OxiZ 측정 결과 summary:
 
-| Date | adsmt commit | Verus version | OxiZ version | 51 verified | Z3 평균 solve_time_us | OxiZ 평균 solve_time_us | adsmt 평균 solve_time_us (opt-in 6 inv) | result diff |
+| Date | adsmt commit | Verus version | OxiZ version | verified (스냅샷) | Z3 평균 solve_time_us | OxiZ 평균 solve_time_us | adsmt 평균 solve_time_us (opt-in 6 inv) | result diff |
 |---|---|---|---|---|---|---|---|---|
 | (대기) | (첫 측정 시점에 row 추가) | — | — | — | — | — | — | — |
 

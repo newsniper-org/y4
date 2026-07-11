@@ -28,10 +28,11 @@
   `.claude-notes/trackers/pr-verus-backend-tracker.md` §3 참조.
 - **Rocq:** opam 설치 (`~/.opam/default/bin/rocq` 신규 CLI + `coqc`
   legacy 호환), version **9.1.1**.
-- **명세:** **`just verus` → 54 verified, 0 errors** (alloc + ipc +
-  capsules + **amdv (AV1 `intercept_floor` + top-level `vmrun_safe`)** +
-  error + 모듈 top-level + refinement). 개수는 proof 추가마다 변하므로
-  **`just verus` 출력이 authoritative** — 본 숫자는 스냅샷.
+- **명세:** **`just verus` → 54 verified, 0 errors** (스냅샷; `just verus`
+  권위) — alloc + ipc + capsules + **amdv (AV1 `intercept_floor` +
+  top-level `vmrun_safe`)** + error + 모듈 top-level + refinement.
+  개수는 proof 추가마다 변하므로 본 숫자는 스냅샷, `just verus` 출력이
+  source of truth.
   **`just coq` → Rocq 9.1.1 trivial theorem placeholder 통과**
   (`theories/Placeholder.v`; R4.1 의 첫 실제 theory land 시 삭제 예정).
 - **Refinement:** alloc/ipc 각 `refinement.rs` — **9개** proof fn

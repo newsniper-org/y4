@@ -144,8 +144,9 @@ v1.0 도달 시 Y4 측 spec 의 학술/산업 차별점 강화 + cargo dep 정�
 
 paper artifact 의 Reproducible 자격 + 학술 차별점 evidence:
 
-1. **OxiZ vs Z3 비교** — Y4 의 Verus 측 51 verified invariant 의 SMT
-   질의를 두 solver 로 발화, 결과 / 시간 / proof cert 비교
+1. **OxiZ vs Z3 비교** — Y4 의 Verus 측 verified invariant (스냅샷 54,
+   `just verus` 권위) 의 SMT 질의를 두 solver 로 발화, 결과 / 시간 /
+   proof cert 비교
 2. **adsmt 의 abductive minimal explanation** — Y4 의 `power_arch.md`
    §6.1.8.2 의 3 query (Which targets are stale / smallest set to
    regenerate / Why being rebuilt) 의 actual implementation
