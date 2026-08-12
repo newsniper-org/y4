@@ -37,6 +37,23 @@ j := env_var_or_default("Y4_J", num_cpus())
 default:
     @just --list --justfile {{justfile()}}
 
+# --- git via dev env ------------------------------------------------------
+
+# Run the git CLI with `.env.dev-git` applied, then forward all args verbatim.
+# `.env.dev-git` (gitignored) points SSH_ASKPASS at ksshaskpass so SSH
+# pushes/fetches prompt via the KDE dialog instead of failing on the absent
+# /usr/lib/ssh/ssh-askpass.  If the env file is missing, git still runs.
+#
+# Usage:  just git <git-args...>            e.g.  just git push origin main
+#         flags that `just` swallows need `--`:
+#                 just git -- push --no-recurse-submodules origin main
+git *ARGS:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    envf="{{justfile_directory()}}/.env.dev-git"
+    if [ -f "$envf" ]; then set -a; . "$envf"; set +a; fi
+    exec git {{ARGS}}
+
 # --- Workspace-wide Rust hygiene -----------------------------------------
 
 # `cargo fmt --check` across the workspace.  Skipped until first member.

@@ -59,6 +59,9 @@ proofs/verus/lib*.rlib
 .claude-notes/_completed/
 *.local.md
 
+# Local dev git env — SSH askpass routing applied by `just git` (machine-local)
+.env.dev-git
+
 # Cross-project request / reply scratch (local mirror to sibling repos)
 # - .local-requests-to/<peer>/  = Y4 outbound (mirror to <peer>/.local-requests-from/Y4/)
 # - .local-replies-from/<peer>/ = inbound reply (mirror from <peer>/.local-replies-to/Y4/)
