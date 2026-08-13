@@ -245,6 +245,7 @@ TRNG output format, etc.). Y4 design changes stay here.
 - Power management 안전장치 (S15~S23 + AV21~AV40): `docs/power_safety.md`
 - Power management 아키텍처: `docs/power_arch.md`
 - CPU virtualization vendor-neutrality (AMD-V ↔ Intel VT-x): `docs/cpu_virt_compat.md`
+- HW/플랫폼/디바이스 메커니즘 추상화 정책 (realization 은 spec 안 함): `docs/hw_mechanism_abstraction.md`
 - License policy details: `docs/licensing.md`
 - Phase plan + entry triggers: `docs/phase_plan.md`
 - Contribution rules: `CONTRIBUTING.md`
