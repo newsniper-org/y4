@@ -47,6 +47,7 @@ first)** 을 "하드웨어 메커니즘" 축으로 구체화한 것.
 | CPU 가상화 | vendor-neutral VMM 인터페이스 (`cpu_virt_compat.md`) | AMD-V(SVM) / Intel VT-x / RISC-V H-ext |
 | Root of Trust | TPM 2.0 conformance (PCR extend / quote / EK-AK 체인) | discrete dTPM / firmware fTPM / 기타 |
 | measured-boot 개시 | RoT trait 이 measurement provenance 보고 | SKINIT / SENTER / RISC-V + DRTM·SRTM 택 |
+| measurement-log 접근 | `MeasurementLogSource`: TCG2 event log + PCR/MR 획득(공통 파서·PCR replay) | UEFI config table / ACPI `TPM2` / coreboot cbmem / device-tree SML |
 | confidential VM | vendor/ISA-neutral confidential-VM capability | AMD SEV-SNP / Intel TDX / RISC-V CoVE |
 | device attestation | "device 가 identity+config 를 attest" | SPDM 채택 범위 (⏳ `hiu_abi.md` / RTL) |
 | (일반) arch-특화 코드 | trait 뒤의 arch-neutral 로직 | per-arch backend (`sel4_backend` 형태) |

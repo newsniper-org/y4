@@ -4,7 +4,7 @@
 ---
 topic: Boot chain deep-dive — Limine→seL4→Y4 실제 chain + measured/secure boot + DRTM (★ DRTM 이 다중 bootloader 다양성과 attestation 단일성을 양립시킴)
 created: 2026-08-17T15:39:20+09:00   # KST (UTC+9)
-status: brainstorming (attestation §10 / key-management §11 후보에서 진입).  결정 다수 + 미결 일부
+status: brainstorming (attestation §10 / key-management §11 후보에서 진입).  결정 다수 + 미결 일부.  rev: §3.1 measured 소비 = 부트로더·펌웨어 무관 MeasurementLogSource(a') 결정 + §8 log-parser Verus 대상(verus-fork 안정화 이후)
 scope: Y4 부팅 chain 최종 목표.  현 baseline(Limine v12.1.0→seL4 15.0.0→y4-roottask, qemu-smoke PASS) 위
        measured/secure boot / DRTM vs SRTM / 다중 bootloader tier / per-ISA boot RoT /
        transactional update+rollback / verified-base bind
@@ -86,6 +86,41 @@ firmware(UEFI/BIOS)
 정책이 attestation 스토리를 조각내지 않는다.  SRTM 은 DRTM 미가용 플랫폼의
 fallback(attestation §2, 무엇이 쓰였는지는 attestation 이 보고).
 
+## §3.1 (결정) measured 소비 — 부트로더·펌웨어 무관 `MeasurementLogSource` (a')
+
+**측정은 이미 표준이 한다.**  Limine v12.1.0 은 표준 준수 SRTM measured boot
+를 내장 — `measured_boot`(Secure Boot 시 강제 on), **PCR 8**(cmdline/kernel
+경로/module 경로) + **PCR 9**(limine.conf/kernel 이미지/module 이미지),
+`EV_IPL` 이벤트, `EFI_TCG2_PROTOCOL`(+ TDX/SEV-SNP 는 `EFI_CC_MEASUREMENT_
+PROTOCOL`, PCR→MR 자동 매핑), **UAPI Linux TPM PCR Registry(GRUB 관례) 준수**,
+그리고 **digest 재현 절차 문서화**(→ RIM 직결, reproducible-build 발제).
+⟹ **Y4 shim 불필요, Limine fork 불필요**(원칙 5 reuse + submodule-tracks-
+upstream D3).
+
+**Y4 는 그 결과를 표준으로 소비 (a')**: "TCG2 event log + PCR/MR 획득"을
+**계약**으로 고정하고 로그 **소스는 추상화**(`MeasurementLogSource`):
+
+| backend | 대상 |
+|---|---|
+| UEFI config table(`LINUX_EFI_TPM_EVENT_LOG` + `EFI_TPM2_FINAL_EVENTS_TABLE`) | UEFI x86 |
+| ACPI `TPM2`(LAML/LASA log area) | UEFI/legacy-BIOS x86 (post-boot 지속) |
+| coreboot cbmem TCPA log | coreboot 플랫폼 |
+| **device-tree SML**(`linux,sml-base`/`linux,sml-size`) | **ARM/RISC-V/embedded (비-UEFI·비-ACPI)** — §5 per-ISA RoT 와 pairing |
+
+- **왜 (a')**: bootloader-무관(Limine/GRUB2/U-Boot/coreboot 모두 같은 PCR
+  extend + 같은 표준 log append, UAPI/TCG 규약 공통) **+ firmware-무관**(UEFI/
+  BIOS/coreboot/DT).  Limine 외 부트로더를 쓰는 커스텀 배포판(§2) × 다중 ISA 를
+  **동일 소비 코드**로 커버.  (b) Limine-특화 핸드오프는 부트로더마다 파편화
+  → 기각.
+- **hw_mechanism_abstraction 인스턴스**: 계약(TCG log+PCR/MR)만 고정, discovery
+  realization 은 per-platform + 로그가 provenance 보고.  `docs/hw_mechanism_
+  abstraction.md` registry 에 등재.
+- **비용 구조**: TCG log 파싱 + PCR replay 는 **공통 1벌**(포맷 동일), 소스별
+  차이는 얇은 discovery 백엔드뿐 — "파서 1 + discovery N".
+- **MB1 nuance 해소**: PCR extend 는 boot protocol 무관(로드 artifact 측정);
+  Y4 는 protocol-특화 핸드오프가 아니라 **표준 소스**에서 log 를 read →
+  현 multiboot1 경로도 문제 없음.
+
 ## §4 (결정) secure boot — 서명 체인 (fail-closed)
 
 - UEFI Secure Boot → **Limine(signed)** → Limine이 seL4 검증 → seL4/Y4 가
@@ -128,8 +163,16 @@ fallback(attestation §2, 무엇이 쓰였는지는 attestation 이 보고).
   C 코드; seL4 **verified boot 은 inherited**).
 - Y4 기여 여지: **root task 초기 setup**(capability 분배 이전)의 일부 invariant
   는 Verus 가능(예: 초기 capability 분배가 C1/C2/C3 well-formed 상태로 시작).
+- ★ **log-parser · PCR-replay = Verus 대상**(§3.1): `MeasurementLogSource` 의
+  공통 파서(TCG `EV_IPL` 파싱)와 PCR replay(측정 chain 재계산 → 기대값/RIM
+  대조)는 deterministic → **공통 계약에 대해 1벌** Verus(hw_mechanism_abstraction
+  §4 정합; discovery 백엔드는 trusted boundary).  boot 에서 새 Verus proof 가
+  생기는 **유일 지점**.  **단 verus-fork 가 최근 Verus 업스트림 breaking change
+  대응 중이라 실제 증명 착수는 그 안정화 이후** — root-task invariant(§9)와는
+  별개 항목이나 동일 verus-fork 타이밍에 걸린다.
 - 검증 스토리 = **measured + secure boot + verified seL4(inherited)** — 새 Verus
-  proof 최소.  boot 은 증명보다 **측정·서명**으로 신뢰를 세운다(경계 명시).
+  proof 는 위 §3.1 log-parser 한 곳으로 **최소**.  boot 은 증명보다 **측정·
+  서명**으로 신뢰를 세운다(경계 명시).
 
 ## §9 결정 / 미결 요약
 
@@ -142,9 +185,11 @@ fallback(attestation §2, 무엇이 쓰였는지는 attestation 이 보고).
   RISC-V; U-Boot↔TF-A pairing, §5)
 - **transactional A/B + rollback**(rEFInd 배제 이유의 실현, measured 와 연동, §6)
 - boot chain = verified-base-bind 의 물리적 지점(§7)
+- **measured 소비 = 부트로더·펌웨어 무관 `MeasurementLogSource`(a', §3.1)** —
+  Limine 내장 표준 측정 사용(shim·fork X), Y4 는 표준 TCG log 를 UEFI/ACPI/
+  coreboot/DT 백엔드로 소비; hw_mechanism_abstraction registry 등재
 
 **미결(설계 필요)**:
-- Limine measured-boot 지원 실제 형태(SRTM fallback 시 각 tier 측정 능력)
 - transactional update 스킴 구체(A/B slot 배치 / 측정값 관리 / rollback trigger)
 - U-Boot + TF-A/ARM-DRTM pairing 구체(⏳ ARM form-factor)
 - root task 초기 setup 의 Verus invariant 범위(§8) — **verus-fork 측 작업
