@@ -4,7 +4,7 @@
 ---
 topic: Boot chain deep-dive — Limine→seL4→Y4 실제 chain + measured/secure boot + DRTM (★ DRTM 이 다중 bootloader 다양성과 attestation 단일성을 양립시킴)
 created: 2026-08-17T15:39:20+09:00   # KST (UTC+9)
-status: brainstorming (attestation §10 / key-management §11 후보에서 진입).  결정 다수 + 미결 일부.  rev: §3.1 measured 소비 = 부트로더·펌웨어 무관 MeasurementLogSource(a') 결정 + §8 log-parser Verus 대상(verus-fork 안정화 이후)
+status: brainstorming (attestation §10 / key-management §11 후보에서 진입).  결정 다수 + 미결 일부.  rev: §3.1 measured 소비 = 부트로더·펌웨어 무관 MeasurementLogSource(a') 결정 + §8 log-parser Verus 대상(verus-fork 안정화 이후) + §6 transactional=per-chunk A/B(chunk-K seL4+roottask / chunk-P capsule+config)+Y4 mini-selector 결정
 scope: Y4 부팅 chain 최종 목표.  현 baseline(Limine v12.1.0→seL4 15.0.0→y4-roottask, qemu-smoke PASS) 위
        measured/secure boot / DRTM vs SRTM / 다중 bootloader tier / per-ISA boot RoT /
        transactional update+rollback / verified-base bind
@@ -139,14 +139,62 @@ upstream D3).
 - Y4 계약: "boot RoT 가 seL4+Y4 launch 를 측정·보고"; realization(x86 SKINIT /
   ARM DEN0113 / RISC-V)은 per-ISA + attestation 이 provenance 보고.
 
-## §6 (결정) transactional update + rollback
+## §6 (결정) transactional update + rollback — per-chunk A/B + Y4 mini-selector
 
-- rEFInd 배제 이유 = **transactional-update hook 부재**(CLAUDE §4).  Y4 는 **A/B
-  slot / transactional update + 실패 시 rollback** 지향.
-- **measured boot 상호작용**: update 후 측정값 변화 → attestation 이 새 버전
-  반영(RIM 갱신, key-mgmt §11 / reproducible build 발제) → tenant 가 새 TCB
-  재검증.  boot 실패 시 **이전 slot 으로 rollback**.
-- systemd-boot 배제(systemd-tied) → **Limine + Y4 자체 transactional 스킴**.
+rEFInd 배제 이유 = transactional-update hook 부재(CLAUDE §4); systemd-boot 배제
+= systemd-tied.  Y4 는 **A/B dual-slot + 실패 시 rollback** 을 자체 스킴으로 —
+이는 외부 하드웨어 메커니즘이 아니라 **Y4-owned 산출물**(RIM/reproducible-build
+과 같은 부류; hw_mechanism_abstraction §3 경계의 Y4 소유 쪽 → **registry 대상
+아님**).
+
+### §6.1 boot-state = GPT 파티션 속성 + Y4 mini-selector (bootloader-무관)
+- **boot-state** = GPT 파티션 속성(`priority`/`tries`/`successful`, ChromeOS
+  cgpt 방식) — on-disk, **bootloader·firmware 무관**(a' 와 동일 이식성 논리).
+- **selector = 단일 Y4 mini-selector** — 어느 부트로더(Limine/GRUB2/U-Boot/
+  coreboot)든 이 mini-selector 하나를 payload 로 로드; 이후 GPT 속성 read →
+  slot 선택 → chain.  ⟹ **per-bootloader adapter 0**(부트로더는 "mini-selector
+  까지 데려다주는" loader 로 격하, §3 테마).
+- mini-selector 무결성 = **secure boot 서명(§4) + anti-rollback floor(§6.4)** 로
+  담보(DRTM 시 measured TCB 밖 pre-launch 이나 이 둘로 커버; SRTM 시 Limine 이
+  측정).
+
+### §6.2 ★ per-chunk A/B — 변경빈도 층화
+Y4 이미지를 단일 slot 이 아니라 **덩어리(chunk)별 독립 A/B**:
+- **chunk-K = seL4 kernel + y4-roottask** (verified core, 드물게 변경) — {1A,1B}
+- **chunk-P = capsule set + config** (driver/policy 층, 자주 변경) — {2A,2B}
+- mini-selector 가 **chunk 별로** slot 선택 → boot set = 선택된 chunk-K ⊕ 선택된
+  chunk-P.
+- **rationale**: Y4 의 신뢰·변경빈도 층화와 정합 — verified seL4 core 는 드물게
+  변경(변경 시 verified-base-bind §7 재트리거), capsule/policy 는 자주.  각 층이
+  자기 변경빈도에 맞는 update train 을 가짐(작은 update 단위, 독립 rollback).
+- ★ **cross-chunk 호환 계약**: chunk-P 가 요구하는 **kernel-ABI 범위**를 선언;
+  mini-selector 는 **호환되는 조합만 선택**.  rollback 도 조합 호환을 보존 —
+  각 chunk 의 "good(successful)" slot 들은 **항상 호환 baseline** 을 이룬다.
+
+### §6.3 update flow (power-fail-safe, per-chunk)
+1. update client 가 대상 chunk 의 **inactive slot** 에 신규 이미지 write(active
+   무손상 → 중단돼도 inactive 만 오염)
+2. 검증(그 slot 의 RIM = 서명/hash)
+3. **원자적 commit-to-try**: 해당 chunk inactive 의 priority↑ + tries=N (GPT 단일
+   write)
+4. 재부팅 → mini-selector 가 그 chunk 의 신규 slot 선택(**호환 확인**) + tries 감소
+5. 정상 도달 시 **mark-good(successful=1)** → 영구 commit; 실패 시 tries 소진 →
+   **그 chunk 만 auto-rollback**(타 chunk 무영향; 이전 slot 손대지 않아 항상 good)
+
+### §6.4 rollback trigger + ★ anti-rollback
+- **트리거**: (a) commit 전 tries 소진 — panic/hang 은 **watchdog** 재부팅으로
+  tries 감소 → 반복 실패 시 rollback; (b) **health-check 실패**(capsule up /
+  accelerator 도달 / attestation self-check) → mark-good 생략 + 재부팅.
+- ★ **anti-rollback(security)**: safety-rollback(이전 good 복귀)은 허용하되
+  악의적 downgrade(구 취약 버전 강제)는 차단 — **chunk 별 TPM NV monotonic
+  counter 의 min-version floor**; floor 미만은 unseal/attestation 실패.
+
+### §6.5 measured-boot / attestation 루프 (§3.1 연동)
+- **chunk 별 RIM**; mini-selector 가 **선택한 chunk slot-id 들을 측정**(PCR
+  extend) → attested TCB = **실제 부팅된 조합(chunk-K ⊕ chunk-P)** 과 일치,
+  trial/committed 상태도 attestable.
+- update 후 측정값 변화 → tenant 가 신규 조합 RIM 으로 재검증; rollback 시 측정값
+  이전 조합으로 → tenant 가 rollback 인지(key-mgmt §11 / reproducible-build 발제).
 
 ## §7 verified-base bind — attestation §3 의 실제 지점
 
@@ -188,9 +236,15 @@ upstream D3).
 - **measured 소비 = 부트로더·펌웨어 무관 `MeasurementLogSource`(a', §3.1)** —
   Limine 내장 표준 측정 사용(shim·fork X), Y4 는 표준 TCG log 를 UEFI/ACPI/
   coreboot/DT 백엔드로 소비; hw_mechanism_abstraction registry 등재
+- **transactional update = per-chunk A/B + Y4 mini-selector**(§6): boot-state=GPT
+  속성(bootloader/firmware 무관), chunk-K(seL4+roottask)/chunk-P(capsule+config)
+  독립 A/B(변경빈도 층화)+cross-chunk 호환 계약; power-fail-safe flow; rollback=
+  tries 소진/health-fail; anti-rollback=chunk 별 TPM NV min-version floor;
+  Y4-owned(registry 대상 아님)
 
 **미결(설계 필요)**:
-- transactional update 스킴 구체(A/B slot 배치 / 측정값 관리 / rollback trigger)
+- **data/영속 파티션** 처리(별도 non-A/B 파티션 + 스키마 변경 시 migration) — §6 열린 항목
+- cross-chunk 호환 descriptor 포맷 + mini-selector 호환 선택 알고리즘 세부(§6.2)
 - U-Boot + TF-A/ARM-DRTM pairing 구체(⏳ ARM form-factor)
 - root task 초기 setup 의 Verus invariant 범위(§8) — **verus-fork 측 작업
   지연으로 보류(미결 유지, 별도 진행)**
