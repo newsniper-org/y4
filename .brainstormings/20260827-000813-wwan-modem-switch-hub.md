@@ -149,6 +149,10 @@ USIM 이 crux — AKA(`AUTHENTICATE` APDU, MILENAGE/TUAK)는 **K 가 카드 밖 
 - **IOMMU realization**: PCIe(VT-d/AMD-Vi, per-BDF, MHI) / 집적 SoC(**ARM SMMU**,
   stream-ID) / USB(DMA master 는 **xHCI** → xHCI confine + USB 데이터 검증) —
   추상화(§10).
+  - ※ **집적 SoC 모뎀은 ARM 에 한정하지 않는다**: **RISC-V(RISC-V IOMMU 표준
+    스펙, device-ID)** 나 기타 ISA(POWER/ARCv3 등, cross-platform 발제)를 채택한
+    SoC 모뎀도 염두 — SoC IOMMU realization 은 ISA 별로 다르되 "baseband 은
+    granted ring 만 도달" 계약은 불변(§10 hw_mechanism_abstraction).
 - 펌웨어 무결성 = modem secure boot + **device attestation(SPDM, attestation §5)**;
   IOMMU 는 서명 펌웨어에도 **defense-in-depth**.
 - 불변식(Verus): `baseband IOMMU domain ⊆ {Y4 모뎀 ring}` ∧ fence-before-reclaim
@@ -189,7 +193,7 @@ USIM 이 crux — AKA(`AUTHENTICATE` APDU, MILENAGE/TUAK)는 **K 가 카드 밖 
 | RAT: LTE / 5G NR (SA/NSA) | 서비스 연속성 계약(§4) |
 | IMS 위치: on-modem / host 스택 | 단일 registration 종단(§3) |
 | UICC 형태: physical / eUICC / iSIM | Y4 유일 중재 + AKA 미노출(§5) |
-| IOMMU: VT-d / AMD-Vi / SMMU / xHCI | baseband 은 granted ring 만(§6) |
+| IOMMU: VT-d / AMD-Vi / ARM SMMU / **RISC-V IOMMU** / 기타 ISA SoC IOMMU / xHCI | baseband 은 granted ring 만(§6) |
 
 계약 = switch-hub + 단일-컨텍스트 + 복제-방지 불변식.  realization 다양성이
 form-factor-agnostic 을 준다.

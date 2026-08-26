@@ -3,6 +3,11 @@
 
 # `.brainstormings/` — design 탐색 기록
 
+> **★ 승격됨 (2026-08-27)**: 본 시리즈의 결정 + 횡단 원칙(P1~P11)은 canonical
+> design memo **[`docs/design_decisions.md`](../docs/design_decisions.md)** 로
+> 승격됨.  본 디렉터리 문서들은 이제 **historical detail(옵션 탐색 + 근거)**로
+> 보존 — 결정의 캐논은 그 memo, 상세 근거는 여기.
+
 본 디렉터리는 sign-off cycle 전의 **brainstorming / 옵션 탐색** 기록.
 결정 (`.claude-notes/`) 이나 지속 추적 (`.claude-notes/trackers/`) 과
 구분되는, "아직 결정 X — 방향 탐색" 단계의 산출물.
