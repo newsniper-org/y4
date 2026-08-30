@@ -54,6 +54,15 @@ _cert_dir := env_var_or_default("ADSMT_CERT_DIR", "target/adsmt-cert")
 _thy_dir := justfile_directory() + "/../isabelle"
 _v_dir   := justfile_directory() + "/../coq/theories/Generated"
 
+# --- Default ------------------------------------------------------------
+
+# MUST stay the FIRST recipe in this file.  `just` with no arguments runs the
+# first recipe, not the one named `default`.  When `_check-verus` stood first
+# (until 2026-08-30) `just verus` → `just proofs` → `just ci` ran the binary-
+# existence check and nothing else: rc=0, zero output, zero proofs.  A hollow
+# gate.  `proofs/coq/justfile` has always had `default: verify` first — match it.
+default: verify
+
 # --- Pre-flight ---------------------------------------------------------
 
 # Verify the verus-fork submodule binary exists.
@@ -73,8 +82,6 @@ _check-verus:
         echo ""; \
         exit 1; \
     fi
-
-default: verify
 
 # --- 1. verify with a chosen backend -----------------------------------
 

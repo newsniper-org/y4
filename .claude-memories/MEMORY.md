@@ -10,3 +10,4 @@
 - [Y4 sign-off 후 후속 논의 대기 항목](y4_pending_topics.md) — ARCH-II' sign-off 18 단계 완료 후 소비전력 관리 기능 논의 (S15+ 후보).
 - [adsmt v1.0 = Y4 verification workflow 재설계 trigger](feedback_adsmt_v1_verification_redesign.md) — release 전까지 verification workflow 본격 변경 X (hold), release 시 전체 재설계 진입.  2026-06-01 P-redesign.1 sign-off 로 hold 사실상 해제 (P-redesign.8 만 deferred).
 - [Y4 adsmt + adsmt-contrib = testing channel pin (rolling)](feedback_adsmt_testing_channel_pin.md) — Y4 가 양 repo testing channel 추종, latest stabilisation 즉시 흡수.
+- [드라이버/SDK 개발환경 · Rust 툴체인 · Y4 ABI 선행조건 방침](y4_toolchain_and_abi_policy.md) — 사용자 방침 축자(2026-08-30, `...` 로 열린 목록); 2024 Edition ✅ / `stable >= 1.97` 은 하한이지 핀 아님 ↔ Y4 는 1.94 + `channel = "stable"`(이 호스트에서 1.96.0) — **verus-fork 작업 후 재판정으로 유보**; 「Y4 ABI」= 게스트↔하이퍼바이저 ABI 이고 `hiu_abi.md` 가 아니며 **문서가 없다**(블로커).

@@ -242,3 +242,52 @@ Y4 가 직접 의존하는 WaveTensor 인터페이스 표면은 다음 셋 뿐�
 WT64v1 ISA 자체(opcode 표 등)는 Y4 의 ABI 경계가 **아니다** — ISA 는 게스트
 SDK 가 가속기와 직접 말할 때 의미가 있고, Y4 는 capability 검증과 메모리
 mapping 만 책임진다.
+
+---
+
+## 11. 「Y4 ABI」의 중의성 — 네 표면의 분간
+
+§10 은 *Y4 가 무엇에 의존하는가*(하향)를 정한다.  그것만으로는
+**게스트 SDK / 드라이버가 Y4 에게 말하는 표면**(상향)이 무엇인지 답하지
+않는다.  「Y4 ABI」라는 말이 실제로는 넷을 가리키므로 아래로 가른다.
+
+| # | 표면 | 방향 | 정의 위치 | 상태 |
+|---|---|---|---|---|
+| A | Y4 ↔ HIU MMIO 레지스터 맵 + 타이밍 계약 | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` | v0 draft, 양측 sign-off 대기 (`HIU_ABI_VERSION` = `0x0000_0000`) |
+| B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **없음** | 미정의.  `amdv_safety.md` §S7.2 가 `y4-hypercall` repo 로 미루나 §5.3 재정의 이후 그 repo 는 사용자 CLI 도구용이고 디스크에도 없다 |
+| C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
+| D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
+| — | WT64v1 ISA | 게스트 SDK **→** 가속기 | WaveTensor 저장소 소관 | §10 대로 **Y4 의 ABI 경계 아님** |
+
+**「Y4용 드라이버 / SDK」가 실제로 부르는 면이 위 넷 중 무엇인지는
+미결이다 — 이 문서는 그것을 정하지 않는다.**  방침(2026-08-30)은
+「구체적인 Y4 ABI」라고만 적었고 어느 표면인지 말하지 않았다.  후보는
+최소 셋이다: ⒜ B 단독 ⒝ B + D (게스트가 lease 를 취득하고 그 권한으로
+HIU MMIO 를 두드리는 규약) ⒞ B·C·D 전부.  **어느 것이냐가 블로커의
+크기를 정하므로 사람이 정한다.**
+
+확실한 것은 **B 가 어느 후보에도 들어가고 현재 어느 파일에도 정의되어
+있지 않다**는 것뿐이다.
+
+> 미결 등재처 (네 저장소가 같은 질문을 열어 두고 있다):
+> `.claude-memories/y4_toolchain_and_abi_policy.md` §6-4 ·
+> wavetensor-sdk `docs/architecture.md` §11 [Q14] ·
+> wavetensor-drivers `docs/platforms.md` §7 ⑺ ·
+> WaveTensor `.claude-memos/dev_platform_axis.md` §6.
+
+따라서: **A 를 「그 ABI」로 읽지 말 것.**  hiu_abi.md 는 방향이 반대이고,
+그 문서에 게스트 ABI 나 툴체인 사항을 덧쓰면 §0 동결 정책(Y4 + WaveTensor
+양측 sign-off)이 오염된다.
+
+B 의 신설은 사용자 방침(2026-08-30)이 「Y4용 드라이버 및 SDK 개발」의
+**선행 조건**으로 지목한 항목이다 — `docs/phase_plan.md` Phase C 절
+말미의 **「게스트 ↔ 하이퍼바이저 ABI spec 은 위 목록에 없다」** 주석에
+등재.  그 선행 조건은 **y4-drivers 진입**에 걸리는 것이지 Phase C 자체의
+차단 의존이 아니다 (방침은 Phase C 를 막는다고 말하지 않았다).
+
+spec 의 소재지(⒜ `Y4/docs/guest_abi.md` 신설 ⒝ `y4-hypercall` 실제 개설
+⒞ 또 다른 sibling repo)도 **미결 — 사람이 정한다.**
+
+> source: `docs/hiu_abi.md` §0 · `docs/amdv_safety.md` §S7.2 ·
+> `docs/vmm_arch.md` §1, §4, §5.3 · `docs/lease_capability.md` §3.1–3.2,
+> §5 · `.claude-memories/y4_toolchain_and_abi_policy.md` §5.

@@ -119,7 +119,34 @@ greeting 까지 검증, 모든 Verus 명세 머지 완료.
 > 가능 — power_safety.md / power_arch.md 의 v1.0 cycle 은 ARCH-II'
 > 짝 frozen 과 무관 (별도 cycle).
 >
-> **위 7 단계 완료 후에 y4-drivers / capsules 깊이 작업 진입.**
+> **위 단계 완료 후에 y4-drivers / capsules 깊이 작업 진입.**
+> *(기존 문면은 "위 7 단계" 였으나 목록은 그 이전부터 1~8 + 4-vn 으로
+> 8+ 항이었다 — 수 불일치는 이 주석 이전부터 존재.  숫자를 임의로
+> 고치지 않고 항 수 표현만 중립화한다.)*
+>
+> **게스트 ↔ 하이퍼바이저 ABI spec 은 위 목록에 없다 — 의도다.**
+> 사용자 방침(2026-08-30)은 「**Y4용 드라이버 및 SDK** 개발을 위해서는
+> 구체적인 Y4 ABI부터 먼저 확정해야 함」이라 적었다.  이것은 바로 위
+> 줄의 **y4-drivers 진입**에 걸리는 선행 조건이지, Phase C 자체(첫
+> 게스트 부팅 · seL4 D1a 패치 · VMM capsule)의 차단 의존이 아니다.
+> 방침은 Phase C 를 막는다고 말하지 않았고, 이 문서도 그렇게 읽지
+> 않는다.
+>
+> 관련 사실 (등재만 하고 일정을 정하지 않는다):
+> - 그 표면은 `hiu_abi.md` 가 정의하는 것이 **아니다** — 방향이
+>   반대다 (`glossary.md` §11 의 표: 그 문서는 A, 여기서 문제되는 것은
+>   최소한 B 를 포함한다).
+> - **소재지 미정**: `amdv_safety.md` §S7.2 는 hypercall ABI spec 을
+>   `y4-hypercall` repo 로 미루나, ⓐ 그 repo 는 디스크에 없고 ⓑ
+>   ARCH-II' 채택 때 `vmm_arch.md` §5.3 에서 「사용자측 CLI / API
+>   tooling repo」로 재정의되어 core spec 의 집이 아니게 되었다 (위
+>   목록 7 이 그 재정의를 승계한다).
+> - `lease_capability.md` §3.2 는 게스트의 cap 취득 경로가 IPC 인지
+>   hypercall 인지 MMIO trap 인지 명시하지 않는다.
+> - **미결**: 방침이 말한 「구체적인 Y4 ABI」가 `glossary.md` §11 의
+>   어느 표면인지, spec 의 소재지가 어디인지, 그리고 이 선행 조건이
+>   위 5~8 과 시간상 어떤 관계인지 — **셋 다 사람이 정한다.**
+>   (`.claude-memories/y4_toolchain_and_abi_policy.md` §6-4 · §6-9)
 
 ## Phase D — 실제 WaveTensor RTL 결합 + PCIe passthrough
 
