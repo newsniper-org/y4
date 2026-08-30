@@ -26,10 +26,10 @@ LLVM scudo, via the on-demand vendoring described in
 
   * seL4 microkernel       https://sel4.systems/
                            (BSD-2-Clause, formally verified)
-                           pinned: 15.0.0     (`third_party/sel4/`)
+                           pinned: 16.0.0     (`third_party/sel4/`)
   * Limine bootloader      https://limine-bootloader.org/
                            (BSD-2-Clause)
-                           pinned: v12.1.0    (`third_party/limine/`)
+                           pinned: v12.6.1    (`third_party/limine/`)
   * LLVM scudo standalone  https://llvm.org/
                            (Apache-2.0 with LLVM exception)
                            pinned via SHA in `third_party/scudo/PIN.toml`,

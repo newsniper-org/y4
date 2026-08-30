@@ -26,7 +26,7 @@ ARCH 비교 (5 candidate architectures) 및 사용자 결정 (2026-05-04).
 
 | 축 | 결정 |
 |---|---|
-| Base | seL4 (`third_party/sel4`, 15.0.0 핀) — 변경 없음 |
+| Base | seL4 (`third_party/sel4`, 16.0.0 핀) — 변경 없음 |
 | **VMM 위치** | **Y4 의 capsules 패턴 안 — 10 capsule + 1 orchestrator (§2)** |
 | Threat model | **VMM core (orchestrator) trusted, intercept handler 들 capsule 격리** (Tock-style defense in depth).  **Trusted scope = seL4 microkernel + D1a 패치 + orchestrator.**  capsule 들은 *cluster-scope-trusted* — 자기 capsule 스코프 안에서 신뢰, 다른 capsule / 다른 tenant 에 대해서는 **격리 보장 invariant 가 강제**.  Verus invariant (P2.2 의 capsule_dependency_acyclic 등) 가 cluster 안 capsule 사이 격리 보존을 inductive 로 닫음 |
 | 검증 도구 | Verus (Y4 의 verus-bin) — VeriSMo 의 Microsoft fork 와 분리 유지 |

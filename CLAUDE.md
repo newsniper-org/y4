@@ -30,7 +30,7 @@ capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로
 
 5개 Phase B 단계 모두 그린:
 1. `proofs/` Verus + Rocq + Isabelle 하네스 (54 verified, 0 errors — 스냅샷; `just verus` 권위)
-2. `boot/` Limine v12.1.0 + seL4 15.0.0 → QEMU `qemu-smoke` PASS
+2. `boot/` Limine v12.6.1 + seL4 16.0.0 → QEMU `qemu-smoke` PASS
 3. `ipc/` (18 tests) + `alloc/` (22 tests, +2 with `--features scudo`)
    Rust 크레이트 + Verus refinement proof
 4. `capsules/` PCIe enum 드라이버 (16 tests)
@@ -132,8 +132,8 @@ Y4/
 │   ├── trackers/        active ledgers / trackers (CVE, paper venues, threats)
 │   └── _completed/      completed work archive
 ├── third_party/
-│   ├── sel4/            git submodule (seL4 15.0.0)
-│   ├── limine/          git submodule (Limine v12.1.0)
+│   ├── sel4/            git submodule (seL4 16.0.0)
+│   ├── limine/          git submodule (Limine v12.6.1)
 │   └── scudo/           pinned standalone (PIN.toml + materialised on demand)
 └── verus-fork/         git submodule — newsniper-org/verus, branch
                          `backend-pluggable` (PR-Verus-Backend land 위치,

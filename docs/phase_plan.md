@@ -51,7 +51,7 @@
 - **D1** Cargo workspace + per-subtree justfile + logicutils
   (`freshcheck`/`stamp`/`lu-par`).
 - **D2** x86_64 only first (Phase B 전 단계).
-- **D3** hybrid 의존 통합 — non-Rust upstream (seL4 15.0.0, Limine v12.1.0)
+- **D3** hybrid 의존 통합 — non-Rust upstream (seL4 16.0.0, Limine v12.6.1)
   은 git submodule; Rust crate 는 cargo `[patch.crates-io]` + git deps;
   LLVM scudo 는 pin-file + `just scudo-fetch` 로 vendored on demand.
 - **D4** Phase B 구현 순서 (위 표).

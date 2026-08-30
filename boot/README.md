@@ -8,8 +8,8 @@ Limine → seL4 → 'Hello, Y4'** 를 띄우는 것.
 
 본 디렉터리는 **Limine boot config + seL4 빌드 컨피그 + cmake 호출
 규칙** 을 보관한다. seL4 와 Limine 의 소스 자체는
-[`/third_party/sel4`](../third_party/sel4) (`15.0.0` 핀) 와
-[`/third_party/limine`](../third_party/limine) (`v12.1.0` 핀) 에 git
+[`/third_party/sel4`](../third_party/sel4) (`16.0.0` 핀) 와
+[`/third_party/limine`](../third_party/limine) (`v12.6.1` 핀) 에 git
 submodule 로 들어 있다 — fork 없음, upstream rebase 하면 즉시 따라간다.
 
 ## CMake invocation 정책: logicutils-only
@@ -79,12 +79,12 @@ just qemu-boot
 
 ## 현 상태 (Phase B 완료)
 
-- ✅ submodule 핀 확정 (sel4 15.0.0, limine v12.1.0)
+- ✅ submodule 핀 확정 (sel4 16.0.0, limine v12.6.1)
 - ✅ logicutils-only 호출 framework 골격
 - ✅ `just sel4-build` — `kernel.elf` 1.2 MB 산출 (KernelDebugBuild +
   KernelPrinting + uniprocessor + PCID/HugePage off + FSGSBASE msr
   fallback for QEMU emulated CPU)
-- ✅ `just limine-build` — Limine 12.1.0 host-side 5 binary (limine,
+- ✅ `just limine-build` — Limine 12.6.1 host-side 5 binary (limine,
   BOOTX64.EFI, limine-bios.sys, limine-bios-cd.bin, limine-uefi-cd.bin)
 - ✅ `just roottask-build` — `y4-roottask` ELF (`x86_64-unknown-none`,
   19 KB)

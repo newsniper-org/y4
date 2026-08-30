@@ -50,8 +50,9 @@ set(KernelFSGSBase          "msr"   CACHE STRING "")
 # Master gate for the Y4 fork patch series (raw-SVM cap types + 6 syscalls
 # + S2/S3/S5/S6/S7/S9 microkernel-side checks for AMD-V SVM, plus the
 # Intel VT-x backend in the v1.x patch path per cpu_virt_compat.md §5).
-# Default OFF — the kernel built from boot/x86_64-debug.cmake is byte-equal
-# to upstream seL4 15.0.0 when this flag is OFF (G5 diff audit, see
-# tools/sel4-fork-check.sh).  Flip ON only when the patches in
-# third_party/sel4-patches/ have been applied via `just sel4-fork-apply`.
+# Default OFF — with this flag OFF no Y4 patches are applied, so the kernel
+# built from boot/x86_64-debug.cmake is byte-equal to the pinned upstream
+# seL4 (third_party/sel4, currently 16.0.0; re-run the G5 diff audit via
+# tools/sel4-fork-check.sh after a pin bump).  Flip ON only when the patches
+# in third_party/sel4-patches/ have been applied via `just sel4-fork-apply`.
 set(Y4_AMDV                 OFF     CACHE BOOL   "")

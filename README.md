@@ -49,8 +49,8 @@ team.
 
 | Layer | Reuse | Origin |
 |-------|-------|--------|
-| Microkernel | binary as-is | seL4 15.0.0 (BSD-2-Clause, formally verified) — `third_party/sel4/` |
-| Bootloader | upstream as-is, chain-loaded | **Limine v12.1.0** (1st), GRUB2-BLS (2nd), U-Boot (3rd), coreboot (4th) — `systemd-boot` and `rEFInd` are explicitly excluded for Y4. See [`docs/architecture.md`](./docs/architecture.md) §Bootloader. |
+| Microkernel | binary as-is | seL4 16.0.0 (BSD-2-Clause, formally verified) — `third_party/sel4/` |
+| Bootloader | upstream as-is, chain-loaded | **Limine v12.6.1** (1st), GRUB2-BLS (2nd), U-Boot (3rd), coreboot (4th) — `systemd-boot` and `rEFInd` are explicitly excluded for Y4. See [`docs/architecture.md`](./docs/architecture.md) §Bootloader. |
 | IPC (control plane) | source port + Rust adapter | Redox scheme — `ipc/src/scheme.rs` |
 | IPC (data plane) | source port + Rust adapter | DragonFlyBSD LWKT msgport — `ipc/src/msgport.rs` |
 | Memory allocator (front) | algorithm port | DragonFlyBSD lock-free SLAB — `alloc/src/slab.rs` |
@@ -113,8 +113,8 @@ Y4/
 │   ├── git-hooks/                pre-commit (memory mirror)
 │   └── scudo-fetch.sh            materialise scudo source from PIN.toml
 ├── third_party/
-│   ├── sel4/                     seL4 15.0.0 (git submodule)
-│   ├── limine/                   Limine v12.1.0 (git submodule)
+│   ├── sel4/                     seL4 16.0.0 (git submodule)
+│   ├── limine/                   Limine v12.6.1 (git submodule)
 │   └── scudo/                    pinned LLVM scudo standalone
 │       ├── PIN.toml              upstream coordinate (commit SHA)
 │       ├── README.md             vendoring policy
@@ -162,8 +162,8 @@ just ci
 Boot the assembled ISO under QEMU and assert the "Hello, Y4" milestone:
 
 ```sh
-just sel4-build           # seL4 15.0.0 → kernel.elf
-just limine-build         # Limine 12.1.0 host-side binaries
+just sel4-build           # seL4 16.0.0 → kernel.elf
+just limine-build         # Limine 12.6.1 host-side binaries
 just roottask-build       # y4-roottask ELF
 just iso-build            # xorriso ISO with kernel + roottask + Limine
 just qemu-smoke           # PASS = root task greeted on serial

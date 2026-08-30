@@ -11,7 +11,7 @@
 > ((F3) overlay patch directory + 8 sub-section) 모두 sign-off.  짝
 > frozen doc = amdv_safety.md / vmm_arch.md / verus_to_isabelle.md.
 
-Y4 가 seL4 mainline (`third_party/sel4`, 현재 핀 15.0.0) 에 패치를
+Y4 가 seL4 mainline (`third_party/sel4`, 현재 핀 16.0.0) 에 패치를
 얹는 fork 를 운용할 때 **반드시** 만족해야 하는 호환성 contract.
 
 본 정책은 **D1a (AMD-V raw-SVM C 패치)** 를 비롯해 **모든 seL4 fork
@@ -255,7 +255,7 @@ Y4 fork 가 절대 하지 않는 것:
 
 | 옵션 | 의미 | 채택 |
 |---|---|:---:|
-| (F1) `third_party/sel4` 의 Y4 branch | `third_party/sel4/` 가 Y4 의 `y4-fork-15.0.0` 브랜치 가리킴 | ✗ |
+| (F1) `third_party/sel4` 의 Y4 branch | `third_party/sel4/` 가 Y4 의 `y4-fork-16.0.0` 브랜치 가리킴 | ✗ |
 | (F2) 별도 repo `y4-sel4-fork` | Y4 자체 repo 운영, `third_party/sel4` 가 그것을 submodule 로 | ✗ (승급 후보) |
 | **(F3) overlay patch directory** | upstream seL4 그대로 + `third_party/sel4-patches/*.patch` 파일들 + 빌드 시점에 apply.  fork repo 운영 부담 0 | **◎** |
 
