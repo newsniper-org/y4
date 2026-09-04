@@ -71,6 +71,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "y4-fip-aarch64"
+version = "0.0.0"
+dependencies = [
+ "y4-fip-core",
+]
+
+[[package]]
+name = "y4-fip-core"
+version = "0.0.0"
+
+[[package]]
+name = "y4-fip-riscv64"
+version = "0.0.0"
+dependencies = [
+ "y4-fip-core",
+]
+
+[[package]]
+name = "y4-fip-x86_64"
+version = "0.0.0"
+dependencies = [
+ "y4-fip-core",
+]
+
+[[package]]
 name = "y4-ipc"
 version = "0.0.0"
 dependencies = [

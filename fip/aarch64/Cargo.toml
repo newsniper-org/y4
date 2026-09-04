@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+
+[package]
+name = "y4-fip-aarch64"
+description = "Y4 FIP macros — AArch64 specialization (seL4 KernelSel4Arch=aarch64)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+y4-fip-core = { path = "../core" }

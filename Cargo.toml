@@ -6,6 +6,10 @@ resolver = "3"
 members = [
     "alloc",
     "capsules",
+    "fip/core",
+    "fip/x86_64",
+    "fip/aarch64",
+    "fip/riscv64",
     "ipc",
     "scudo-sys",
 ]
