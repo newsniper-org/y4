@@ -23,10 +23,13 @@
 //! (`#![forbid(unsafe_code)]`); drop-then-reuse fast-path 는 allocator(perceus
 //! scan §3)에 있고 이 크레이트에는 없다.
 //!
-//! ## 제공 API (v1)
+//! ## 제공 API
 //! - [`Fip`] — FIP-able 타입 marker.
 //! - [`compact`] — `&mut [T]` in-place 압축(freelist / run-queue 용, no-alloc).
+//! - [`compact_with`] — 압축 + 유지 원소 in-place 변형을 1-pass 로.
+//! - [`dedup`] — 연속 중복 제거(no-alloc, 정렬된 freelist 등).
 //! - [`fip_update!`] — `&mut` place 의 in-place 값 변환(no-alloc).
+//! - [`fip_map!`] — `&mut [T]` 각 원소를 value-변환(no-alloc).
 //!
 //! ## 로드맵 (다음 단계 — 의존성 대기)
 //! - **`#[fip]` proc-macro** (Koka `fip fun` 대응 애노테이션): 함수를 FIP 로
@@ -73,6 +76,61 @@ pub fn compact<T>(xs: &mut [T], mut keep: impl FnMut(&T) -> bool) -> usize {
     w
 }
 
+/// [`compact`] + **유지 원소 in-place 변형을 1-pass 로**.  각 원소에 `f(&mut x)`
+/// 를 호출하고(원소를 제자리 변형 가능), `true` 를 반환한 원소만 앞으로 모아
+/// 유지 개수를 반환한다.  힙 할당 0, 상수 추가 공간.
+///
+/// freelist 원소를 순회하며 유효한 것만 남기고 동시에 갱신하는 hot 경로 등.
+///
+/// # 예
+/// ```
+/// let mut xs = [1, 2, 3, 4];
+/// // 짝수만 남기되, 남길 원소는 10 을 더한다.
+/// let n = y4_fip_core::compact_with(&mut xs, |v| {
+///     if *v % 2 == 0 { *v += 10; true } else { false }
+/// });
+/// assert_eq!(n, 2);
+/// assert_eq!(&xs[..n], &[12, 14]);
+/// ```
+#[must_use = "the retained length must be used; elements past it are logically dead"]
+pub fn compact_with<T>(xs: &mut [T], mut f: impl FnMut(&mut T) -> bool) -> usize {
+    let mut w = 0;
+    for r in 0..xs.len() {
+        if f(&mut xs[r]) {
+            xs.swap(r, w);
+            w += 1;
+        }
+    }
+    w
+}
+
+/// **연속 중복 제거** — 인접한 동일 원소를 제거하고 유지 개수를 반환한다(유지
+/// 원소는 앞으로).  힙 할당 0, 상수 추가 공간.  `slice::partition_dedup`(nightly)
+/// / `Vec::dedup`(alloc-backed)의 no-alloc·고정 슬라이스 대응 — 정렬된 freelist
+/// 의 중복 정리 등.  **연속** 중복만 제거(전역 아님).
+///
+/// # 예
+/// ```
+/// let mut xs = [1, 1, 2, 3, 3, 3, 4];
+/// let n = y4_fip_core::dedup(&mut xs);
+/// assert_eq!(n, 4);
+/// assert_eq!(&xs[..n], &[1, 2, 3, 4]);
+/// ```
+#[must_use = "the deduplicated length must be used; elements past it are logically dead"]
+pub fn dedup<T: PartialEq>(xs: &mut [T]) -> usize {
+    if xs.is_empty() {
+        return 0;
+    }
+    let mut w = 1;
+    for r in 1..xs.len() {
+        if xs[r] != xs[w - 1] {
+            xs.swap(r, w);
+            w += 1;
+        }
+    }
+    w
+}
+
 /// `&mut` place 의 **in-place 값 변환**: `*place = f(take(place))`.
 ///
 /// 힙 할당 없이(core-only) 값을 소비-변환한다.  `mem::take` 를 쓰므로
@@ -91,6 +149,25 @@ macro_rules! fip_update {
         let __fip_place = &mut $place;
         let __fip_old = ::core::mem::take(__fip_place);
         *__fip_place = ($f)(__fip_old);
+    }};
+}
+
+/// `&mut [T]` 의 **각 원소를 value-변환**한다: 원소마다 [`fip_update!`] 적용.
+/// 힙 할당 0(core-only), `T: Default`.  `f: FnMut(T) -> T` 로 value-transform
+/// (원소를 소비-재생성)하는 FIP 관용구.
+///
+/// # 예
+/// ```
+/// let mut xs = [1, 2, 3];
+/// y4_fip_core::fip_map!(xs, |v| v * 2);
+/// assert_eq!(xs, [2, 4, 6]);
+/// ```
+#[macro_export]
+macro_rules! fip_map {
+    ($slice:expr, $f:expr) => {{
+        for __fip_elem in ($slice).iter_mut() {
+            $crate::fip_update!(*__fip_elem, $f);
+        }
     }};
 }
 
@@ -135,5 +212,52 @@ mod tests {
             fip_update!(*slot, |v| v + 10);
         }
         assert_eq!(arr, [11, 12, 13]);
+    }
+
+    #[test]
+    fn compact_with_filters_and_transforms() {
+        let mut xs = [1, 2, 3, 4, 5, 6];
+        let n = compact_with(&mut xs, |v| {
+            if *v % 2 == 0 {
+                *v += 100;
+                true
+            } else {
+                false
+            }
+        });
+        assert_eq!(n, 3);
+        assert_eq!(&xs[..n], &[102, 104, 106]);
+    }
+
+    #[test]
+    fn dedup_consecutive() {
+        let mut xs = [1, 1, 2, 3, 3, 3, 4, 4];
+        let n = dedup(&mut xs);
+        assert_eq!(n, 4);
+        assert_eq!(&xs[..n], &[1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn dedup_keeps_nonconsecutive_repeats() {
+        // 전역이 아니라 연속만 제거 — 1,2,1 은 그대로.
+        let mut xs = [1, 2, 1];
+        let n = dedup(&mut xs);
+        assert_eq!(n, 3);
+        assert_eq!(&xs[..n], &[1, 2, 1]);
+    }
+
+    #[test]
+    fn dedup_empty_and_single() {
+        let mut e: [i32; 0] = [];
+        assert_eq!(dedup(&mut e), 0);
+        let mut s = [7];
+        assert_eq!(dedup(&mut s), 1);
+    }
+
+    #[test]
+    fn fip_map_doubles_slice() {
+        let mut xs = [1, 2, 3];
+        fip_map!(xs, |v| v * 2);
+        assert_eq!(xs, [2, 4, 6]);
     }
 }
