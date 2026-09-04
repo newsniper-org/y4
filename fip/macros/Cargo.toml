@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+
+[package]
+name = "y4-fip-macros"
+description = "Y4 FIP proc-macros — `#[fip]` attribute (Koka `fip fun` 대응; no-alloc in-place 계약).  build-time only, no external deps."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]

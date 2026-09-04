@@ -7,6 +7,7 @@ members = [
     "alloc",
     "capsules",
     "fip/core",
+    "fip/macros",
     "fip/x86_64",
     "fip/aarch64",
     "fip/riscv64",

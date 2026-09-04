@@ -82,6 +82,10 @@ name = "y4-fip-core"
 version = "0.0.0"
 
 [[package]]
+name = "y4-fip-macros"
+version = "0.0.0"
+
+[[package]]
 name = "y4-fip-riscv64"
 version = "0.0.0"
 dependencies = [
