@@ -4,20 +4,41 @@
 //! # y4-fip-riscv64 — FIP 매크로, RISC-V RV64 특화
 //!
 //! [`y4_fip_core`] 의 FIP 계약을 **RISC-V RV64**(RV64GC) 용으로 특화한다
-//! (compiler-guideline 튜닝 자리).  seL4 `KernelSel4Arch=riscv64` 대응.
+//! (compiler-guideline 튜닝).  seL4 `KernelSel4Arch=riscv64` 대응.  이 크레이트를
+//! **RV64 를 타깃할 때** 사용한다.
 //!
 //! P3(hw_mechanism_abstraction): 계약은 `y4-fip-core` 가 공유, realization 은
-//! 본 subcrate 가 arch-specific 으로 제공.  설계: `docs/design_decisions.md` §2.1.
-//!
-//! **scaffold** — 실제 arch 튜닝은 설계 진행 중.
+//! 본 subcrate 의 [`arch`] 모듈.  설계: `docs/design_decisions.md` §2.1.
 
 #![no_std]
 #![forbid(unsafe_code)]
 
 pub use y4_fip_core::*;
 
-#[cfg(target_arch = "riscv64")]
 pub mod arch {
-    //! RISC-V RV64 compiler-guideline 튜닝 (no-alloc hot 경로용 arch-specific
-    //! helper 자리) — scaffold.
+    //! RISC-V RV64 compiler-guideline 튜닝 파라미터·helper.
+
+    /// arch 이름.
+    pub const ARCH: &str = "riscv64";
+
+    /// 전형적 L1 cache line 크기(bytes).  RISC-V 는 impl-defined 이나 통상 64
+    /// (플랫폼별 override 대상).
+    pub const CACHE_LINE: usize = 64;
+
+    /// 한 cache line 에 담기는 `T` 개수 — cache-friendly FIP batch 크기.
+    /// ZST 는 `usize::MAX`.
+    #[must_use]
+    pub const fn per_cache_line<T>() -> usize {
+        match CACHE_LINE.checked_div(core::mem::size_of::<T>()) {
+            Some(n) => n,
+            None => usize::MAX,
+        }
+    }
+
+    /// read prefetch hint — 현재 **no-op**.  RISC-V `prefetch.r`(Zicbop 확장,
+    /// 가용 시)을 `asm!` 로 emit 하는 실제 튜닝은 후속(audited unsafe).
+    #[inline(always)]
+    pub fn prefetch_read<T>(p: *const T) {
+        let _ = p;
+    }
 }
