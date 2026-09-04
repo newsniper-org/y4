@@ -120,6 +120,21 @@ bearer) · USIM-AKA 권한 = 전부 capability.  **단일-보유 capability 가 
   — partition-keyed zone(P0..3, I1 cross-tenant UAF 차단) + lease-lifecycle
   bulk reclaim; **모든 aggregation 은 lease lifecycle 에서만**(atomic 0);
   `CapabilityAlloc<F>`.  (P2·P11 의 씨앗.)
+- [perceus-reference-scan](../.brainstormings/20260904-200712-perceus-reference-scan.md)
+  — Koka **Perceus/FP² reuse analysis** 차용(clean-room 기법, license 무관):
+  ★ reuse → **allocator drop-then-reuse fast-path**(per-CPU hot-slot, freelist
+  왕복 회피; atomic-free P1·deterministic WCET·Verus·measurement gate;
+  Frame-Limited Reuse[ICFP'22]로 bound).  ★ **FIP 규율**(FP²[ICFP'23]: provable
+  zero-alloc + constant stack) → hot/RT 무할당 경로(IPC fast path·scheduler·
+  capsule 상태기계)를 **`core`-only(no `alloc`) 로 컴파일러가 zero-alloc 강제** +
+  `&mut` in-place(WCET·bounded stack·P10).  **precision**(free-at-last-use) →
+  민감 자료 **early-drop + zeroize** 로 잔존 window 최소화(§2.7 key-mgmt).
+  **배제**: atomic RC(§0.5/P1 위반, cross-CPU 는 IPC) · RC-everywhere(Rust 정적
+  ownership 우월; Lean 4 "Counting Immutable Beans" borrowing = Rust 정적 borrow
+  의 동적판) · effect-handler · cycle.  §5.1 비교 **`alloc::Rc` vs FIP-macro**:
+  목표가 Perceus 가치 포착이면 **FIP-macro 우선**(Rc = Perceus 가 줄이려는 RC
+  baseline), std `Rc` 는 드문 동적-공유(비-hot, 단일-CPU) fallback, **`Arc` 는
+  hot 경로 금지**.
 
 ### 2.2 IPC
 - [ipc-layer-design](../.brainstormings/20260812-173424-ipc-layer-design.md)
