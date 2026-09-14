@@ -108,7 +108,7 @@ Y4/
 ├── docs/
 │   ├── architecture.md     canonical design memo
 │   ├── glossary.md         WaveTensor terms (HIU/lease/TRNG/...) extracted from RTL
-│   ├── hiu_abi.md          Y4 ↔ HIU ABI v0 (가속기-대면; frozen → unblocks `hiu/`)
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v0 draft·미동결 — 동결 시 `hiu/` unblock)
 │   ├── y4_abi.md           게스트↔하이퍼바이저 ABI (Y4 ABI) v0 draft (게스트-대면)
 │   ├── lease_capability.md lease capability schema v0
 │   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
