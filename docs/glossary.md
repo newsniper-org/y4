@@ -254,7 +254,7 @@ mapping 만 책임진다.
 | # | 표면 | 방향 | 정의 위치 | 상태 |
 |---|---|---|---|---|
 | A | Y4 ↔ HIU MMIO 레지스터 맵 + 타이밍 계약 | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` | v0 draft, 양측 sign-off 대기 (`HIU_ABI_VERSION` = `0x0000_0000`) |
-| B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **없음** | 미정의.  `amdv_safety.md` §S7.2 가 `y4-hypercall` repo 로 미루나 §5.3 재정의 이후 그 repo 는 사용자 CLI 도구용이고 디스크에도 없다 |
+| B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **`docs/y4_abi.md` §2** (v0 draft) | 정의됨 (2026-09-14).  core VMM 은 워크스페이스 안, `y4-hypercall` repo 는 §5.3 재정의 후 사용자 CLI 전용(디스크 미존재) |
 | C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
 | D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
 | — | WT64v1 ISA | 게스트 SDK **→** 가속기 | WaveTensor 저장소 소관 | §10 대로 **Y4 의 ABI 경계 아님** |
@@ -266,8 +266,11 @@ mapping 만 책임진다.
 HIU MMIO 를 두드리는 규약) ⒞ B·C·D 전부.  **어느 것이냐가 블로커의
 크기를 정하므로 사람이 정한다.**
 
-확실한 것은 **B 가 어느 후보에도 들어가고 현재 어느 파일에도 정의되어
-있지 않다**는 것뿐이다.
+**해소 (2026-09-14, 사용자 지시):** 「Y4용 드라이버/SDK」가 부르는 면 =
+**게스트-대면**(B + D + 가상 디바이스 C-service)로 확정.  스펙의 집 =
+**`docs/y4_abi.md`**(v0 draft — hypercall + capability + 가상 디바이스 세 표면).
+위 「사람이 정한다」는 이로써 답해졌고, 남은 것은 그 문서의 **v1.0 frozen**
+(`y4_abi.md` §7)뿐이다.
 
 > 미결 등재처 (네 저장소가 같은 질문을 열어 두고 있다):
 > `.claude-memories/y4_toolchain_and_abi_policy.md` §6-4 ·
