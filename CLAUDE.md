@@ -108,7 +108,8 @@ Y4/
 ├── docs/
 │   ├── architecture.md     canonical design memo
 │   ├── glossary.md         WaveTensor terms (HIU/lease/TRNG/...) extracted from RTL
-│   ├── hiu_abi.md          Y4 ↔ HIU ABI v0 (frozen → unblocks `hiu/`)
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI v0 (가속기-대면; frozen → unblocks `hiu/`)
+│   ├── y4_abi.md           게스트↔하이퍼바이저 ABI (Y4 ABI) v0 draft (게스트-대면)
 │   ├── lease_capability.md lease capability schema v0
 │   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md       Phase A → Phase E progression + entry triggers
@@ -247,6 +248,7 @@ TRNG output format, etc.). Y4 design changes stay here.
 - CPU virtualization vendor-neutrality (AMD-V ↔ Intel VT-x): `docs/cpu_virt_compat.md`
 - HW/플랫폼/디바이스 메커니즘 추상화 정책 (realization 은 spec 안 함): `docs/hw_mechanism_abstraction.md`
 - 설계 결정 메모 (`.brainstormings/` 승격 — 횡단 원칙 P1~P11 + 주제별 digest): `docs/design_decisions.md`
+- 게스트 ↔ 하이퍼바이저 ABI (Y4 ABI, v0 draft — SDK/driver 선행조건): `docs/y4_abi.md`
 - License policy details: `docs/licensing.md`
 - Phase plan + entry triggers: `docs/phase_plan.md`
 - Contribution rules: `CONTRIBUTING.md`

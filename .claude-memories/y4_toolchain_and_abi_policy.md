@@ -1,8 +1,9 @@
 ---
 name: 드라이버/SDK 개발환경 · Rust 툴체인 · Y4 ABI 선행조건 방침 (사용자 2026-08-30)
-description: 사용자 방침 축자 보존 + Y4 국소 실측 델타. 권장 개발환경 5종(열린 목록)·2024 Edition·stable >= 1.97 하한·asm Rust 포팅(착수 시기 미정)·Y4 ABI 확정이 드라이버/SDK 의 선행 조건(!!). MSRV 정합은 verus-fork 작업 후 재판정으로 유보.
+description: 사용자 방침 축자 보존 + Y4 국소 실측 델타. 권장 개발환경 5종(열린 목록)·2024 Edition·stable >= 1.97 하한·asm Rust 포팅(착수 시기 미정)·Y4 ABI 확정이 드라이버/SDK 의 선행 조건(!!). MSRV 정합은 verus-fork 작업 후 재판정으로 유보. (2026-09-14 갱신: Y4 ABI v0 draft = docs/y4_abi.md 착수 — §6-4/§6-5 해소, v1.0 frozen 은 남음 — §8.)
 type: project
 originSessionId: 01QzUmzau38A2GzjbGNoFRTf
+modified: 2026-09-14T05:11:33.301Z
 ---
 2026-08-30 사용자가 드라이버 / SDK 개발 방침을 제시했다.  방침은 Y4 ·
 wavetensor-drivers · wavetensor-sdk · WaveTensor 네 저장소에 동시에
@@ -247,3 +248,21 @@ Y4 안에서 「ABI」로 불리는 표면은 넷이고 서로 다른 경계다:
 로 적는다.  Y4 의 마지막 커밋은 **2026-08-27** (`d404040`) 이고 6~8월에
 docs/brainstorming 커밋 14건이 있다.  코드는 멈춰 있으나 설계 작업은
 계속되었다.
+
+## 8. 갱신 (2026-09-14) — Y4 ABI v0 draft 착수 (사용자 지시)
+
+사용자가 「블로커 해소에 바로 착수」 지시.  §5 가 "문서 없음" 으로 남겼던
+게스트↔하이퍼바이저 ABI 를 **`docs/y4_abi.md` (v0 — draft, not frozen)** 로 신설.
+
+- **§6-4 해소**: 「Y4용 드라이버/SDK」가 부르는 경계 = **게스트-대면** — §5 의
+  B(hypercall) + D(lease/capability) + 가상 디바이스(virtio NIC / 로컬 IMS
+  endpoint 등, WWAN 발제 근거).  사용자 지시로 확정(후보 ⒝ + C-service).
+- **§6-5 해소**: 스펙의 집 = **`docs/y4_abi.md`**(후보 ⒜ 신설).
+- **정정**: `y4-hypercall` = 사용자측 CLI/API tooling(`vmm_arch.md` §5 재정의
+  확정, 디스크 미존재).  core VMM/hypercall = **Y4 워크스페이스 안**(orchestrator
+  thin entry) — y4_abi.md §2 에 이대로 기재.
+- **정합**: `glossary.md` §11 row B(없음→`y4_abi.md` §2)+해소 note ·
+  `phase_plan.md` Phase C 주석(spec 이제 존재) · `CLAUDE.md` §5/§9 등재.
+- **남은 것**: `y4_abi.md` **v1.0 frozen** 이 실제 SDK/driver 개발 선행조건(§7).
+  §6-1/2/3(MSRV·toolchain)은 여전히 §4 유보(verus-fork 후).  §6-6/7/8/9 열림.
+- **브랜치**: main 에 작성 → 사용자 지시로 `fip/isa-subcrates` 에 merge.
