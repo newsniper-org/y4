@@ -3,6 +3,10 @@
 
 # `fip/isa-subcrates` 브랜치 점검 — 미결 항목 (2026-10-02)
 
+> **갱신 (2026-10-02):** rustc 1.98 정합(`8ed1f70`)으로 §0 fmt 실패와 §1-2 prefetch 가
+> 해소됐고, 브랜치는 main 으로 port 됐다(브랜치는 유지). `fip/` 는 CLAUDE.md §5 ·
+> README 레이아웃에 등재했다(§3-3 일부). 나머지 항목은 미결 그대로다.
+
 - **대상:** `fip/isa-subcrates` @ `468a851`. 별도 detached worktree 에서 점검했다(읽기 전용).
 - **범위:** `main...fip` 차이 = 워크스페이스 멤버 `fip/{core,macros,x86_64,aarch64,riscv64}` + `Cargo.lock` 의 경로 패키지 5개.
 - **방법:**
@@ -18,7 +22,7 @@
 
 | 검사 | 결과 |
 |---|---|
-| `cargo fmt --all -- --check` | ❌ **실패** — `fip/x86_64/src/lib.rs:47-53`. 이 커밋(a1799cd, 2026-09-04)이 쓰인 뒤 rustfmt 가 1.9.0(rustc 1.98.1)으로 올라가면서 한 줄 포맷을 요구한다. main 은 통과. ⇒ **이 브랜치에서 `just ci` 는 빨간불** |
+| `cargo fmt --all -- --check` | ✅ **해소 (2026-10-02, `8ed1f70`)** — 당시: ❌ **실패** — `fip/x86_64/src/lib.rs:47-53`. 이 커밋(a1799cd, 2026-09-04)이 쓰인 뒤 rustfmt 가 1.9.0(rustc 1.98.1)으로 올라가면서 한 줄 포맷을 요구한다. main 은 통과. ⇒ **이 브랜치에서 `just ci` 는 빨간불** |
 | `cargo clippy … --all-targets -D warnings` (fip 5개) | ✅ — 단 workspace lints 를 받지 않은 상태라서다(§2-1) |
 | `cargo test` | ✅ core 10 unit + 5 doctest, macros 1 doctest. arch 크레이트 3개는 **테스트 0** |
 | `cargo check --target` | ✅ x86_64-unknown-none (core·x86_64), aarch64-linux-gnu, riscv64gc-linux-gnu. bare-metal aarch64/riscv64 타깃은 미설치 |
@@ -34,7 +38,7 @@
    - 「batch 크기」로 쓰면 `chunks(0)` 은 panic 하고, stride 루프는 멈추지 않는다.
    - 지금 호출자가 없어 잠재 결함이다.
    - → `Some(0) => 1` 로 하한을 걸고, ZST/1/64/65/128 B 단위 테스트를 단다.
-2. **x86_64 `prefetch_read` 가 커널 타깃(`x86_64-unknown-none`)에서 인라인되지 않는다.**
+2. ✅ **해소 (2026-10-02, `8ed1f70` — `asm!("prefetcht0")`, x86_64-unknown-none release asm 에서 인라인 확인).** 당시: **x86_64 `prefetch_read` 가 커널 타깃(`x86_64-unknown-none`)에서 인라인되지 않는다.**
    - `_mm_prefetch` 는 `#[target_feature(enable="sse")]` 인데 해당 타깃은 SSE 를 끈다.
    - 그래서 힌트마다 out-of-line `call`/`jmp` 가 된다(asm 실측). host 에서는 `prefetcht0` 로 인라인된다.
    - SAFETY 주석이 실제 의무(SSE)가 아니라 포인터를 근거로 든다(`:47-48`).

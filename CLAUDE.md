@@ -119,6 +119,10 @@ Y4/
 │   └── phase_plan.md       Phase A → Phase E progression + entry triggers
 ├── alloc/               y4-alloc (DragonFly SLAB + hardened backend)
 ├── capsules/            y4-capsules (Tock isolation + PCIe enum)
+├── fip/{core,macros,x86_64,aarch64,riscv64}/
+│                        y4-fip-* — FIP(Fully in-Place, Perceus/FP² 차용) no-alloc
+│                        in-place 빌딩블록 + `#[fip]` + per-ISA 튜닝 (소비자 없음;
+│                        미결: `.claude-notes/fip-isa-subcrates-open-items.md`)
 ├── ipc/                 y4-ipc (Redox scheme + LWKT msgport hybrid)
 ├── kernel/              y4-roottask (bare-metal x86_64-unknown-none)
 ├── scudo-sys/           y4-scudo-sys (LLVM scudo C++ FFI)
