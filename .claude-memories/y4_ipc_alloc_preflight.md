@@ -4,7 +4,7 @@ description: Phase B step 3 의 ipc/ 와 alloc/ Verus 명세 시작 전 결정 �
 type: project
 originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 ---
-2026-05-04 사용자 결정 (`Y4/.claude-memos/ipc-and-alloc.md`).
+2026-05-04 사용자 결정 (`Y4/.claude-notes/_completed/ipc-and-alloc.md` — 옛 경로 `Y4/.claude-memos/` 는 없다).
 
 ## 확정 사항
 
@@ -15,7 +15,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 race-free 를 증명. seL4 cmake config 의 `KernelMaxNumNodes` 도 함께
 승급 (현 1 → 4 또는 형상별 분기).
 
-**C3 — 에러 enum:** **공통 `Y4Error`** (`kernel/error.rs`).
+**C3 — 에러 enum:** **공통 `Y4Error`**.  실물 (2026-10-01): spec `proofs/verus/src/error.rs` + 크레이트별 mirror `alloc|ipc|capsules/src/error.rs` (`kernel/error.rs` 는 없다).
 **Why:** 두 서브시스템의 error path 가 결국 같은 capability 검증 실패
 도메인. 변환 boilerplate 회피.
 **How to apply:** `Y4Error::{NoMemory, BadCap, Timeout, ...}` 단일
@@ -61,13 +61,13 @@ verb) 은 overhead OK; 데이터평면 (HIU MMIO 디스패치, accel-d↔tenant)
 **I-P3 zero-copy:** **v0 OUT**, 별도 "shared-frame capability" primitive
 로 Phase C 즈음 분리.
 **Why:** Y4 IPC 는 통상 작은 메시지 (cap mint, lease 발급, scheme verb;
-< 64B). 큰 데이터는 IPC 가 아니라 HIU shared region / seL4 frame share
+< 64B). 큰 데이터는 IPC 가 아니라 페이지 소유권 이양(HIU `0x200`, glossary §6) / seL4 frame share
 로 전달. zero-copy 는 IPC 의 속성이 아니라 별개 primitive.
 **How to apply:** ipc/ Verus 명세는 send-by-copy 모델. 큰 페이로드의
 shared-frame primitive 는 hiu/ 또는 신규 frames/ 서브트리에서.
 
 **I-P3 priority-inversion:** **v0 IN**.
-**Why:** SMP-first (C2) 환경에서 우선순위 전도는 wave-aligned scheduling
+**Why:** SMP-first (C2) 환경에서 우선순위 전도는 wave-aligned scheduling(= Y4 정책 이름; 장치 근거는 드레인, glossary §9)
 의 결정성을 깨뜨릴 수 있음. 명세에서 회피 invariant 를 못 박지 않으면
 Phase C 에서 lease scheduler 와 충돌 시 추적이 어려움.
 **How to apply:** ipc/ 명세에 "고우선 thread 가 저우선 thread 의 msgport
@@ -88,7 +88,7 @@ Verus 명세는 두 컴포넌트의 boundary contract + scudo 의 보안 invaria
 
 **A-P2 — seL4 VA reservation:** **(a) bare kernel API**
 (`seL4_X86_Page_Map / Unmap`, `seL4_X86_PageTable_Map`).
-**Why:** `seL4_VSpaceObject_Map_Reservation()` 은 seL4 15.0.0 kernel
+**Why:** `seL4_VSpaceObject_Map_Reservation()` 은 seL4 15.0.0 및 16.0.0 (6e7c3b7, 2026-10-02 grep 0건) 모두
 API 에 부재 — `libsel4vspace` (`seL4_libs` 별도 upstream) 의
 `vspace_reserve_range()` 가 사용자가 떠올린 함수의 실체. C4 결정상
 trusted boundary 가 `seL4_Page_Map / Unmap` 으로 좁혀져 있으므로
@@ -103,12 +103,6 @@ seL4 libs 의존 없음. third_party 에 seL4_libs 추가 안 함.
 - Redox scheme 소스: `/home/ybi/y4-upstream-refs/redox-kernel/src/scheme/`
 - 둘 다 read-only — Y4 트리에는 들어가지 않음. fork 가 아니라 참조용.
 
-scudo 와 OpenBSD malloc 추가 reference 가 필요해질 시점 (alloc/ 첫 PR)
-에 동일 패턴으로 `~/y4-upstream-refs/{scudo,openbsd-libc}/` 추가.
-
-## 외부 reference 위치
-
-- DragonFly LWKT 소스: `/home/ybi/y4-upstream-refs/dragonfly/sys/kern/lwkt_*.c`
-  + `/home/ybi/y4-upstream-refs/dragonfly/sys/sys/{thread,msgport}.h` (sparse-checkout)
-- Redox scheme 소스: `/home/ybi/y4-upstream-refs/redox-kernel/src/scheme/`
-- 둘 다 read-only — Y4 트리에는 들어가지 않음. fork 가 아니라 참조용.
+scudo 는 `~/y4-upstream-refs/` 가 아니라 Y4 트리 안 `third_party/scudo/PIN.toml`
+(`just scudo-fetch` 로 materialise) 로 고정됐다. OpenBSD malloc reference 는
+A-P1 로 불필요해졌다.

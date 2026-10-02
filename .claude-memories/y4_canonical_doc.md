@@ -10,7 +10,7 @@ type: project
 
 **How to apply:**
 - New Y4 design changes → edit `Y4/docs/architecture.md` first.
-- Mirror back to the WaveTensor memo **only when** the change crosses into the WaveTensor RTL ABI (HIU lease ABI shape, TRNG output format, capability-binding nonce semantics).
+- When a change crosses into the WaveTensor host ABI (the canonical guide's MMIO configuration surface — translation entries, lease rotation, masking key/nonce obligations, entropy-health fault bit; §3.10 agreement), prefer a request via `Y4/.local-requests-to/WaveTensor/` (mirrored to WaveTensor `.local-requests-from/Y4/`) — WaveTensor recommends this; CLAUDE.md §1/§7 still permit a direct edit only for an ABI crossing. WaveTensor updates its canonical guide; Y4 updates `docs/hiu_abi.md`. See [[y4-wavetensor-relation]].
 - For purely Y4-internal changes (IPC fusion details, allocator layout, capsule typing, formal-proof obligations) — do not touch the WaveTensor memo at all.
 
 This split exists to prevent design drift between the two copies and to keep the WaveTensor repo's commit history focused on RTL/assembler work.

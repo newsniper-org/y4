@@ -1,12 +1,12 @@
 ---
 name: y4-drivers + y4-hypercall + 게스트 호스팅 계획 (2026-05-04)
-description: 별도 repo y4-drivers / y4-hypercall, 첫 driver matrix, ACPI/네트/USB/FS 도구 채택, AMD-V 차단 이슈, KernelVTX sub-options.
+description: 별도 repo y4-drivers / y4-hypercall, 첫 driver matrix, ACPI/네트/USB/FS 도구 채택, AMD-V = ARCH-II' 채택(문서 v1.0 frozen), KernelVTX 안(미적용). y4-drivers 착수는 docs/y4_abi.md v1.0 frozen 대기.
 type: project
 originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 ---
 ## y4-drivers (별도 repo, 로컬 시작)
 
-- **위치:** `/home/ybi/y4-drivers/` (시작), 추후 push.
+- **위치:** 계획상 `/home/ybi/y4-drivers/` — **미개설** (2026-10-01 디스크에 없음). 착수는 사용자 방침(2026-08-30)상 `docs/y4_abi.md` v1.0 frozen 이후.
 - **라이선스:** Apache-2.0 main + GPL-capsule mixed (Y4 의 `licensing.md`
   §"Linux driver tier" 정책 적용).
 - **워크스페이스:** cargo workspace, **멤버별 driver 1 크레이트**.
@@ -60,7 +60,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 
 ## 게스트 호스팅 (VMM 위치 — ARCH-II' 채택 후 재정의 2026-05-04)
 
-- **Core VMM 위치:** Y4 워크스페이스 내부 — `Y4/vmrun-orchestrator/` (thin
+- **Core VMM 위치 (계획 — 디렉터리 미생성, 2026-10-02):** Y4 워크스페이스 내부 — `Y4/vmrun-orchestrator/` (thin
   ~수백 LoC orchestrator) + `Y4/capsules/` 의 10 신규 capsule (vmcb /
   npt / msr-bitmap / io-bitmap / firmware-approval / cpuid-emul /
   npf-handler / audit / nested-request / lifecycle).
@@ -79,9 +79,12 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
   게스트) 는 **virtio paravirtualization only** — 명시 마일스톤으로
   phase_plan 에 박을 것.
 
-## seL4 KernelVTX sub-options 결정
+## seL4 KernelVTX sub-options 결정 — ⚠ 미적용 제안 (2026-10-01 확인)
 
-`boot/x86_64-debug.cmake` 에 추가:
+`boot/x86_64-debug.cmake` 에 **적용된 적 없다** (KernelVTX/KernelIOMMU/
+KernelFPU 없음, KernelHugePage OFF 유지).  채택 경로는 AMD-V raw-SVM
+(`Y4_AMDV` master flag, 기본 OFF + 패치 001 의 KernelSVM — `sel4_fork_policy`
+§3.3); VT-x 는 `cpu_virt_compat.md` §5 소관.  아래 표는 당시 제안 기록:
 
 | 옵션 | 값 |
 |---|---|
@@ -118,15 +121,13 @@ bhyve / NVMM (BSD-2) 알고리즘 reference.
   기법 영감 (코드 import 0, 기법만 paper attribution).
 
 **워크스트림 (이 순서로 완료 후 y4-drivers / capsules 진입):**
-1. **`docs/amdv_safety.md` v1.0 frozen** — S1–S14 + VMCB whitelist +
-   PR split. 현 v0 draft, S1–S10 sign-off 끝, S11–S14 + §4/§6 미정.
-2. **`docs/vmm_arch.md` v1.0 frozen** — ARCH-II' 디자인 sign-off. 현
-   v0 draft.
-3. **`docs/sel4_fork_policy.md` v1.0 frozen** — Strictly Additive Fork.
-   현 v0 draft.
-4. **`docs/verus_to_isabelle.md` v1.0 frozen + 도구 구현** —
-   statement-only `sorry` + `axiom` opt-in hybrid. 별도 repo
-   `y4-verus2isabelle` (Apache-2.0). ~1500 LoC Rust. 5–6 와 병렬.
+1. ✅ **`docs/amdv_safety.md` v1.0 frozen** (2026-05-05) — S1–S14 + VMCB
+   whitelist + PR split.
+2. ✅ **`docs/vmm_arch.md` v1.0 frozen** (2026-05-05) — ARCH-II'.
+3. ✅ **`docs/sel4_fork_policy.md` v1.0 frozen** (2026-05-05).
+4. ✅ **`docs/verus_to_isabelle.md` v1.0 frozen** (2026-05-05) — 도구는
+   R7 (2026-06-03) 로 재정의: 별도 repo `y4-verus2isabelle` **폐기**, emit 은
+   `verus-fork` submodule 의 `-V emit-isabelle` → `proofs/isabelle/` (R7.7).
 5. **seL4 측 D1a C 패치** (`CONFIG_Y4_AMDV` gate, default OFF). 4 객체
    + 6 syscall + S2–S9 의 microkernel 측 검사. ~수백 LoC.
 6. **Y4 측 vmrun-orchestrator + 10 capsule** (`Y4/vmrun-orchestrator/`
@@ -136,8 +137,8 @@ bhyve / NVMM (BSD-2) 알고리즘 reference.
 
 **Contribute-back 경로:**
 - D1a 의 raw-SVM C 패치 → seL4 mainline PR.
-- Verus 증명 → 별도 artifact + Isabelle skeleton 자동 export
-  (`y4-verus2isabelle` 도구 사용).
+- Verus 증명 → 별도 artifact + Isabelle 자동 emit (`verus-fork`
+  `-V emit-isabelle`; `y4-verus2isabelle` 도구는 R7 로 폐기).
 
 **현 호스트에서 즉시 진입 가능 — 하드웨어 비용 0.** SEV-SNP 미보유 무관.
 
@@ -168,17 +169,16 @@ Phase D 마일스톤 (확정):
 
 자세한 분석: `Y4/docs/amdv_safety.md` §S9.
 
-## 진행 가능 작업 (즉시 unblock)
+## 작업 상태 (2026-10-01 갱신)
 
-1. `y4-drivers` repo scaffold (위 결정대로)
-2. `y4-driver-test-fixtures` 멤버 + `MockMmio`/`MockDma`/`MockIrq` trait
-3. 첫 driver: `y4-driver-virtio-net` (virtio-drivers crate 이식)
-4. capsules `kernel/` 비의존 5 개 (PCIe BAR → cap walker → MSI-X
-   discovery → fault recovery → 자원 transfer)
-5. ACPI / smoltcp / xhci 채택 결정 영구화
+1–3. `y4-drivers` scaffold · test-fixtures · virtio-net — **차단**: 사용자
+   방침(2026-08-30)상 `docs/y4_abi.md` **v1.0 frozen** 선행
+   ([[y4_toolchain_and_abi_policy]]).
+4. ✅ capsules PCIe enum — Phase B step 4 완료 (16 tests).
+5. ACPI / smoltcp / xhci 채택 결정 영구화 — 미착수.
 
 ## 차단 작업 (결정 대기)
 
-- 게스트 호스팅 진입 (AMD-V 결정 필요)
+- 게스트 호스팅 진입 — AMD-V 는 결정됨(ARCH-II'); 남은 것은 Phase C 의존 (PR-1 D1a 패치 — `third_party/sel4-patches/` 아직 README 만 — + VMM capsule 미착수)
 - KernelHugePage = ON 으로 cmake 변경 (verification build 호환 재검토)
 - IOMMU programming capsule (kernel/ MMIO map 의존)

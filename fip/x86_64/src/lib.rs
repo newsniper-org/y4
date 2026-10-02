@@ -40,15 +40,26 @@ pub mod arch {
     }
 
     /// read prefetch hint — hot in-place 루프에서 다음 원소를 미리 당긴다.
-    /// x86_64 에서 `PREFETCHT0`(`_mm_prefetch`); 그 외 타깃에선 no-op.
+    /// x86_64 에서 `PREFETCHT0` 한 명령으로 인라인; 그 외 타깃에선 no-op.
+    ///
+    /// `core::arch::x86_64::_mm_prefetch` 를 쓰지 않는다 — rustc 1.98 에서 그
+    /// intrinsic 은 `#[target_feature(enable = "sse")]` safe fn 이라, SSE 를 끈
+    /// 커널 타깃(`x86_64-unknown-none`)에서는 인라인되지 못하고 힌트마다
+    /// out-of-line 호출이 된다.  `PREFETCHT0` 자체는 x86-64 기본 명령이라
+    /// target feature 가 필요 없으므로 `asm!` 로 직접 낸다.
     #[inline(always)]
     pub fn prefetch_read<T>(p: *const T) {
         #[cfg(target_arch = "x86_64")]
-        // SAFETY: `_mm_prefetch` 는 부작용 없는 hint 이다 — 어떤 주소든 메모리
-        // 접근이나 trap 없이 무시되므로 임의 raw 포인터로 호출해도 안전.
+        // SAFETY: `PREFETCHT0` 은 x86-64 기본 ISA 의 순수 힌트다 — 아키텍처상
+        // 어떤 주소에 대해서도 fault·예외를 내지 않고 메모리·레지스터·플래그
+        // 상태를 바꾸지 않는다(SDM Vol. 2 PREFETCHh).  따라서 임의 raw 포인터로
+        // 실행해도 안전하며, `nostack`·`preserves_flags`·`readonly` 가 그 사실을
+        // 컴파일러에 알린다.
         unsafe {
-            core::arch::x86_64::_mm_prefetch::<{ core::arch::x86_64::_MM_HINT_T0 }>(
-                p.cast::<i8>(),
+            core::arch::asm!(
+                "prefetcht0 [{0}]",
+                in(reg) p,
+                options(nostack, preserves_flags, readonly),
             );
         }
         #[cfg(not(target_arch = "x86_64"))]
