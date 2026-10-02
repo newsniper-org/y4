@@ -19,13 +19,13 @@
 | `LICENSE`, `NOTICE`, `README.md`, `CONTRIBUTING.md` | ✅ |
 | `docs/architecture.md` (CC-BY-4.0 → Apache-2.0 inbound) | ✅ |
 | `docs/licensing.md`, `docs/phase_plan.md` (본 문서) | ✅ |
-| `docs/glossary.md` — RTL 추출 용어 사전 | ✅ |
-| `docs/hiu_abi.md` — v0 draft | ✅ |
+| `docs/glossary.md` — 용어 사전 (2026-10-01 WaveTensor 정본 기준으로 재출처) | ✅ |
+| `docs/hiu_abi.md` — v0.1 draft (2026-10-02 WaveTensor 정본 부록 E 정합) | ✅ |
 | `docs/lease_capability.md` — capability 스키마 v0 | ✅ |
 | **`docs/hiu_abi.md` v1.0 동결 (Y4 + WaveTensor 양측 sign-off)** | ⏳ 진행 |
 
 **Phase A → Phase B 진입 트리거:** `docs/hiu_abi.md` 가 `v1.0 frozen`
-으로 표시되고 `HIU_ABI_VERSION` 값이 `0x0001_0000` 으로 고정.
+으로 표시되고 `HIU_ABI_VERSION`(`0xFFC`) 비0 판 값이 양측 합의(WaveTensor 정본 §3.10)로 고정 — Y4 제안은 `0x0001_0000`.
 *(HIU 와 무관한 Phase B 산출물은 본 동결 전이라도 진행 가능 —
 실제로 Phase B 의 5개 단계는 모두 mock 위에서 완료됨.)*
 
@@ -67,9 +67,9 @@ greeting 까지 검증, 모든 Verus 명세 머지 완료.
 |---|---|
 | `hiu/mock/` — `hiu_abi.md v1.0` 그대로 구현하는 Rust mock | QEMU MMIO BAR 노출 |
 | `hiu/` lease capability 런타임 | mock 위 동작, hard cap=4 |
-| XChaCha20 마스킹 / nonce binding on `context_switch` | Verus 불변식 선행 |
+| 임대별 마스크 키·논스 회전 (E.9 6항: `0xE00` flush → `0xEA0`/`0xE80`/`0xEA4` → `0xEBC`/`0xEC0`) · `(키, 논스)` 쌍 유일성 = Y4 의무 | Verus 불변식 선행 |
 | 멀티테넌트 격리 시나리오 통합 테스트 | 전부 mock 기반 |
-| TRNG 채널 stub + `trng_unhealthy` 처리 | mock entropy seed |
+| `FAULT_STATUS[17]`(엔트로피 건강성, `0xF84` W1C) 처리 stub + 호스트 측 키·논스 엔트로피 원천 | mock entropy seed |
 | **첫 게스트 호스팅 (별도 repo `y4-hypercall`)** | Alpine Linux mini-rootfs. **virtio paravirt only** (게스트 자체 PCIe driver 는 Phase D). 첫 PoC = ramdisk + serial console (G-disk/network/display 결정 G3 통과 후). VMM 위치 = `y4-hypercall` repo. |
 | **하드웨어 driver 일부** (별도 repo `y4-drivers`) | virtio-net/blk + e1000e + AHCI + NVMe 1.x + XHCI 1차 PR 범위. Phase C 기간 중 병렬로 진행 |
 

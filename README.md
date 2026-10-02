@@ -26,10 +26,10 @@ in this repo lives at [`docs/architecture.md`](./docs/architecture.md).
 
 ## Why Y4
 
-WaveTensor's HIU already exposes hardware features (`context_switch`,
-partitioned TLB, shadow regions, XChaCha20 capability binding,
-flush-on-context-switch) whose security potential is wasted under a
-general-purpose OS. Y4 maps each of those primitives to a hypervisor-level
+WaveTensor's HIU already exposes hardware features (per-partition
+address translation, per-partition flush, per-lease physical-address
+masking keys, page ownership — see `docs/glossary.md`) whose security
+potential is wasted under a general-purpose OS. Y4 maps each of those primitives to a hypervisor-level
 capability, giving:
 
 - **Tiny TCB** — tenant data never traverses a Linux stack.
@@ -74,8 +74,9 @@ Self-written by Y4 (Phase B already shipped):
 
 Self-written by Y4 (Phase C onwards):
 
-- HIU integration (`context_switch`, partitioned TLB, shadow regions,
-  XChaCha20 capability binding) — blocked until `docs/hiu_abi.md` v1.0.
+- HIU integration (per-partition translation entries, lease rotation =
+  partition flush + rekey, per-lease masking keys) — blocked until
+  `docs/hiu_abi.md` v1.0.
 - Lease scheduler (wave-aligned preemption).
 - Accelerator daemon RPC / local IPC unified under one namespace API.
 - Guest-OS hosting paravirt for Linux distros and DragonFlyBSD.
@@ -94,8 +95,8 @@ Y4/
 ├── justfile                      top-level recipes (ci, scudo-fetch, mirror-memory, ...)
 ├── docs/
 │   ├── architecture.md           canonical design memo
-│   ├── glossary.md               WaveTensor terms (HIU/lease/TRNG/...) extracted from RTL
-│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0 (MMIO map, timing contracts, freeze policy)
+│   ├── glossary.md               WaveTensor terms (HIU/lease/masking/...) from the canonical guide
+│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0.1 (configuration surface per canonical App. E, order contracts, freeze policy)
 │   ├── lease_capability.md       lease capability schema v0 (invariants, lifecycle)
 │   ├── licensing.md              Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
