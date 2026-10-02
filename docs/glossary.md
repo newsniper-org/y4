@@ -1,247 +1,460 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors -->
 
-# Y4 — 용어 사전 (WaveTensor 측 정의 기반)
+# Y4 — 용어 사전 (WaveTensor 정본 기반)
 
-본 문서는 Y4 가 호스트하는 WaveTensor 가속기의 핵심 용어를
-**WaveTensor 로컬 저장소(`/home/ybi/WaveTensor/`)의 RTL 및 spec 메모에서
-추출한 정의 그대로** 정리한다. Y4 의 capability 스키마, HIU ABI 문서,
-Verus/Coq 명세는 모두 이 사전을 참조한다.
+이 문서는 Y4 가 호스트하는 WaveTensor 가속기의 핵심 용어를 정리한다.
+근거는 **WaveTensor 정본 `docs/wt64v1-architecture-guide/`**(이하 `G/`)이고,
+Y4 의 capability 스키마·HIU ABI 문서·Verus/Coq 명세가 이 사전을 참조한다.
 
-원본 출처는 각 항목 끝에 `source:` 줄로 명시한다. WaveTensor 측에서 정의가
-바뀌면 본 사전을 우선 갱신한 뒤 의존 문서(architecture.md, hiu_abi.md,
-proofs/)에 전파한다.
+> **재출처 (2026-10-01).** 이 사전의 이전 판(§1–§10)은 WaveTensor 저장소 루트의
+> legacy 참조 구현(`HIU.v` · `Pod.v` · `Cluster.v`)과 비정본 메모
+> (`.claude-memos/wt64v1_spec.md`)에서 추출했다. WaveTensor 는 2026-08-20 부터
+> 정본에 맞춰 RTL 을 clean-room 으로 전면 재구현하고 있다(SpinalHDL 주 +
+> SystemVerilog 검증층, `rtl/`). 그래서 이 판에서 legacy 근거를 전부 걷어냈다.
+> 옛 용어가 무엇으로 바뀌었는지는 §12 대응표에 있다.
 
 ---
 
-## 1. HIU (Host Interface Unit)
+## 0. 출처 · 권위 · 인용 규약
 
-WaveTensor 가속기와 호스트 사이의 단일 진입점 모듈. 주소 변환·DMA·shadow
-region·partitioned TLB·XChaCha20 마스킹·TRNG 출력까지 **호스트–가속기
-경계에 걸리는 모든 보안/통신 primitive 를 한 모듈에 모은 것**.
+**권위 순서** — WaveTensor 측 방침. 2026-10-01 요청문
+(`Y4/.local-requests-from/WaveTensor/2026-10-01-status-and-read-access.md` §1,
+gitignore 된 로컬 채널)으로 통보받았다. 정본이 `main.pdf` 하나라는 부분은
+WaveTensor `claude.md:10-25` 에도 있다:
 
-RTL 모듈 시그니처(파라미터 + 주요 포트):
+| 순위 | 위치 | 지위 |
+|---|---|---|
+| 1 | `G/` (`main.typ` → PDF) | **유일한 정본.** 계약을 규정한다 |
+| 2 | `rtl/` (재구현) | *오늘의 실물 사실*. ABI 계약이 아니다 |
+| 3 | `.claude-memos/` | 비정본, volatile |
+| ✗ | 저장소 루트 `*.v` · `tb_*.v` · `test_*.py` | **legacy** — ABI 근거로 쓰지 않는다 |
 
-| 파라미터 | 기본값 | 의미 |
+정본 자신이 범위를 이렇게 정한다. 계약(비트 레이아웃·필드 의미·합법/불법 판정·
+오류 분류·사이클 계약·라우팅 규약·상태 전이·수치 기준·불변식)은 규정하고, 구현
+(모듈 분할·**신호 이름**·파이프라인 단수·레지스터 배치·HDL)은 재구현팀의 자유로
+둔다 (`G/chapters/00-preface.typ:29-33`). 따라서 **RTL 포트·파라미터 이름은 Y4 의
+ABI 근거가 될 수 없다.** 호스트가 보는 구성 표면(§2, 부록 E.1)은 재구현이 *새로
+정의한* 규범이다. pre-stable 동안에는 바꿀 수 있고, 동결하려면 양측 합의(§3.10)가
+필요하다 (`e-defined.typ:9-16`, `03-hiu.typ:1322-1330`).
+
+정본은 **pre-stable** 이다. 동결 보증은 `T_stable` 부터 발효하며, 그 값은 아직
+비어 있다 (`00-preface.typ:36-54`, `G/appendix/b-gaps.typ:1797-1820`).
+
+**인용 규약.** 이 문서의 모든 `G/…:줄` 인용은 **WaveTensor 커밋 `97b0105`**
+기준이다. WaveTensor 는 HEAD 와 정본 줄 번호가 자주 움직인다. 그래서 새 인용에는
+커밋 sha 와 그 줄의 축자 문구를 함께 적는다. 따옴표 안 문구는 정본
+(CC-BY-4.0)의 축자 인용이다. 단 「옛 Y4 판」이라고 밝힌 따옴표는 예외로,
+정본이 아니라 이 사전의 이전 판 문구다.
+
+**읽기 방침.** Y4 세션은 `/home/ybi/WaveTensor/` 를 읽기 전용으로 읽는다.
+쓰기·git 상태 변경·트리 안 산출물 생성은 하지 않고, 실행이 필요하면 `git archive`
+사본에서 한다. legacy 를 읽었더라도 그 내용을 WaveTensor 쪽 메시지에 옮기지
+않는다(clean-room). 세부는 Y4 메모리 `wavetensor_read_policy.md` 에 있다.
+
+---
+
+## 1. HIU (호스트 인터페이스)
+
+**정의.** 호스트와 연산 패브릭 사이에 놓여 *호스트가 장치에 닿는 유일한 경계*.
+호스트 요청을 받아 정당성을 판정하고 패브릭용 형태로 바꿔 넘긴다
+(`G/chapters/03-hiu.typ:10-14`). 호스트는 연산 패브릭에 직접 닿지 않는다.
+주소·구성·난수가 전부 HIU 를 지난다 (`03-hiu.typ:16-23`).
+
+**네 역할** (`03-hiu.typ:41-50`):
+1. **주소 변환** — PE 는 가상 주소로 메모리에 접근한다. 목적은 격리와,
+   호스트 MMU 유무에 무관한 DVMA 다(§6).
+2. **접근 승인** — 판정 경로는 상수 시간이다.
+3. **구성 표면** — MMIO 레지스터(§2). ISA 의 논리 ID 사상표도 여기 산다.
+4. **엔트로피 공급** — Pod 범위 난수(§7).
+
+**요청 처리 순서** — 여섯 단계, 어느 경로든 같은 상태열 (`03-hiu.typ:62-74`):
+접수 → 고정 지연 → 변환표 조회 → 물리 주소 마스킹 → 요청 실행 → 접근 승인.
+조회 결과(적중/미적중)가 이후 단계의 개수를 바꾸면 안 된다. 승인(6)이 실행(5)
+뒤에 오는 것은 의도다. 실행 단계는 승인 전에 외부에 관측 가능한 부수효과를 내지
+않는다 (`03-hiu.typ:102-121`).
+
+**상수 시간성** — 절대치가 아니라 *경로 간 동일성*이다. 적중·대체·미적중 세
+경로가 완전히 같은 상태열을 지난다 (`05-security.typ:230-232`,
+`appendix/c-glossary.typ:117`). 사이클 수는 계약이 아니라 귀결이다
+(`05-security.typ:250-253`). 참조 구현에서 변환 시퀀스가 36→37 사이클로
+늘어난 적이 있지만 계약은 유지됐다 (`05-security.typ:244-245`). ⇒ Y4 문서에
+절대 사이클 수(예: 옛 Y4 판의 「≈32 cycle」)를 ABI 로 박지 않는다.
+
+**호스트 주소 변환 서비스에 질의해 채우는 형태는 기각** (Y4 주: PCIe ATS/PRI 가
+이 부류다. 정본은 「ATS」라는 낱말을 쓰지 않는다) — 질의 왕복은 가변 지연이라 상수 시간
+계약과 양립하지 않는다 (`03-hiu.typ:178-191`). 재구현 요건: 변환은 장치 안에서
+완결한다. 호스트 서비스는 선택적 가속일 뿐이며, 지원 호스트에서 기능이 늘어도
+안 된다 (`03-hiu.typ:211-221`).
+
+**HIU 는 문지기이지 운반자가 아니다.** 대량 데이터는 패브릭이 옮긴다
+(`03-hiu.typ:232-238`).
+
+> source: `G/chapters/03-hiu.typ` §3.1–3.3, `G/chapters/05-security.typ` §5.3
+> (WaveTensor `97b0105`).
+
+---
+
+## 2. MMIO 구성 표면 (호스트가 보는 4 KiB 페이지)
+
+구성 표면은 **4 KiB 한 페이지**의 32-bit 워드 맵이다. 영역 배치
+(`G/appendix/e-defined.typ:44-57`, 부록 E.1):
+
+| 범위 | 크기 | 내용 |
 |---|---:|---|
-| `ADDR_WIDTH` | 64 | 가상/물리 주소 폭 |
-| `DATA_WIDTH` | 32 | DMA 데이터 폭 |
-| `MAX_REGIONS` | 16 | shadow region 슬롯 수 |
-| `TLB_ENTRIES` | 16 | partition 당 TLB entry 수 |
-| `NUM_PARTITIONS` | 4 | partitioned TLB 분할 수 (cache-attack 격리) |
-| `CHACHA_ROUNDS` | 20 | XChaCha20 라운드 수 |
-| `DUMMY_CYCLES` | 8 | TRANSLATE 후 상수시간 dummy 지연 |
+| `0x000`–`0x11F` | 288 B | **물려받은 구역** — 뜻은 호스트 ABI 합의(§3.10) 대상. 합의 전 처분: 쓰기 거절 + `FAULT_STATUS[6]`, 읽기 0 |
+| `0x120`–`0x1FF` | 224 B | 예약 (물려받은 구역이 늘어날 자리) |
+| `0x200`–`0x2FF` | 256 B | 페이지 소유권 표 (§6) |
+| `0x300`–`0x37F` | 128 B | 완료 방향 — 완료 링 · 완료 통지 · 드레인 관측면 |
+| `0x380`–`0x3FF` | 128 B | 명령 방향 — 명령 링 |
+| `0x400`–`0x7FF` | 1 KiB | LNID 소유 표 (256 × 4 B) |
+| `0x800`–`0xBFF` | 1 KiB | LBID 사상표 (256 × 4 B) |
+| `0xC00`–`0xDFF` | 512 B | 변환 항목 배열 (§3) |
+| `0xE00`–`0xE7F` | 128 B | 변환 저장소 제어 — flush · 미적중 관측 (§3) |
+| `0xE80`–`0xEFF` | 128 B | 마스킹 — 키 · 논스 · 재키잉 (§5) |
+| `0xF00`–`0xF3F` | 64 B | step 프로그램 적재 |
+| `0xF40`–`0xF7F` | 64 B | 재조립 문맥 소거 |
+| `0xF80`–`0xFBF` | 64 B | 장치 전역 fault (§8) |
+| `0xFC0`–`0xFFF` | 64 B | 장치 식별 — `0xFFC` = ABI 판 (§10) |
 
-핵심 입력 신호:
-- `virt_addr [63:0]`, `dma_req`, `dma_data_in [31:0]`, `interface_type [1:0]`
-- `ats_req`, `pri_req` (PCIe ATS / PRI)
-- `shadow_write_*` 4종 + `shadow_index [3:0]` — shadow region 등록
-- **`context_switch`** — 1-cycle 펄스, 모든 partitioned TLB / shadow region 강제 무효화
-- `partition_id [1:0]` — 현재 사이클의 TLB 파티션 선택
-- `chacha_nonce [191:0]`, `chacha_key [255:0]` — XChaCha20 키/논스 입력
+**페이지 전역 규칙:**
+- **sub-word 쓰기 거절.** 기입 단위는 워드 하나다. 주소 하위 두 비트 ≠ 0 인 쓰기는
+  페이지 어디서든 거절 + loud fault `FAULT_STATUS[6]` 이다. 비정렬 읽기는 0 이고
+  fault 가 없다 (`03-hiu.typ:745-754`). ⇒ 바이트 폭 레지스터는 워드 정렬 오프셋으로
+  재배치해야 한다 (§3.10 합의 입력, `03-hiu.typ:1352-1355`).
+- **RO 워드** — 쓰기는 거절 + loud fault 다 (`e-defined.typ:202-204`).
+- **워드 안의 예약 비트** — 엄격하다. 비0 기입은 거절 + loud fault 다
+  (`e-defined.typ:188-190`).
+- **표에 없는 오프셋** — 쓰기 무시 · 읽기 0 (3.7 예약 정책). 단 sub-word 쓰기와
+  물려받은 구역은 위 두 규범이 따로 받는다 (`e-defined.typ:205-206`).
+- **소비 회로가 없는 RW 워드** — 두 링의 base(`0x300`/`0x304` · `0x380`/`0x384`),
+  `SQ_SIZE`(`0x388`), `SQ_TAIL`(`0x390`). 쓰기는 거절 + `[6]`, 읽기는 0 이다. 이는
+  **소비 회로가 서기 전까지의 잠정 처분**이고, 회로가 서면 수락으로 넓힌다(엄격 →
+  관대 = 하위 호환, `e-defined.typ:743`). 실물 상태: 명령 링을 소비하는 회로는
+  0건이다 (`e-defined.typ:715-716`).
+- **WO 워드** — 읽기 0, fault 없음 (되읽기를 주지 않는다, `e-defined.typ:198-201`).
 
-핵심 출력:
-- `phys_addr [63:0]`, `dma_data_out [31:0]`, `dma_ack`, `access_granted`
-- `ats_resp`, `pri_resp`
-- TRNG: `rng_raw [7:0] + valid`, `rng_word [63:0] + valid`, `trng_unhealthy`
-
-FSM 상태(요지): `IDLE → SHADOW_UPDATE | TRANSLATE → DUMMY_DELAY →
-CHACHA_H_INIT → CHACHA_H_MASK → CHACHA_INIT → CHACHA_MASK → CHACHA_FINAL
-→ DMA_EXEC → GRANT_ACCESS → IDLE`. `context_switch` 가 들어오면 어느
-상태에서나 `FLUSH_TLB` 로 강제 천이.
-
-> source: `WaveTensor/HIU.v` lines 4–46 (모듈 헤더), 84–98 (FSM 상태 정의),
-> 112–306 (메인 시퀀서).
-
----
-
-## 2. Partitioned TLB
-
-HIU 내부의 4-way partitioned TLB. **공유 TLB 가 아니라 partition_id 별로
-물리적으로 분리된 4 개의 16-entry 테이블**. 같은 가상 주소가 partition 마다
-다른 물리 주소로 매핑될 수 있고, partition 사이의 lookup hit/miss 가
-서로의 timing 에 영향을 주지 않는다 → cross-tenant cache-timing 채널 차단.
-
-```verilog
-reg [ADDR_WIDTH-1:0] partitioned_tlb_virt [0:NUM_PARTITIONS-1][0:TLB_ENTRIES-1];
-reg [ADDR_WIDTH-1:0] partitioned_tlb_phys [0:NUM_PARTITIONS-1][0:TLB_ENTRIES-1];
-reg                  partitioned_tlb_valid [0:NUM_PARTITIONS-1][0:TLB_ENTRIES-1];
-```
-
-총 64 entry (4 × 16). Y4 는 `partition_id` 를 lease capability 의 attribute
-로 노출하고, 동시 활성 lease 수의 hard cap 을 4 로 강제한다.
-
-> source: `WaveTensor/HIU.v` lines 49–51, 152–156 (조회 경로).
+> source: `G/appendix/e-defined.typ` E.1, `G/chapters/03-hiu.typ` §3.7, §3.10.
 
 ---
 
-## 3. Shadow region
+## 3. 주소 변환 — 파티션 · 변환 항목 (옛 「partitioned TLB」 + 「shadow region」)
 
-`MAX_REGIONS = 16` 개의 `(start, end, valid)` 튜플 테이블. TLB miss 시
-fallback 으로 조회되며, hit 시 **`virt_addr` 를 그대로 `phys_addr` 로
-identity-map** 하여 access_granted 를 올린다.
+**파티션** — 격리 단위. 각 파티션은 자기 변환 항목 집합을 가지며, 파티션 간
+변환 누출은 금지다 (`03-hiu.typ:512-515`). **파티션은 태그에 실리지 않는다.**
+요청의 파티션은 「어느 임대 아래 도착했는가」가 정하며, 격리 판정의 입력은 구조이지
+데이터가 아니다 (`03-hiu.typ:522-530`). 파티션 값을 기입으로 받는 표면 셋
+(`0xE00` · `0xEA0` · `0xEBC`)은 그 필드를 `[7:0]` 8 bit 로 고정한다
+(`e-defined.typ:409-412`).
 
-```verilog
-reg [ADDR_WIDTH-1:0] shadow_regions_start [0:MAX_REGIONS-1];
-reg [ADDR_WIDTH-1:0] shadow_regions_end   [0:MAX_REGIONS-1];
-reg                  shadow_valid         [0:MAX_REGIONS-1];
-```
+**변환은 장치 안에 있다.** 호스트는 변환 항목을 *기입*할 뿐이다
+(`03-hiu.typ:165-171`). 그 표면이 **변환 항목 배열** `0xC00`–`0xDFF` 이다.
+- 항목 주소 = `0xC00 + (파티션 ≪ 7) + (색인 ≪ 3)`. `addr[8:7]` = 파티션,
+  `addr[6:3]` = 색인, `addr[2]` = 워드 (`e-defined.typ:110`, `:297-299`).
+- 항목 = 8 B (2 워드). 페이지 크기는 **4 KiB 고정**이다. 가변 페이지는 상수 시간을
+  깬다 (`e-defined.typ:764-778`).
+  - `XLATE_ENTRY_LO` (+0x0, WO): `[31:0]` 물리 프레임. 스테이징이며 항목 번호를
+    함께 래치한다 (`e-defined.typ:305-306`).
+  - `XLATE_ENTRY_HI` (+0x4, WO): `[31]` V(유효), `[30:28]` 권한 R·W·X, `[27:0]` 태그
+    (VPN 상위). 기입이 항목 전체를 단일 에지로 커밋한다 (`e-defined.typ:307-308`).
+    정본은 「`[30:28]` 권한 R·W·X」라는 나열 순서만 준다. 비트별 배정
+    `[30]`=R · `[29]`=W · `[28]`=X 는 RTL 이 정했고, RTL 측이 이를 §3.10 입력으로
+    올렸다 (실물: `rtl/README.md:672`).
+- **규범은 형상이 아니라 인코딩이다.** 512 B 창이 *파티션 ≤ 4 · 색인 ≤ 16* 을
+  구조로 건다. 「파티션 4 × 항목 16」은 참조 구현의 **측정**값이고 규범이 아니다
+  (`e-defined.typ:791-803`, `b-gaps.typ:835-838`). 실재 파티션 수는 형상
+  파라미터다. ⇒ **동시에 보유된 임대(파티션 점유) ≤ 실재 파티션 수 ≤ 4** 다. 단
+  드레인 후 교체(§4) 때문에 패브릭 안에서 진행하는 일은 어느 순간에도 한 테넌트의
+  것이다 (`01-isa-asm.typ:1250-1253`).
+- **임대 간 항목 분리**는 세 가지가 함께 준다. ⒜ 기입 주소 인코딩 `addr[8:7]`.
+  ⒝ 상한 아래 형상에서 없는 파티션 주소로 기입하면 거절 + `[6]` (별칭 설치는 격리
+  위반, `e-defined.typ:423-425`). ⒞ 파티션 간 저장 용량 비공유·교차 축출 금지
+  규범 (`03-hiu.typ:576-593`, SEC-4). 주소 구조만으로는 성립하지 않는다.
 
-등록은 `shadow_write_en=1` + `shadow_index=k` 로 1 cycle 에 끝남
-(SHADOW_UPDATE 상태). `context_switch` 시 모두 무효화.
+**적중** — 파티션·태그가 모두 일치하고 V 가 설 때만 적중한다. 읽기 경로의
+우선순위는 *진행 중 채움 바이패스 > 저장 블록 조회 > (선택적) 호스트 응답* 이다
+(`03-hiu.typ:628-644`).
 
-Y4 측 책임: tenant compartment 생성 시 IOMMU 셋업과 동시에 shadow region
-을 등록하여, tenant 가 자기에게 부여된 메모리 범위 외부를 가속기로 DMA
-하지 못하게 한다.
+**미적중은 오류가 아니다** (`e-defined.typ:869-875`, 부록 E.3).
+- 요청은 **배압으로 정지**하고, 미적중을 sticky 로 알린다. 정지는 조회 단 *전체*의
+  정지다 (`05-security.typ:273-276`).
+- 채움 주체는 **호스트**다. 장치는 채우지 않고 **타임아웃도 두지 않는다**
+  (타임아웃은 조용한 실패다). 정지가 영구화되지 않게 할 책임은 호스트에 있다.
+- 관측: `0xE04` XLATE_STATUS(`[0]` 정지 중 · `[1]` sticky · `[15:8]` 정지한 요청의
+  파티션), `0xE08`/`0xE0C` MISS_VPN. 값은 정지 게이트 스냅샷이고, 정지가 없으면
+  0 이다. 읽기는 아무것도 해제하지 않는다 (`e-defined.typ:322-327`).
+- sticky 해제: `0xE10` XLATE_MISS_CLEAR. **sticky 만 지우고 정지는 풀지 않는다.**
+  정지를 푸는 것은 항목 기입뿐이다. 그래서 **드라이버 순서는 「항목 기입 → 해제」**
+  다. 정지 중에 쓴 해제는 유실된다 (`e-defined.typ:328-329`, `:873`, `:888-890`).
 
-> source: `WaveTensor/HIU.v` lines 53–55, 141–148, 159–164.
+**flush 는 데이터를 남긴다 — 영구 규율.** `0xE00` XLATE_FLUSH(`[7:0]` 파티션,
+기입이 곧 발화)는 **그 파티션의 유효 비트만** 지운다. 태그·변환 데이터는 남는다.
+V 가 *유일한 방벽*이다 (`03-hiu.typ:674-683`, `e-defined.typ:320-321`).
+**전 파티션을 한꺼번에 비우는 전역 발화는 없고, 있어서도 안 된다**
+(`e-defined.typ:1546-1547`). 수락된 flush 는 그 파티션을 래치한 LO 스테이징의
+*유효만* 내린다(프레임·번호는 남는다, `e-defined.typ:306`, `:321`). ⇒ flush 뒤 새
+임대의 항목 기입은 **LO 부터** 해야 하며, LO 없는 HI 는 거절 + `[6]` 이다
+(`e-defined.typ:1542`). 스테이징 레지스터는 하나뿐이므로
+LO→HI 쌍은 호스트가 직렬화한다(정본 귀결).
 
----
-
-## 4. XChaCha20 masking
-
-DMA 발사 전, **물리 주소(또는 데이터)를 XChaCha20 키스트림과 XOR** 해
-가속기 외부 메모리 트래픽이 노출되더라도 평문이 드러나지 않도록 한다.
-192-bit nonce + 256-bit key 입력 → HChaCha20 으로 subkey 유도 →
-ChaCha20 으로 keystream 생성 → 64-bit 마스크가 `phys_addr` 와 XOR 되어
-`masked_phys_addr` 가 DMA 엔진에 전달.
-
-라운드 수: `CHACHA_ROUNDS = 20` (RFC 8439 표준값). FSM 상태:
-`CHACHA_H_INIT → CHACHA_H_MASK → CHACHA_INIT → CHACHA_MASK → CHACHA_FINAL`.
-
-키/논스 바인딩 정책 (Y4 책임):
-- **tenant 별 (key, nonce) 발급** — Y4 가 lease capability 발급 시 함께 묶음.
-- `context_switch` 와 동일 사이클에 새 nonce 적용.
-- nonce 재사용 금지 (XChaCha20 의 보안 가정 위반).
-
-> source: `WaveTensor/HIU.v` lines 27–28 (포트), 174–273 (HChaCha/ChaCha
-> 시퀀스), 308–324 (quarter-round 함수).
-
----
-
-## 5. `context_switch` 신호
-
-HIU 의 1-bit 동기 입력. 라이즈 시 **동일 사이클**에 다음을 일으킨다:
-
-1. FSM 강제 `FLUSH_TLB` 진입.
-2. 모든 4 × 16 partitioned TLB entry 의 `valid` 비트 클리어.
-3. 모든 16 shadow region 의 `valid` 클리어.
-
-Y4 측 책임: lease 전환의 atomic 단계 중 하나. `context_switch` raise →
-새 (key, nonce, partition_id) 바인딩 → 새 shadow region 등록의 **3-step
-sequence 가 hypervisor capability 의 일부로 보장되어야 한다**.
-
-> source: `WaveTensor/HIU.v` lines 25 (포트), 133 (강제 천이),
-> 292–302 (FLUSH_TLB).
-
----
-
-## 6. Lease (가속기 lease)
-
-ad-hoc daemon-level 객체였던 lease 를 Y4 에서는 **hypervisor capability**
-로 격상한다 (architecture.md §"Lease 의 OS-level 모델링").
-
-life-cycle:
-1. 클라이언트(M) → daemon RPC 로 lease 요청.
-2. Y4 가 capability token 발급, tenant compartment 의 cap-table 에 등록.
-3. compartment 가 가속기 MMIO/메모리에 접근할 때마다 Y4 가 cap 검증.
-4. token 만료 시 Y4 가 atomic 3-step 청소:
-   - (a) compartment teardown,
-   - (b) HIU `context_switch` raise,
-   - (c) 가속기 상태 sanitize.
-
-lease attribute(최소):
-- `partition_id ∈ {0,1,2,3}` (partitioned TLB 슬롯)
-- `(chacha_key, chacha_nonce)` — Y4 가 발급, tenant 가 직접 보지 않음
-- shadow region 슬롯 인덱스 집합 (≤ 16)
-- 만료 시각 / heartbeat 정책
-
-동시 활성 lease 의 hard cap = 4 (partitioned TLB 의 NUM_PARTITIONS).
-
-> source: `docs/architecture.md` §"Lease 의 OS-level 모델링" (lines 262–269);
-> `WaveTensor/.claude-memos/remote_accelerator_access.md` §"우리 가속기 측
-> 사전 준비".
+> source: `G/chapters/03-hiu.typ` §3.6, `G/appendix/e-defined.typ` E.1.2 ·
+> E.2 · E.3, `G/appendix/b-gaps.typ` 「4 × 16」 행.
 
 ---
 
-## 7. TRNG (Phase 1 raw + Phase 3 conditioned)
+## 4. 테넌트 임대 (tenant lease) · 임대 회전 · 드레인
 
-HIU 내부 TRNG 서브시스템. 두 출력 채널을 가진다:
+**정의.** *파티션에 주소 변환 권한이 부여된 상태*. 영구가 아니라 회수
+가능하다 (`03-hiu.typ:517-520`). **임대의 단위는 파티션이다**
+(`05-security.typ:113`).
 
-| 출력 | 폭 | 단계 | 비고 |
-|---|---:|---|---|
-| `rng_raw + rng_raw_valid` | 8-bit + 1-bit | Phase 1 | RO 8 개 → 3-stage inverter chain → von Neumann 디바이어싱 → 8-bit 누적 시프트 |
-| `rng_word + rng_word_valid` | 64-bit + 1-bit | Phase 3 | 8 개의 정상 raw 바이트를 패킹 |
-| `trng_unhealthy` | 1-bit, sticky | — | RCT 또는 APT 실패 시 reset 까지 latch |
+Y4 는 이 임대를 **hypervisor capability** 로 격상한다 (`docs/architecture.md`
+§「Lease 의 OS-level 모델링」, `docs/lease_capability.md`). 장치에는 임대를 하나의
+기입이나 이벤트로 다루는 표면이 없다. 임대 회전은 파티션 단위 표면(E.9 6항)을
+차례로 쓰는 것으로만 표현된다 (`e-defined.typ:1538-1555`, `03-hiu.typ:517-525`).
 
-Health check (NIST SP800-90B):
-- **RCT** (Repetition Count Test, §4.4.1): threshold = 41 (= 1 + ⌈20/0.5⌉, H_min ≈ 0.5).
-- **APT** (Adaptive Proportion Test, §4.4.2): window = 64, threshold = 51 (α = 2⁻²⁰).
+**임대 회전 — 정본 E.9 6항** (`e-defined.typ:1538-1555`), *그 파티션에만* 건다:
+1. 호스트가 그 파티션에 대한 **투입을 멈춘다**(드레인 의무).
+2. `0xE00` XLATE_FLUSH 로 그 파티션의 변환 유효 비트를 지운다(데이터는 남음).
+3. `0xEA0` MASK_PART 를 그 파티션으로 두고, 새 키 8 워드 + 새 논스 6 워드를 기입한다.
+4. `0xEBC` MASK_REKEY 로 발화한 뒤 `0xEC0` MASK_STATUS 의 그 파티션 비트가 설 때까지
+   기다린다.
 
-`rng_word` 는 WT64v1 ISA 의 `OPREF.src_kind = 2` (TRNG bank) 에 직접
-공급된다 — 가속기 ISA 가 TRNG 를 first-class operand source 로 인식.
+정본이 항목 기입에 대해 요구하는 것은 하나다. ⑵ 뒤 새 임대의 항목은 LO 부터
+쓴다(§3, `e-defined.typ:1542`). 순서를 어긴 구간의 요청은 **정지되지 않고
+통과**하며, `FAULT_STATUS[11]` 「미준비 마스크 통과」가 사후에 크게 알릴 뿐이다
+(`e-defined.typ:1551-1555`).
 
-⚠ Phase 3 의 64-bit 패킹은 SP800-90A approved conditioner 가 아니다
-(per-bit min-entropy 보존만, PRF 확장 없음). Phase 3.5 에서 ChaCha20-keyed
-conditioner 로 교체 예정.
+**Y4 측 선택:** 항목 기입(`0xC00`, LO → HI)은 ⑷ 뒤에 한다. 그리고 이 열 전체를
+**단일 capability invocation 안에서 직렬화**해 게스트가 중간 상태를 보지 못하게
+한다.
 
-Y4 측 책임:
-- `trng_unhealthy` 가 latch 되면 lease 발급 중단 + 모든 활성 lease 의 키
-  rotation 트리거.
-- guest OS 가 TRNG 를 직접 보지 못하게 함 (hypervisor capability 통해서만).
+**드레인 — 「기계에 드레인 모드는 없다」** (`03-hiu.typ:1033`). 구성(사상표·
+flush·소유권) 교체는 *드레인 후 교체* 다. 비어야 하는 정의역은 여섯이다(요청
+파이프라인 · 공유 유닛 보류 자원 · 생산자 출력/병합 · 진행 중 결과 슬롯 · 열린
+재조립 문맥 · 미완료 순서 토큰, `03-hiu.typ:1015-1030`). 관측면은
+DRAIN_ALLZERO(E.11, `0x37C`)다. 단 `DRAIN_ALLZERO = 1` 의 뜻은 「이 정의역이
+비었다」이지 「장치에 비행 중인 일이 없다」가 아니다. 정본은 이 구별을 아직 적지
+않았다(B.5 미결, `b-gaps.typ:1979-1990`). ⇒ 확장이 새 실행 주체를 들이면, Y4 는
+재키잉·리셋·이주 전에 이 값 하나만 믿지 않는다. 3.7.2 「드레인 후 교체」의
+귀결(해설)로, 패브릭은 공간이 아니라 **시간 분할**로 격리된다. 어느 순간에도
+패브릭 안의 일은 한 테넌트의 것이다 (`01-isa-asm.typ:1250-1253`). 이를 완화하려면
+3.7.2 와 패브릭 2.3 을 명시적으로 개정해야 한다 (`03-hiu.typ:527-529`).
 
-> source: `WaveTensor/HIU.v` lines 326–586 (전체 TRNG 블록);
-> `WaveTensor/.claude-memos/wt64v1_spec.md` §6 "TRNG 사양" + §"OPREF.src_kind".
-
----
-
-## 8. Pod / Cluster / PE — 가속기 토폴로지 용어
-
-Y4 자체는 dataflow 토폴로지를 알 필요 없지만, lease attribute 와 IPC 채널
-이름이 이 계층을 참조하므로 정의 고정:
-
-- **PE** (Processing Element): 단일 ALU/MUL/DIV 유닛. WT64v1 토큰 in →
-  토큰 out 6 cycle 기본.
-- **Cluster**: `(PE_ROWS, PE_COLS) ∈ {(2,2),(2,4),(4,2),(4,4)}` 격자의
-  L-PE 들 + 1 개의 stripped MATMUL_UNIT + 1 개의 공유 EHDecode 프론트엔드.
-- **Pod**: `(CLUSTER_ROWS, CLUSTER_COLS) ∈ {(2,2),(2,4),(4,2),(4,4)}` 격자의
-  Cluster 들. Pod 1 개당 HIU 1 개. **참조 구현은 16-PE Pod = 2×2 cluster
-  × 2×2 PE**.
-- **Wave**: WT64v1 의 dataflow 토큰 시퀀스 단위. `wave_number` 는 토큰의
-  tag 안에서 증가하며 `WADV` (0x01) opcode 로 advance. Y4 의 lease
-  scheduler 는 wave 경계에 정렬해 preempt 한다 (wave-aligned preemption).
-
-> source: `WaveTensor/Pod.v` lines 4–35, `WaveTensor/Cluster.v` lines 4–47,
-> `WaveTensor/.claude-memos/wt64v1_spec.md` §1, §3.1 (`WADV`).
+> source: `G/chapters/03-hiu.typ` §3.6, §3.7.2, `G/appendix/e-defined.typ` E.9 6항,
+> `G/chapters/05-security.typ` §5.2.2.
 
 ---
 
-## 9. WT64v1 (참고)
+## 5. 주소 마스킹 · 마스크 키 · 논스
 
-WaveTensor 가속기의 v1 ISA. Y4 는 ISA 자체를 해석하지 않지만, lease 발급
-시 **ISA conformance level 을 lease attribute 로 노출**한다 (예:
-"WT64v1-base only" vs "WT64v1 + WT64v1-C 확장"). 향후 WT64v2 발생 시 lease
-스키마는 backwards-compatible 확장으로 처리.
+**정의.** 장치가 외부로 내는 물리 주소를 키스트림으로 가려, 관측자가 실제 접근
+위치를 복원하지 못하게 한다 (`05-security.typ:86-88`). 마스크는 **표준 스트림
+암호의 키스트림**이며 표준에 준거한다. 준거 대상은 확장 논스 스트림 암호
+(XChaCha)이고, 기반 라운드 함수는 ChaCha (RFC 8439)다 (`05-security.typ:100-101`,
+`:180-188`). 마스크는 물리 주소의 **페이지 프레임 부분에만** 적용하고 페이지 내
+오프셋에는 적용하지 않는다 (`e-defined.typ:1522-1523`).
 
-> source: `WaveTensor/.claude-memos/wt64v1_spec.md` §1 + §11–12 (회귀
-> 베이스라인 + 변경 정책).
+**표면 — `0xE80` 구역** (`e-defined.typ:338-347`):
+
+| 오프셋 | 이름 | 접근 | 뜻 |
+|---|---|:-:|---|
+| `0xE80`–`0xE9C` | MASK_KEY[0..7] | WO | MASK_PART 파티션의 256-bit 키. 읽기 0. 기입은 그 파티션의 마스크 유효를 즉시 떨어뜨린다 |
+| `0xEA0` | MASK_PART | RW | `[7:0]` 키·논스 기입 대상 파티션 (창). `[31:8]` 예약 = 0 (엄격) |
+| `0xEA4`–`0xEB8` | MASK_NONCE[0..5] | WO | 그 파티션의 192-bit 논스. 읽기 0. 기입은 그 파티션의 마스크 유효를 즉시 떨어뜨린다 |
+| `0xEBC` | MASK_REKEY | WO | `[7:0]` 재키잉할 파티션 — 기입이 발화. `[31:8]` 예약 = 0 (엄격) |
+| `0xEC0` | MASK_STATUS | RO | `[7:0]` 파티션별 마스크 준비 · `[8]` 엔진 busy · `[9]` 재키잉 수락 가능 |
+
+**규범:**
+- **키는 임대마다 다르다.** 임대의 단위가 파티션이므로 장치는 파티션 수만큼 키를
+  동시에 지고, 전 파티션이 키 한 벌을 공유하는 배치는 배제된다. 같은 파티션의
+  연속 임대도 새 키를 쓴다 (`05-security.typ:112-116`, `e-defined.typ:1514-1521`).
+- **키는 호스트가 구성 표면으로 기입한다. 장치는 키를 생성하지 않는다**
+  (`e-defined.typ:1508-1513`). 장치가 키를 만들면 golden 대조(SEC-1)가 성립하지
+  않는다.
+- **키·논스는 WO** 다. 키 자료 추출 방어의 실물이다 (`05-security.typ:25-27`).
+- **유일해야 하는 것은 `(키, 논스)` 쌍이다.** 「임대마다 새 키」의 유일성과 신선도는
+  **장치가 강제할 수단이 없는 호스트(=Y4) ABI 의무**다. 키가 WO 이고 장치는 이력을
+  지지 않기 때문이다 (`e-defined.typ:1514-1521`).
+- **재키잉은 그 파티션의 flush 와 함께만** 일어난다. 한 임대의 키 기입이 다른
+  임대의 마스크 유효를 떨어뜨리면 위반이다 (`e-defined.typ:1524-1528`).
+- 키·논스 바이트의 **zeroize 규범은 정본에 없다**(침묵). WaveTensor 비정본 메모는
+  이를 개정 후보 G1 로 두고, 들인다면 단위는 파티션이라고 제안한다
+  (`.claude-memos/y4_hiu_abi_signoff_response.md:514-526` — 메모의 제안이지 정본
+  규범이 아니다).
+
+**실물 상태 (rtl, `97b0105`):** 키·논스 저장은 파티션별이다(`MaskUnit.scala:286-287`,
+`ca3c496` 에서 정본을 따라잡음). 키 기입은 자기 파티션의 마스크 유효만 내린다.
+재키잉 연산 자원(라운드 상태·단계 기계·라운드망)은 한 벌을 공유하며, 규범은 이를
+허용한다 (`05-security.typ:155-158`). 그 분리 여부와 면적 대가는 B.5 미측정
+항목이다. 재키잉은 43 사이클 고정이다.
+
+> source: `G/chapters/05-security.typ` §5.1–5.2, `G/appendix/e-defined.typ` E.1.2
+> `0xE80` 구역 · E.9.
 
 ---
 
-## 10. RTL ↔ Y4 ABI 경계
+## 6. 페이지 소유권 · zero-copy · DVMA
 
-Y4 가 직접 의존하는 WaveTensor 인터페이스 표면은 다음 셋 뿐이다.
-이 경계 외부의 변경은 Y4 에 영향을 주지 않는다 — 본 사전과
-`docs/hiu_abi.md` 가 그 경계를 정의한다.
+**DVMA** — 장치가 물리 주소가 아니라 *가상 주소로* 메모리에 접근하는 것이다.
+PE 는 호스트에 MMU 가 있든 없든 일관되게 DVMA 를 누린다 (`03-hiu.typ:147-157`).
 
-1. **HIU 모듈 포트** (§1) — 호스트에서 보이는 MMIO 레지스터 맵으로 변환됨.
-2. **`context_switch` semantic** (§5) — flush atomicity 보장 cycle 수.
-3. **TRNG 출력 채널** (§7) — `rng_word` 폭, valid 펄스 길이, health flag
-   의미.
+**페이지 소유권 규약** (`03-hiu.typ:353-368`). 하드웨어 일관성이 없을 때 일관성을
+대신하는 소프트웨어 규약이다 (`03-hiu.typ:313-319`):
+1. 단위는 페이지이고, 상태는 **호스트 소유 / 장치 소유** 둘뿐이다.
+2. 전이는 구성 표면의 명시적 쓰기로만 일어난다.
+3. 넘기는 쪽이 비운다. 하드웨어 일관성이 있으면 이 의무만 생략할 수 있고, 소유권
+   상태 기계 자체는 그대로 유지한다 (`03-hiu.typ:366-368`).
+4. 소유하지 않은 쪽의 접근은 **loud fault (sticky)** 다. 관측 결과는 값 차단 +
+   loud fault 다 (`03-hiu.typ:80-82`). 이 축의 후-formal 은 아직 *미측정*이다
+   (`03-hiu.typ:1269`).
 
-WT64v1 ISA 자체(opcode 표 등)는 Y4 의 ABI 경계가 **아니다** — ISA 는 게스트
+표면 `0x200`: `OWN_IDX`(RW, 조회 대상) · `OWN_STATUS`(RO, `[0]` 장치 소유) ·
+`OWN_SET`(WO, 장치로 이양) · `OWN_CLR`(WO, 호스트로 회수)
+(`e-defined.typ:222-233`). 전이는 한 번의 쓰기로 완결되며 (`e-defined.typ:1379-1383`), 전이 워드는 전 비트가
+대상 프레임이다. 소유권 전이 워드의 프레임 폭과 변환 항목의 물리 프레임 폭은
+**같아야 한다**. 두 폭이 같다는 *관계*가 계약이다 (`e-defined.typ:786-790`,
+`:1385-1386`).
+
+> source: `G/chapters/03-hiu.typ` §3.3–3.4, `G/appendix/e-defined.typ` E.7.
+
+---
+
+## 7. 엔트로피원 (옛 「TRNG 채널」)
+
+**네 단계** (`05-security.typ:329-334`):
+1. 물리 엔트로피원 — 자유 발진 링 다수(참조 구현은 8개).
+2. 편향 제거.
+3. 건강성 검사 — 반복 계수 + 적응 비율, NIST SP 800-90B. 임계값은 사양에서 유도한다.
+4. 조건화 — SP 800-90A 표준 조건화. 참조 구현에서는 범위 밖이었다.
+
+참조 구현의 건강성 파라미터(창 1/임계 41, 창 64/임계 51)는 **측정**값이지
+규범이 아니다 (`05-security.typ:337-340`).
+
+**SEC-6** — 건강성 실패는 명시적 해제 전까지 유지된다(sticky). 실패 상태에서
+생산된 난수는 소비자에게 *실패로 표시되어* 전달된다(poison)
+(`05-security.typ:512-514`).
+
+**호스트가 보는 면은 둘이다.**
+- `FAULT_STATUS[17]` 「엔트로피원 건강성 검사 실패」(sticky, `e-defined.typ:522`).
+  `0xF84` W1C 로 해제한다.
+- 값 단위로는 완료 디스크립터 CD_TAG1 `[27]` poison 이 있다. 오늘 poison 의 유일한
+  후보 원천이 `[17]` 이다 (`e-defined.typ:735-736`, `01-isa-asm.typ:1151-1153`).
+
+둘 다 재구현에서는 상수 0 이다. **난수 값을 호스트가 읽는 워드는 E.1 신규 맵에
+없다.** 물려받은 `0x000`–`0x11F` 의 뜻은 §3.10 합의 대상으로 남아 있다
+(`e-defined.typ:44`). 난수의 소비자는 ISA 다. OPREF `src_kind = 2`
+는 「난수 뱅크 (Pod 범위 64비트 조건화 난수)」다 (`01-isa-asm.typ:787-798`).
+
+**실물 상태 (측정 트랙):** 엔트로피원 유닛은 재구현에 **미착지**다. 자리는 ABI
+이지만 `[17]` 은 상수 0 이다 (`e-defined.typ:727-728`, `03-hiu.typ:1279`; rtl
+`Wt64Top.scala:360`, `:1563`). 정본 §3.9 측정표의 다른 행 「난수 공급 [구현]」
+(`03-hiu.typ:1256`)은 이와 어긋나 보인다. WaveTensor 쪽 확인 대상이다.
+
+**Y4 측 함의:** 장치는 키를 생성하지 않고 논스도 호스트가 기입한다
+(`e-defined.typ:1508-1509`, `:1543`). 그러므로 마스크 키·논스의 엔트로피 원천은
+**호스트(Y4) 측**이다. `[17]` 관측 시의 정책(신규 임대 중단 등)은 **Y4 가 정하는
+것이지 정본 요구가 아니다.**
+
+주의할 점이 하나 있다. E.9 이전에 쓰인 정본 해설 문장 두 곳은 여전히 장치
+엔트로피가 마스킹을 먹인다고 서술한다(「엔트로피의 건강성이 곧 주소 은닉의
+강도다」 `03-hiu.typ:32-33`, `05-security.typ:376`). 규범(E.9 1항)과의 이 긴장은
+정본 쪽 정리 대상이다.
+
+> source: `G/chapters/05-security.typ` §5.4, SEC-5/6, `G/appendix/e-defined.typ`
+> `0xF80` `[17]`, `G/chapters/01-isa-asm.typ` §1.4.3.
+
+---
+
+## 8. fault · 완료 통지 · 인터럽트
+
+**loud fault** — 조용한 실패 금지가 원칙이다. 장치 전역 fault 구역은 다음과 같다
+(`03-hiu.typ:1156-1158`, `e-defined.typ:494-499`, 비트 배정 `:509-524`):
+- `0xF80` FAULT_STATUS (RO) — 원천별 sticky 비트맵(접지 않음). Y4 가 자주 마주칠
+  비트: `[6]` 거절된 구성 기입, `[11]` 미준비 마스크 통과, `[17]` 엔트로피 건강성.
+- `0xF84` FAULT_CLEAR (WO) — 같은 배치의 W1C. 해제와 발화가 같은 사이클이면 발화가
+  이긴다.
+- `0xF88` FAULT_SUMMARY (RO) — `[0]` 논리합. 개별 노출에 덧붙는 값이다.
+
+**완료 통지** — **완료 링에 항목을 넣는 것이 유일한 통지 수단이다**
+(`e-defined.typ:1329`). **인터럽트는 선택적 가속**이다. 마스크로 끌 수 있고, 끄면
+호스트가 완료 링을 폴링하며 기능은 줄지 않는다 (`e-defined.typ:1330-1332`).
+표면은 `0x320` IRQ_STATUS(sticky) · `0x324` IRQ_MASK(**reset 값 1 = 기본 폴링**) ·
+`0x328` IRQ_CLEAR 다 (`e-defined.typ:258-263`). 인터럽트를 정상 경로의 전제로 두지
+않는다 (`e-defined.typ:1365-1367`).
+
+**실물 상태 (rtl @97b0105):** 최상위 인터럽트 선은 하나이고, set 원천은 완료 링
+삽입 하나다 (`rtl/spinal/src/main/scala/wt64/host/CompletionUnit.scala`).
+**정본:** E.6 은 완료 통지 외의 IRQ 원천을 정하지 않는다. FAULT_SUMMARY 의 IRQ
+편입은 WaveTensor 요청 채널(비정본)이 「G2」로 올린 개정 후보다.
+
+> source: `G/chapters/03-hiu.typ` §3.8, `G/appendix/e-defined.typ` E.1.2
+> `0xF80` 구역 · E.6.
+
+---
+
+## 9. 토폴로지 · WT64v1 · wave
+
+- **WT64v1** — WaveTensor 64-bit Dataflow ISA, version 1. 데이터플로 명령어 집합과
+  실행 기계의 규약이다 (`00-preface.typ:80-81`).
+- **토큰** — 64-bit 페이로드 + 80-bit 태그 (`00-preface.typ:90-91`).
+- **PE** — 연산을 수행하는 단위이며 이종이다(참조 구현 실측은 범용·행렬·나눗셈
+  셋, `02-fabric-alu.typ:40-62` 측정 트랙). **Cluster** — PE 그리드 한 장 + 공유
+  디코더 + 결과 뱅크. 공유 자원이 존재하는 최소 단위다. **Pod** — Cluster 그리드
+  한 장. 현행 실측 형상의 최상위다 (`02-fabric-alu.typ:10-20`).
+- **형상** — 그리드 크기는 구현 파라미터이며 각각 최대 4×4 다. 기본 형상은 2×2
+  Cluster × 2×2 PE = **16 PE**, ISA 상한은 **256 PE** 다 (`02-fabric-alu.typ:22-27`,
+  `00-preface.typ:108-110`). 형상은 명령 인코딩에 나타나지 않는다(형상 독립성,
+  INV-T1/T2).
+- **Global Grid / 다중 Pod** — 설계 의도로만 존재한다. 다중 Pod 구성은 2026-07-12 에
+  철회됐다 (`02-fabric-alu.typ:29-32`, `a-capacity.typ:44-48`). 참조 구현의
+  상호연결은 NoC 가 아니라 브로드캐스트 · valid 디먹스 · OR 병합이다(실측,
+  `02-fabric-alu.typ:129-156`, `b-gaps.typ:30-32`).
+- **wave 번호** — 80-bit 태그 안의 32-bit **불투명 식별자**다. 값을 짓고 올리는
+  것은 호스트다. 기계는 등가 비교·보존 외에는 해석하지 않으며, 증가도 기계가 하지
+  않는다 (`01-isa-asm.typ:822-837`, `:1018-1021`). wave 번호는 **순서 기전이 아니고
+  아무것도 게이트하지 않는다** (`04-ext-payload.typ:682-683`).
+  ⇒ Y4 의 「wave-aligned preemption」은 Y4 스케줄러의 정책 이름일 뿐이고, 장치
+  측 근거는 §4 드레인이다.
+- WT64v1 ISA(opcode 표 등)는 Y4 의 ABI 경계가 **아니다**(§10).
+
+> source: `G/chapters/00-preface.typ`, `G/chapters/01-isa-asm.typ` §1.4,
+> `G/chapters/02-fabric-alu.typ` §2.1, `G/appendix/a-capacity.typ`,
+> `G/appendix/c-glossary.typ`.
+
+---
+
+## 10. 장치 ↔ Y4 ABI 경계
+
+Y4 가 직접 의존하는 WaveTensor 표면은 **구성 표면(§2) 하나**다. 정본은 이
+경계를 이렇게 규정한다: 구성 표면의 계약은 정본 단독으로 동결할 수 없고, *동결에는
+양쪽 합의가 필요하다* (`03-hiu.typ:1322-1330`, §3.10). 그 합의의 Y4 측 문서가
+`docs/hiu_abi.md` 다.
+
+1. **구성 표면 레지스터 맵** (E.1) — §2 표. 그중 Y4 가 직접 쓰는 것은 변환(§3),
+   임대 회전·마스킹(§4–§5), 소유권(§6), fault·통지(§8)다.
+2. **판 워드 `0xFFC` HIU_ABI_VERSION** (RO) — 드라이버가 가장 먼저 읽는 워드다.
+   **합의 전 값은 0 이고, 판 0 은 물려받은 `0x000`–`0x11F` 에 어떤 레이아웃도
+   약속하지 않는다.** 비0 판 값과 필드 분할(major/minor 등)은 합의가 정한다
+   (`03-hiu.typ:1344-1350`, `e-defined.typ:504-505`).
+3. **§3.10 합의 입력** — §3.10 이 함께 올리는 것: 물려받은 구역·판 워드의 처분,
+   E.1.3 소비 회로 없는 RW 워드의 쓰기 거절, 소거 구간 중 읽기, 바이트 폭
+   레지스터의 워드 정렬 재배치 (`03-hiu.typ:1352-1355`).
+   - **장치 쪽에서 닫을 수 없는 다섯** (정본 축자 목록): 링의 거처 · E.8 선택자
+     오프셋 · 링 크기 인코딩 · fault 비트맵 · 개시 wave 태그의 원천
+     (`b-gaps.typ:2079-2081`).
+   - **동결 대기:** 변환 항목 비트 배치와 프레임 폭 값 (`e-defined.typ:1439-1441`,
+     `:806-812`), 에포크 폭 4b (`b-gaps.typ:1130-1131`), 태그 배치 전체.
+
+**WT64v1 ISA 자체**(opcode 표 등)는 Y4 의 ABI 경계가 **아니다**. ISA 는 게스트
 SDK 가 가속기와 직접 말할 때 의미가 있고, Y4 는 capability 검증과 메모리
 mapping 만 책임진다.
+
+> **주의 (2026-10-01):** `docs/hiu_abi.md` v0 의 레지스터 표(`0x000`–`0x110`)는
+> legacy 참조 구현 기준이다. 재구현 장치에는 그 워드들이 *없다*. 그 구간에
+> 쓰면 `FAULT_STATUS[6]` 이 선다(정본 §3.10 처분, WaveTensor 판정 HP-1). 그 문서를
+> 정본 E.1 에 정합시킬지·언제 할지는 WaveTensor 요청 2026-10-01 의 질문 1–3 에
+> 대한 Y4 답에 달려 있다.
 
 ---
 
@@ -253,11 +466,11 @@ mapping 만 책임진다.
 
 | # | 표면 | 방향 | 정의 위치 | 상태 |
 |---|---|---|---|---|
-| A | Y4 ↔ HIU MMIO 레지스터 맵 + 타이밍 계약 | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` | v0 draft, 양측 sign-off 대기 (`HIU_ABI_VERSION` = `0x0000_0000`) |
+| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | v0 draft, 양측 합의 대기.  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) |
 | B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **`docs/y4_abi.md` §2** (v0 draft) | 정의됨 (2026-09-14).  core VMM 은 워크스페이스 안, `y4-hypercall` repo 는 §5.3 재정의 후 사용자 CLI 전용(디스크 미존재) |
 | C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
 | D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
-| — | WT64v1 ISA | 게스트 SDK **→** 가속기 | WaveTensor 저장소 소관 | §10 대로 **Y4 의 ABI 경계 아님** |
+| — | WT64v1 ISA | 게스트 SDK **→** 가속기 | WaveTensor 정본 `G/chapters/01-isa-asm.typ` | §10 대로 **Y4 의 ABI 경계 아님** |
 
 **「Y4용 드라이버 / SDK」가 실제로 부르는 면이 위 넷 중 무엇인지는
 미결이다 — 이 문서는 그것을 정하지 않는다.**  방침(2026-08-30)은
@@ -272,7 +485,7 @@ HIU MMIO 를 두드리는 규약) ⒞ B·C·D 전부.  **어느 것이냐가 블
 위 「사람이 정한다」는 이로써 답해졌고, 남은 것은 그 문서의 **v1.0 frozen**
 (`y4_abi.md` §7)뿐이다.
 
-> 미결 등재처 (네 저장소가 같은 질문을 열어 두고 있다):
+> 미결 등재처 (네 저장소가 같은 질문을 열어 두고 있었다):
 > `.claude-memories/y4_toolchain_and_abi_policy.md` §6-4 ·
 > wavetensor-sdk `docs/architecture.md` §11 [Q14] ·
 > wavetensor-drivers `docs/platforms.md` §7 ⑺ ·
@@ -288,9 +501,35 @@ B 의 신설은 사용자 방침(2026-08-30)이 「Y4용 드라이버 및 SDK �
 등재.  그 선행 조건은 **y4-drivers 진입**에 걸리는 것이지 Phase C 자체의
 차단 의존이 아니다 (방침은 Phase C 를 막는다고 말하지 않았다).
 
-spec 의 소재지(⒜ `Y4/docs/guest_abi.md` 신설 ⒝ `y4-hypercall` 실제 개설
-⒞ 또 다른 sibling repo)도 **미결 — 사람이 정한다.**
+spec 의 소재지는 **해소됐다**: ⒜ `Y4/docs/` 안 신설 — `docs/y4_abi.md`
+(2026-09-14).  ⒝ `y4-hypercall` 개설 · ⒞ 다른 sibling repo 갈래는 택하지 않았다.
 
 > source: `docs/hiu_abi.md` §0 · `docs/amdv_safety.md` §S7.2 ·
 > `docs/vmm_arch.md` §1, §4, §5.3 · `docs/lease_capability.md` §3.1–3.2,
-> §5 · `.claude-memories/y4_toolchain_and_abi_policy.md` §5.
+> §5 · `docs/y4_abi.md` §0–§2, §7 ·
+> `.claude-memories/y4_toolchain_and_abi_policy.md` §5, §8.
+
+---
+
+## 12. legacy 용어 대응표 (옛 판 §1–§10 → 정본)
+
+Y4 의 다른 문서(`hiu_abi.md`, `lease_capability.md`, `architecture.md` 등)에 남은
+옛 용어를 읽을 때 쓴다. 그 문서들의 본문 정정은 WaveTensor 요청 2026-10-01
+질문 3(H1–H4 · HP-1..7 반영 여부)에 대한 Y4 결정 뒤에 한다.
+
+| 옛 용어 (legacy 기준) | 정본 대응물 | 비고 |
+|---|---|---|
+| partitioned TLB (4 × 16) | 변환 저장 + 변환 항목 배열 `0xC00` (§3) | 4×16 은 측정값. 규범은 인코딩 상한 ≤4 · ≤16 |
+| shadow region (16 슬롯, identity-map) | **없음.** 호스트가 기입하는 변환 항목(§3)이 그 자리 | 정본·부록 E 에 「shadow」 0건 |
+| `context_switch` (1-cycle, 전 파티션 + shadow 전역 무효화) | 파티션별 `0xE00` XLATE_FLUSH + E.9 6항 임대 회전 (§3–§4) | **전역 무효화는 정본이 금지** |
+| `HIU_CTRL` · `dma_req` · `HIU_VIRT_ADDR` (호스트 DMA 단발) | E.1 신규 맵에 대응 워드 없음. 정본 §3.3 은 요청 발신자를 PE 쪽에 둔다 | `0x000`–`0x11F` 는 합의 전 쓰기 거절. 합의가 그 구간에 워드를 배정할 수는 있다 (`03-hiu.typ:1342-1343`). 「G4」는 WaveTensor 요청 채널의 라벨(비정본) |
+| `ats_req` / `pri_req` / `ats_resp` / `pri_resp` | 호스트 변환 서비스 질의로 채우는 *정상 경로*는 정본이 기각 (`03-hiu.typ:178-191`). 선택적 가속 경로로는 상수 시간 불훼손·기능 불증감을 조건으로 허용 (`:211-221`). 참조 구현의 해당 상태는 형태만 있는 의도된 미결선 (`:201-208`) | 미적중은 배압 정지 + 호스트 채움(§3) |
+| `HIU_PHYS_ADDR` (마스킹 전 RO) | E.1 맵에 대응 워드 없음 (`e-defined.typ:39-58`) | (Y4 추론) 마스킹 전 주소를 내주면 주소 마스킹 계약(`05-security.typ:99-102`)·SEC-4 와 긴장한다. 키 WO 근거(`e-defined.typ:1531-1532`, 정본 §5.8 관측면)와 같은 형태 |
+| `HIU_CHACHA_KEY` / `NONCE` (한 벌) | `0xE80` 구역 MASK_KEY/NONCE, 파티션별 · WO (§5) | 임대별 키 · `(키, 논스)` 쌍 유일 = Y4 의무 |
+| `rng_raw` / `rng_word` / `trng_unhealthy` | E.1 신규 맵에 호스트용 난수 워드 없음. 건강성은 `FAULT_STATUS[17]` (W1C 해제) + CD_TAG1 poison (§7) | 물려받은 구간의 뜻은 §3.10 합의 대상 (`e-defined.typ:44`). `[17]` 은 자리만 ABI 이고 상수 0 이다(측정 트랙) |
+| `DUMMY_CYCLES = 8`, 「≈32 cycle」 | 상수 시간성 = 경로 간 동일성 (§1) | 절대 사이클 수는 계약 아님 |
+| `HIU_STATUS.dma_ack` polling | 완료 링 폴링 / opt-in IRQ (§8) | IRQ_MASK reset = 1 |
+| `HIU_ABI_VERSION` v0 = `0x0000_0000` (옛 표의 판) | `0xFFC` 판 0 = 「약속 없음」 (§10) | 비0 판 값은 합의 대상 |
+| PE = 단일 ALU/MUL/DIV, 6 cycle | 이종 PE (§9) | 사이클 수 근거 없음 |
+| `WADV` 로 증가하는 `wave_number` | 호스트가 짓는 불투명 32-bit 식별자, 게이트 없음 (§9) | |
+| `OPREF.src_kind = 2` (TRNG bank) | 「난수 뱅크 (Pod 범위 64비트 조건화 난수)」 (§7) | 값 배정은 그대로 |

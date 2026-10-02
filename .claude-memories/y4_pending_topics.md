@@ -77,7 +77,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 11. ✅ **PR-Verus-Backend 준비** (2026-06-01) — R3.11 + R3.12 의 별도 세션
     entry point.  `.claude-notes/trackers/pr-verus-backend-tracker.md`
     신설 (9 phase P-vb.1~P-vb.9, 분량 ~1100 LoC).  Verus 본체 fork =
-    `~/verus-fork/` (사용자가 수동 clone — 대기).  Cross-ref: av-proof-
+    `~/verus-fork/` (당시 계획; → item 15 에서 `<Y4>/verus-fork/` submodule 로 대체).  Cross-ref: av-proof-
     body-tracker §1 R3.11/R3.12 + smt-cross-validation-tracker §9 +
     unified-toolkit-pin.toml [verus]
 12. ⚠️ **P-redesign.4** (2026-06-01) — **superseded by R7 sign-off
@@ -149,6 +149,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
     - **adsmt baseline 갱신 (R7.6)**: rc.6-1 → **rc.29** (`03f33a9`, sound
       + complete 확보) + adsmt-contrib **rc.28** (`33349dc`).  branch =
       testing (rolling), stable v1.0.0 release 시 stable-v1 channel 전환
+      [⚠ 2026-10-01: feedback_adsmt_v1_verification_redesign 의 「(i) testing 계속」과 충돌 — 사용자 확인 필요]
       예정
     - **`proofs/verus/justfile` consumer pattern adapt (R7.2)** — 8
       recipes (verify / verify-adsmt / verify-cvc5 / verify-oxiz /
@@ -157,7 +158,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
     - **신설 tracker**: `.claude-notes/trackers/y4-sel4-integration-
       tracker.md` (R7 ledger + per-cluster emission record + l4v
       milestone watch)
-    - Plan ledger: `~/.claude/plans/jazzy-gliding-puppy.md`
+    - Plan ledger: (당시 `~/.claude/plans/jazzy-gliding-puppy.md` — 2026-10-01 디스크에 없음) → `.claude-notes/trackers/y4-sel4-integration-tracker.md` 가 R7 ledger
 17. ✅ **R7.11 first emit milestone — verify-adsmt unblocked + AOT functional**
     (2026-06-08, adsmt v1.0.0-rc.30)
     - **rc.30 baseline 갱신**: adsmt `e2951a8` (declare-datatypes
@@ -204,6 +205,8 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
       - adsmt-contrib = `cbf7a46` (rc.31-era wasm packages, rc.33 base
         rebuild 필요)
       - verus-fork submodule pin = `22e10f196` (이전 `55cb8316e`)
+        → 이후 `c9b9a45ee` (Y4 `41bcdbe`, 2026-06-11).  `unified-toolkit-pin.lock`
+        은 여전히 `22e10f196` 을 적고 있다 (lock 미갱신, 2026-10-01 확인)
     - **Y4 측 변경**:
       - `unified-toolkit-pin.lock` rc.33 baseline + Verus fork pin
       - `proofs/verus/justfile` emit-{isabelle,rocq,install} recipe
@@ -212,7 +215,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
         `~/adsmt-contrib/adsmt-emit-{isabelle,rocq}-wasm/{isabelle,rocq}.
         adsmt-emit`)
       - `.gitignore`: `.adsmt-emitters/` + `target/adsmt-cert/` 추가
-        (단 `adsmt-emit.toml` + `adsmt-emit.lock` 는 committed)
+        (단 `adsmt-emit.toml` 은 committed; `adsmt-emit.lock` 은 2026-10-02 현재 생성·커밋되지 않음)
     - **Caveats** (verus-fork reply §):
       - cert ⇔ obligation mapping = `<seq>.cert.<ext>` (Verus function
         이름 X, per-(check-sat) sequence).  per-AV `.thy` 위해 `--verify-
@@ -243,9 +246,12 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 1. **PR-1 P1.1 진입** — `001-cap-types-svm.patch` 작성 (4 cap 종류 +
    `*.y4-modified.bf` + `KernelSVM` 활성 + `Y4_AMDV` master flag dispatch)
 2. **PR-2~PR-5 본격 작업** — Phase C 진입 차단 해제 단계 5~7 + 8 (PR-5a~d)
-3. **WaveTensor Phase 0 진입** — 별도 세션에서 진행 (2026-05-07 결정)
+3. ~~WaveTensor Phase 0 진입~~ — Phase 0 모델은 historical.  WaveTensor 는
+   2026-08-20 부터 정본(`docs/wt64v1-architecture-guide/`) 기준 clean-room RTL
+   재구현 중.  Y4 측 할 일: WaveTensor 요청 2026-10-01 (질문 7개) 답변 +
+   `hiu_abi.md` 를 정본 부록 E 에 정합 ([[wavetensor-terms]])
 4. **Microbench measurement (P-redesign.6 의 baseline)** — Verus
-   `--backend=oxiz` flag 가 작동 가능해진 시점 즉시
+   Verus `-V oxiz` (`just verify-oxiz`) 로 이미 가능 — 즉시 진입 가능 (item 14: `--backend=` flag 는 정의하지 않음)
 5. **Phase C 진입 후 신규 unresolved 처리** — power_safety.md §7.3 (4)
    + power_arch.md §8.3 (5) + vmm_arch.md §8 (7) + amdv_safety.md §8.3
    (4) + verus_to_isabelle.md §8.5 (3) + cpu_virt_compat.md §8 (4 — Lean4
@@ -255,12 +261,11 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
    `power-threat-ledger.md` (Phase C 진입 후 활성) +
    `adsmt-integration-tracker.md` (active) +
    `smt-cross-validation-tracker.md` (active, 2026-06-01)
-7. **`capsules/src/config_space.rs`** — 사용자 별도 clippy lint, 본 cycle
-   외 (unstaged 유지)
+7. ~~`capsules/src/config_space.rs` clippy lint~~ — commit `416e846` 로 반영됨
 
 ## adsmt v1.0 watch (현 status 2026-06-01)
 
-**adsmt status (2026-06-03 갱신)**:
+**adsmt status (2026-06-03 갱신 — ⚠ historical; 이후 rc.29/rc.30/rc.33 은 위 item 16–18, 현행 기록처는 `unified-toolkit-pin.lock`)**:
 - testing + main branch HEAD = `2c46803` "fix .gitmodules" (2026-06-03)
   + tag **`v1.0.0-rc.6-1`** = 동일 commit (첫 tag 는 `v1.0.0-rc.1`,
   RC.2~RC.5 + RC.6 는 tag 없이 commit chain 으로 진행)
@@ -291,7 +296,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 **Y4 측 dependency 정책**:
 - adsmt + adsmt-contrib 둘 다 **testing channel pin** (rolling),
   `feedback_adsmt_testing_channel_pin.md`
-- Rust toolchain 의무 1.96
+- Rust: MSRV 1.94 (`rust-version`) · 사용자 방침 하한 `stable >= 1.97` · 이 호스트 stable = 1.98.1 (2026-10-01) — 정합 판정은 verus-fork 작업 후 ([[y4_toolchain_and_abi_policy]])
 - `Y4/unified-toolkit-pin.toml` + `.lock` baseline 신설 (2026-06-01)
 
 **Hold pattern 변화**:
@@ -305,7 +310,8 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 (2026-05-29 신설, active, §10 P-redesign ledger + §10.6 channel pin
 + Lean4 watch).
 
-## 현 git status
+## git 상태
 
-- branch `main` = `origin/main` 보다 6 commit 앞 (push 대기)
-- `capsules/src/config_space.rs` clippy lint 만 unstaged (사용자 별도)
+시점 스냅샷은 여기 적지 않는다 — `git status` / `git log` 로 직접 읽는다.
+(옛 「main 이 6 commit 앞 · config_space.rs unstaged」 는 2026-06 시점 기록이며
+낡았다.)

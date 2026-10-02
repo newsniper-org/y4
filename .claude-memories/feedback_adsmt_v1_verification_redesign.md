@@ -1,9 +1,10 @@
 ---
 name: adsmt v1.0 release 가 Y4 verification workflow 전체 재설계 trigger
-description: adsmt v1.0 release 전까지 Y4 측 verification workflow 의 본격 변경 X (hold pattern), v1.0 release 시점에 전체 재설계 진입
+description: (historical) adsmt v1.0 release 전 hold pattern — 2026-06-01 완전 해제(실제 hold 영역 0, P-redesign.8 포함 즉시 진입 가능, testing channel 유지). 아래 hold/OK/release 후 목록은 기록용.
 type: feedback
 originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 ---
+(historical — 2026-05-29 시점 서술; 2026-06-01 완전 해제, commit `72f76de`)
 adsmt v1.0 정식 release 가 나오면 Y4 의 verification workflow **전체**
 를 대대적으로 재설계할 예정.  Stable release 전까지는 hold pattern —
 spec 의 v1.x patch 본격 적용 X.
@@ -43,9 +44,12 @@ validation 등) 가 모두 통합 toolkit 으로 전환되므로, 그 전 시점
 부분 변경 시 redesign 시점에 모순 발생 + 작업 중복.  사용자가 2026-05-29
 명시: "기다리고 있도록".
 
-**How to apply:**
+**How to apply (2026-10-01 정정):** hold 는 **완전 해제**됐으므로 아래
+세 목록은 **historical** 이다 — 현재 작업 판단에 쓰지 말 것.  특히
+`y4-verus2isabelle` 도구는 R7 (2026-06-03) 로 폐기됐다 (emit 은
+`verus-fork` `-V emit-isabelle`).
 
-- **hold (adsmt v1.0 release 전):**
+- ~~hold (adsmt v1.0 release 전):~~ (historical)
   - Y4 측 AV1~AV40 proof body 본격 작성 deferred
   - unsafe + proof 짝 lint 자동화 (Phase B 후반 예정이었음) deferred
   - Rocq theory 본격 (Y4.Lease.Spec / Y4.IPC.Refinement / Y4.Sel4.Wrapper) deferred
@@ -78,5 +82,4 @@ validation 등) 가 모두 통합 toolkit 으로 전환되므로, 그 전 시점
     body 채움) — unified toolkit 위에서
 
 - **추적:** `.claude-notes/trackers/adsmt-integration-tracker.md` 의
-  §7 Watch milestones — adsmt P5 (v0.19) / v1.0 release 도달 시
-  본 memory 와 tracker 둘 다 갱신, hold pattern 해제.
+  §7 Watch milestones.  hold 해제는 이미 끝났다(2026-06-01).

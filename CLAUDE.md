@@ -11,10 +11,12 @@ for every commercial form factor that hosts a WaveTensor accelerator
 embedded SoC/SoM).
 
 Y4 is a sibling project to **WaveTensor** (`/home/ybi/WaveTensor/`).
-WaveTensor is the accelerator (RTL + assembler + cocotb tests + Vivado
-synth flow); Y4 is the host hypervisor that exposes the accelerator's
-hardware capabilities (HIU, partitioned TLB, shadow regions, XChaCha20
-masking, lease) as OS-level capabilities.
+WaveTensor is the accelerator (canonical architecture guide + clean-room
+RTL reimplementation in SpinalHDL/SystemVerilog + assembler + cocotb/formal
+tests); Y4 is the host hypervisor that exposes the accelerator's hardware
+capabilities (HIU configuration surface: per-partition address translation,
+tenant lease, physical-address masking keys, page ownership) as OS-level
+capabilities. Terms: `docs/glossary.md`.
 
 The original Y4 design memo was drafted inside the WaveTensor repo as
 `WaveTensor/.claude-memos/host_a_custom_hypervisor.md`. **The canonical
@@ -39,7 +41,9 @@ capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로
 
 **HIU/lease 런타임은 차단**: `docs/hiu_abi.md` 가 `v1.0 frozen` 으로
 표시되고 (Y4 + WaveTensor 양측 sign-off), `HIU_ABI_VERSION` 레지스터
-값이 `0x0001_0000` 으로 고정될 때까지.
+(`0xFFC`)의 비0 판 값이 양측 합의(정본 §3.10)로 고정될 때까지. Y4 의 제안은
+`(major << 16) | minor`, v1.0 = `0x0001_0000` 이다. 합의 전 장치 값은 0 이고,
+판 0 은 레이아웃을 약속하지 않는다 (`docs/glossary.md` §10).
 
 전체 Phase A → Phase E 진행은 `docs/phase_plan.md` 참조.
 
@@ -107,7 +111,7 @@ Y4/
 ├── justfile             top-level recipes (ci / scudo-fetch / mirror-memory / ...)
 ├── docs/
 │   ├── architecture.md     canonical design memo
-│   ├── glossary.md         WaveTensor terms (HIU/lease/TRNG/...) extracted from RTL
+│   ├── glossary.md         WaveTensor terms (HIU/lease/masking/...) from the canonical guide
 │   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v0 draft·미동결 — 동결 시 `hiu/` unblock)
 │   ├── y4_abi.md           게스트↔하이퍼바이저 ABI (Y4 ABI) v0 draft (게스트-대면)
 │   ├── lease_capability.md lease capability schema v0
@@ -181,12 +185,23 @@ These are non-negotiable; they govern every Y4 decision:
 
 | Project | Path | Relationship |
 |---------|------|-------------|
-| **WaveTensor** | `/home/ybi/WaveTensor/` | The accelerator. Y4 hosts it. WaveTensor's RTL exposes the HIU primitives Y4 maps to capabilities. **WaveTensor side keeps `host_a_custom_hypervisor.md` as historical context only — the canonical Y4 design lives here.** |
+| **WaveTensor** | `/home/ybi/WaveTensor/` | The accelerator. Y4 hosts it. Its HIU configuration surface (MMIO) is what Y4 maps to capabilities. **Authority order on the WaveTensor side:** `docs/wt64v1-architecture-guide/` = sole canonical spec → `rtl/` (clean-room reimplementation) = today's physical reality, not ABI → `.claude-memos/` = non-canonical → repo-root `*.v` / `tb_*.v` / `test_*.py` = **legacy, never an ABI source**. **WaveTensor side keeps `host_a_custom_hypervisor.md` as historical context only — the canonical Y4 design lives here.** |
 | imads-hpo / imads-src | `/home/ybi/imads-*/` | HPO infrastructure that will eventually run as guest workloads on Y4. |
 
 When working in this repo, do **not** edit WaveTensor source files
-unless the change crosses into the WaveTensor RTL ABI (HIU lease ABI,
-TRNG output format, etc.). Y4 design changes stay here.
+unless the change crosses into the WaveTensor host ABI (the canonical
+guide's App. E configuration surface — translation entries, lease rotation,
+masking key/nonce, entropy-health fault bit; §3.10 agreement). Y4 design
+changes stay here.
+
+Reading WaveTensor sources is allowed **read-only** (no writes, no git
+state changes, no in-tree build/sim/formal runs — use a `git archive` copy
+under `/var/tmp/` if something must run). Cite `file:line` together with
+the WaveTensor commit sha and the verbatim phrase. Never carry legacy
+(root `*.v`) content into messages to WaveTensor (clean-room). Change
+requests go through `.local-requests-to/WaveTensor/` (mirrored to
+WaveTensor `.local-requests-from/Y4/`); replies through
+`.local-replies-to/WaveTensor/`.
 
 ## 8. How to work in this repo (Claude Code conventions)
 
@@ -203,7 +218,7 @@ TRNG output format, etc.). Y4 design changes stay here.
   (seL4, Limine) as `git submodule` under `third_party/`; Rust crates
   reused from upstream (Tock parts, etc.) via cargo `[patch.crates-io]`
   + git deps in workspace `Cargo.toml`. Submodule pins:
-  **seL4 = 15.x stable**, **Limine = 12.x stable**.
+  **seL4 = 16.0.0**, **Limine = v12.6.1** (stable series pins).
 - **CMake invocation wrapping (`boot/`, future capsule build):**
   **logicutils-only**. Per-form-factor cmake `-D` flags live in
   `boot/<subsystem>.rules` (consumed by `lu-rule`); matrix execution
@@ -224,8 +239,8 @@ TRNG output format, etc.). Y4 design changes stay here.
   sign-off do not merge.
 - **Style:** `cargo fmt` + `cargo clippy -- -D warnings` clean. C
   ports follow the upstream's `clang-format` preset. Imperative-mood
-  commit subjects, subsystem-prefixed (`hiu: bind XChaCha20 nonce on
-  context_switch raise`).
+  commit subjects, subsystem-prefixed (`hiu: rekey partition after XLATE_FLUSH on
+  lease rotation`).
 - **Verification gating:** new privileged code paths require their
   Verus/Coq artifacts in the same PR. Bug fixes that don't change
   specified behavior are exempt.

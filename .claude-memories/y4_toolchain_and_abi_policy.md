@@ -140,7 +140,7 @@ Y4 안에서 「ABI」로 불리는 표면은 넷이고 서로 다른 경계다:
 
 **결론:** 「Y4용 드라이버 / SDK」가 부를 ABI = **B + D 의 교집합**
 (게스트가 lease 를 취득하고 HIU MMIO 를 두드리는 규약).  현재 **어느
-파일에도 정의되어 있지 않다.**  사용자 방침의 `!!` 는 정확한 지점을
+파일에도 정의되어 있지 않다.**  [→ 2026-09-14 해소: `docs/y4_abi.md` v0 (§8)]  사용자 방침의 `!!` 는 정확한 지점을
 짚었다.
 
 부수 실측 — 계획 문서가 반복 참조하는 sibling repo 중 **디스크에 없는
@@ -152,8 +152,8 @@ Y4 안에서 「ABI」로 불리는 표면은 넷이고 서로 다른 경계다:
 
 - v1.0 frozen 6건 (전부 5월): `amdv_safety` · `vmm_arch` ·
   `sel4_fork_policy` · `verus_to_isabelle` · `power_safety` · `power_arch`.
-- v0 draft, 동결 안 됨 3건: `hiu_abi.md` (§5 미해결 5항, 양측 sign-off
-  필요, `HIU_ABI_VERSION` 여전히 `0x0000_0000`) · `lease_capability.md`
+- v0 draft, 동결 안 됨 3건 [2026-09-14 이후 4건 — `y4_abi.md` 추가]: `hiu_abi.md` (§5 미해결 5항, 양측 sign-off
+  필요, `HIU_ABI_VERSION` 여전히 `0x0000_0000` [2026-10-01: 정본상 판 0 = 「약속 없음」; hiu_abi 가 0 에 옛 레이아웃을 붙인 것은 정본이 지목한 함정 — §9 · glossary §10]) · `lease_capability.md`
   (§5 미해결 5항) · `cpu_virt_compat.md` (§8 unresolved).
 - Phase A → B 트리거(`hiu_abi.md` v1.0 동결)가 **여전히 미도달**.
   Phase C 차단 의존 8항 중 5·6·7·8 전부 (열림).
@@ -245,7 +245,7 @@ Y4 안에서 「ABI」로 불리는 표면은 넷이고 서로 다른 경계다:
 **교차 저장소 기재 노후 (Y4 쪽 결함 아님, 보고만):**
 `/home/ybi/wavetensor-drivers/.claude-memories/wtdrv_relationships.md:13`
 및 그쪽 `CLAUDE.md:167` 이 Y4 를 "Currently paused … as of 2026-07-14"
-로 적는다.  Y4 의 마지막 커밋은 **2026-08-27** (`d404040`) 이고 6~8월에
+로 적는다.  Y4 의 마지막 커밋은 (2026-08-30 시점) **2026-08-27** (`d404040`) 이고 [이후 2026-09-14 `a9058b1`(main)·`468a851`(fip) 까지 진행] 6~8월에
 docs/brainstorming 커밋 14건이 있다.  코드는 멈춰 있으나 설계 작업은
 계속되었다.
 
@@ -266,3 +266,12 @@ docs/brainstorming 커밋 14건이 있다.  코드는 멈춰 있으나 설계 �
 - **남은 것**: `y4_abi.md` **v1.0 frozen** 이 실제 SDK/driver 개발 선행조건(§7).
   §6-1/2/3(MSRV·toolchain)은 여전히 §4 유보(verus-fork 후).  §6-6/7/8/9 열림.
 - **브랜치**: main 에 작성 → 사용자 지시로 `fip/isa-subcrates` 에 merge.
+
+## 9. 갱신 (2026-10-01) — 실측 재확인
+
+- 이 호스트의 `stable` 은 이제 **`rustc 1.98.1 (48a229cea 2026-09-01)`** 을 푼다 (§3 표의 1.96.0 은 2026-08-30 스냅샷).  하한 `>= 1.97` 충족은 **롤링 별칭의 우연**이며, 집행 장치가 없다는 충돌 ③ 은 그대로다.  `rust-version` 은 여전히 1.94.
+- §3 의 `Cargo.toml:36/37` 줄 번호는 **main** 기준이다 (`fip/isa-subcrates` 에서는 workspace member 추가로 41/42).
+- §5 「문서 없음」은 §8 로 해소됐다 (`docs/y4_abi.md` v0).  블로커는 이제 그 문서의 **v1.0 frozen** 이다.
+- `hiu_abi.md` 쪽 새 사실: WaveTensor 가 2026-10-01 요청으로 HP-1..7 판정을 알려 왔다.  옛 v0 표의 `0x000`–`0x110` 워드(물려받은 구역 `0x000`–`0x11F` 안)는 재구현 장치에 없고, 쓰면 `[6]` 이 선다.  `0xFFC` 는 있으나 판 0 = 「약속 없음」이다.
+- §3 의 pending_topics 「1.96」 불일치는 2026-10-01 편집으로 해소됐다(이제 1.94 + 방침 하한 기재).  ([[wavetensor-terms]], `docs/glossary.md` §10)
+

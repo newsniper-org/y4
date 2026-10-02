@@ -10,7 +10,7 @@ type: feedback
 
 **Tool priority:**
 1. **Verus** — Rust-native, 1st-tier choice. Most Y4 code is Rust, so Verus annotations sit inline with the code being verified.
-2. **Coq / Lean 4** — for high-level invariants Verus cannot express (e.g., system-wide capability transitivity, side-channel non-interference).
+2. **Rocq (Coq)** — manual theories for high-level invariants Verus cannot express (e.g., system-wide capability transitivity, side-channel non-interference). **Isabelle/HOL** — auto-emitted from Verus via the `verus-fork` submodule (`-V emit-isabelle` → `proofs/isabelle/`, R7.7) as the seL4 L4.verified inbound contract (pipeline ready; emitted per-AV `.thy` = 0 as of 2026-10-02 — R7.11 user run pending). **Lean 4** — excluded for now (R1 = a', revisit at adsmt v1.1.x).
 3. **Kani** — bounded model checking complement, useful for ruling out specific failure modes before Verus is asked to prove the general invariant.
 4. **Frama-C / Why3** — only for the C portion (driver ports), if any.
 

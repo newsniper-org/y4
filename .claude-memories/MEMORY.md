@@ -1,14 +1,15 @@
-- [Y4 project basics](y4_basics.md) — what Y4 is, repo layout, single Apache-2.0 license, scaffold-only status, Phase 0 still in WaveTensor.
+- [Y4 project basics](y4_basics.md) — what Y4 is, single Apache-2.0, Phase B complete (mock HIU); only hiu/ + lease runtime wait for hiu_abi.md v1.0 frozen; phase model A→E.
 - [Y4 design canonical doc](y4_canonical_doc.md) — `docs/architecture.md` is the source of truth; WaveTensor's memo is historical context only.
-- [Y4 reuse manifest + bootloader exclusions](y4_reuse_manifest.md) — seL4/Tock/DragonFly/Redox; Limine 1st, systemd-boot/rEFInd excluded.
-- [Y4 formal-first verification rule](y4_formal_first.md) — proofs land before privileged code; Verus 1st-tier, Coq for invariants Verus cannot express.
-- [Y4 ↔ WaveTensor relationship](y4_wavetensor_relation.md) — sibling repo at /home/ybi/WaveTensor; do not edit WaveTensor sources from Y4 unless ABI crosses.
-- [WaveTensor 용어 — Y4 ABI 경계 정의](wavetensor_terms.md) — HIU 포트/partitioned TLB(4×16)/shadow(16)/XChaCha20(192-bit nonce, 256-bit key)/context_switch/lease/TRNG 핵심 수치; 정전 사전은 Y4/docs/glossary.md.
-- [Y4 build & dev 결정 (D1–D4)](y4_build_decisions.md) — Cargo workspace + justfile/logicutils, x86_64 first, hybrid submodule+cargo deps, Phase B 순서: proofs → boot → ipc/alloc → capsules.
-- [Y4 ipc/alloc 사전점검 결정](y4_ipc_alloc_preflight.md) — SMP-first, 공통 Y4Error, ipc/alloc 독립(d), scheme+raw msgport 하이브리드, alloc=DragonFly SLAB+scudo, seL4 bare page API. Refs: /home/ybi/y4-upstream-refs/.
-- [y4-drivers + y4-hypercall + 게스트 호스팅 계획](y4_drivers_and_guest_plan.md) — 별도 repo, virtio-drivers/e1000e/AHCI/NVMe1.x/XHCI 1차, smoltcp/acpi-rs/xhci 채택, FS matrix, AMD-V 차단 이슈.
-- [Y4 sign-off 후 후속 논의 대기 항목](y4_pending_topics.md) — ARCH-II' sign-off 18 단계 완료 후 소비전력 관리 기능 논의 (S15+ 후보).
-- [adsmt v1.0 = Y4 verification workflow 재설계 trigger](feedback_adsmt_v1_verification_redesign.md) — release 전까지 verification workflow 본격 변경 X (hold), release 시 전체 재설계 진입.  2026-06-01 P-redesign.1 sign-off 로 hold 사실상 해제 (P-redesign.8 만 deferred).
-- [Y4 adsmt + adsmt-contrib = testing channel pin (rolling)](feedback_adsmt_testing_channel_pin.md) — Y4 가 양 repo testing channel 추종, latest stabilisation 즉시 흡수.
-- [드라이버/SDK 개발환경 · Rust 툴체인 · Y4 ABI 선행조건 방침](y4_toolchain_and_abi_policy.md) — 사용자 방침 축자(2026-08-30, `...` 로 열린 목록); 2024 Edition ✅ / `stable >= 1.97` 은 하한이지 핀 아님 ↔ Y4 는 1.94 + `channel = "stable"`(이 호스트에서 1.96.0) — **verus-fork 작업 후 재판정으로 유보**; 「Y4 ABI」= 게스트↔하이퍼바이저 ABI 이고 `hiu_abi.md` 가 아니며 **문서가 없다**(블로커).
+- [Y4 reuse manifest + bootloader exclusions](y4_reuse_manifest.md) — seL4/Tock/DragonFly/Redox, allocator = DragonFly SLAB + scudo; Limine 1st, systemd-boot/rEFInd excluded.
+- [Y4 formal-first verification rule](y4_formal_first.md) — proofs land before privileged code; Verus 1st-tier, Rocq manual + Isabelle auto-emit, Lean 4 excluded (R1=a').
+- [Y4 ↔ WaveTensor relationship](y4_wavetensor_relation.md) — sibling repo; ABI = WaveTensor canonical guide's MMIO configuration surface (§3.10 agreement); request/reply channels; legacy root *.v never an ABI source.
+- [WaveTensor 소스 읽기 방침](wavetensor_read_policy.md) — 「읽기 전용 조건부」 6 조건 (2026-10-01 사용자 지시): 쓰기·git 변경·트리 내 실행 금지, 정본 > rtl > memos > legacy, sha+축자 인용, clean-room, 라이선스.
+- [WaveTensor 용어 — 정본 기준 캐시](wavetensor_terms.md) — 정본 @97b0105: 변환 항목 0xC00(≤4 파티션·≤16), 파티션별 flush 0xE00(전역 금지), 임대 회전 E.9 6항, 임대별 키 0xE80(WO, 호스트 생성), FAULT[17], 판 0=약속 없음. 상세는 docs/glossary.md.
+- [Y4 build & dev 결정 (D1–D4)](y4_build_decisions.md) — Cargo workspace + justfile/logicutils(adsmt 흡수), x86_64 first, hybrid submodule+cargo deps, seL4 16.0.0 / Limine v12.6.1.
+- [Y4 ipc/alloc 사전점검 결정](y4_ipc_alloc_preflight.md) — SMP-first, 공통 Y4Error(proofs/verus spec + crate mirror), ipc/alloc 독립(d), scheme+raw msgport 하이브리드, alloc=DragonFly SLAB+scudo, seL4 bare page API.
+- [y4-drivers + y4-hypercall + 게스트 호스팅 계획](y4_drivers_and_guest_plan.md) — 별도 repo(미개설, y4_abi v1.0 대기), driver matrix, smoltcp/acpi-rs/xhci, FS matrix, AMD-V = ARCH-II'(v1.0 frozen), KernelVTX 안 미적용.
+- [Y4 sign-off ledger + 후속 주제](y4_pending_topics.md) — ARCH-II'/power/vendor-neutrality/P-redesign/R7 완료 기록 + 남은 후속(P-redesign.7/8, PR-1 P1.1, WaveTensor 요청 답변).
+- [adsmt v1.0 hold — 해제됨](feedback_adsmt_v1_verification_redesign.md) — (historical) 2026-06-01 hold 완전 해제, 실제 hold 영역 0; testing channel 유지 (stable-v1 전환 여부는 pending_topics 와 충돌 — 사용자 확인 필요).
+- [Y4 adsmt + adsmt-contrib = testing channel pin (rolling)](feedback_adsmt_testing_channel_pin.md) — 양 repo testing channel 추종; 현 commit 기록처는 unified-toolkit-pin.lock.
+- [드라이버/SDK 개발환경 · Rust 툴체인 · Y4 ABI 선행조건 방침](y4_toolchain_and_abi_policy.md) — 사용자 방침 축자(2026-08-30); `stable >= 1.97` 은 하한이지 핀 아님 ↔ Y4 MSRV 1.94 + `channel = "stable"`(이 호스트 1.98.1, 2026-10-01) — **verus-fork 작업 후 재판정으로 유보**; 「Y4 ABI」= docs/y4_abi.md (v0, 2026-09-14) — SDK/driver 착수는 v1.0 frozen 후.
 - [just first-recipe trap — Verus 게이트가 84일간 공허했다](just_first_recipe_trap.md) — `just` 는 이름이 `default` 인 레시피가 아니라 **파일의 첫 레시피**를 돈다; `_check-verus` 가 위에 있어 `just ci` 가 증명 54개를 하나도 안 돌리고 통과했다 (`bc0b698` 2026-06-07 ~ 2026-08-30). `--dry-run` 출력을 조건 평가로 읽지 마라.
