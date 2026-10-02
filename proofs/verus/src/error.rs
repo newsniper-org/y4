@@ -35,8 +35,9 @@ pub enum Y4Error {
     /// scheme path with bad encoding).
     InvalidArg,
 
-    /// Lease invariant broke (partition disjointness, nonce reuse,
-    /// shadow-slot collision).  Always paired with a panic in the
+    /// Lease invariant broke (partition disjointness, (key, nonce)
+    /// reuse, translation entry written outside the lease's partition
+    /// window).  Always paired with a panic in the
     /// hypervisor — the variant exists for spec clients that observe
     /// the failure model.
     LeaseInvariant,

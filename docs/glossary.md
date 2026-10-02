@@ -450,11 +450,10 @@ Y4 가 직접 의존하는 WaveTensor 표면은 **구성 표면(§2) 하나**다
 SDK 가 가속기와 직접 말할 때 의미가 있고, Y4 는 capability 검증과 메모리
 mapping 만 책임진다.
 
-> **주의 (2026-10-01):** `docs/hiu_abi.md` v0 의 레지스터 표(`0x000`–`0x110`)는
-> legacy 참조 구현 기준이다. 재구현 장치에는 그 워드들이 *없다*. 그 구간에
-> 쓰면 `FAULT_STATUS[6]` 이 선다(정본 §3.10 처분, WaveTensor 판정 HP-1). 그 문서를
-> 정본 E.1 에 정합시킬지·언제 할지는 WaveTensor 요청 2026-10-01 의 질문 1–3 에
-> 대한 Y4 답에 달려 있다.
+> **정합 완료 (2026-10-02):** `docs/hiu_abi.md` 는 v0.1 에서 정본 E.1 에 맞춰
+> 다시 쓰였다. v0 의 legacy 레지스터 표(`0x000`–`0x110`)는 그 문서 §8 이력으로
+> 내려갔다. 재구현 장치에는 그 워드들이 *없고*, 쓰면 `FAULT_STATUS[6]` 이 선다(정본
+> §3.10 처분, WaveTensor 판정 HP-1).
 
 ---
 
@@ -466,7 +465,7 @@ mapping 만 책임진다.
 
 | # | 표면 | 방향 | 정의 위치 | 상태 |
 |---|---|---|---|---|
-| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | v0 draft, 양측 합의 대기.  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) |
+| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | v0.1 draft (2026-10-02 정본 정합), 양측 합의 대기.  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) |
 | B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **`docs/y4_abi.md` §2** (v0 draft) | 정의됨 (2026-09-14).  core VMM 은 워크스페이스 안, `y4-hypercall` repo 는 §5.3 재정의 후 사용자 CLI 전용(디스크 미존재) |
 | C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
 | D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
@@ -514,8 +513,8 @@ spec 의 소재지는 **해소됐다**: ⒜ `Y4/docs/` 안 신설 — `docs/y4_a
 ## 12. legacy 용어 대응표 (옛 판 §1–§10 → 정본)
 
 Y4 의 다른 문서(`hiu_abi.md`, `lease_capability.md`, `architecture.md` 등)에 남은
-옛 용어를 읽을 때 쓴다. 그 문서들의 본문 정정은 WaveTensor 요청 2026-10-01
-질문 3(H1–H4 · HP-1..7 반영 여부)에 대한 Y4 결정 뒤에 한다.
+옛 용어를 읽을 때 쓴다. `hiu_abi.md` · `lease_capability.md` · `architecture.md` 본문은 2026-10-02 에
+정본 기준(H1–H4 · HP-1..7 반영)으로 정정됐다. 이 표는 이력·다른 문서용이다.
 
 | 옛 용어 (legacy 기준) | 정본 대응물 | 비고 |
 |---|---|---|

@@ -20,7 +20,7 @@
 | `docs/architecture.md` (CC-BY-4.0 → Apache-2.0 inbound) | ✅ |
 | `docs/licensing.md`, `docs/phase_plan.md` (본 문서) | ✅ |
 | `docs/glossary.md` — 용어 사전 (2026-10-01 WaveTensor 정본 기준으로 재출처) | ✅ |
-| `docs/hiu_abi.md` — v0 draft | ✅ |
+| `docs/hiu_abi.md` — v0.1 draft (2026-10-02 WaveTensor 정본 부록 E 정합) | ✅ |
 | `docs/lease_capability.md` — capability 스키마 v0 | ✅ |
 | **`docs/hiu_abi.md` v1.0 동결 (Y4 + WaveTensor 양측 sign-off)** | ⏳ 진행 |
 

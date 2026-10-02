@@ -14,9 +14,9 @@
 > - `WaveTensor/.claude-memos/remote_accelerator_access.md` — A의 호스트 OS 가 가벼우면 좋다는 원래 결정. 본 메모는 그 항목을 한 단계 더 깊이 파는 변형.
 > - `WaveTensor/.claude-memos/sdk_architecture.md` — Rust 중심 stack 일관성. Y4 도 Rust 면 동일 ecosystem.
 >
-> **용어 사전:** 본 문서에 등장하는 HIU / partitioned TLB / shadow region /
-> XChaCha20 / `context_switch` / lease / TRNG / Pod·Cluster·PE / wave 의
-> 정확한 정의(RTL 시그널 폭, FSM 상태, threshold 등)는
+> **용어 사전:** 본 문서에 등장하는 HIU / 변환 항목·파티션 flush / 주소
+> 마스킹(임대별 키·논스) / lease / 엔트로피원 / Pod·Cluster·PE / wave 의
+> 정확한 정의(WaveTensor 정본 `docs/wt64v1-architecture-guide/` 인용)는
 > [`./glossary.md`](./glossary.md) 에 한 곳으로 모아져 있다. WaveTensor
 > 측 정의가 바뀌면 사전을 우선 갱신한다.
 
@@ -198,7 +198,7 @@ Y4 자체 부팅 단계는 **자체 작성하지 않고 기존 검증된 OSS boo
 
 **최소 수정 원칙**:
 - 우리는 bootloader 의 **소스 트리를 fork 하지 않는다**. upstream 패키지 (또는 distro 빌드) 를 그대로 사용.
-- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업, partitioned TLB 초기화) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
+- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업; 변환 항목은 WO·읽기 0 이라 확인할 수 없으므로 실재 파티션마다 `0xE00` flush 로 기지 상태를 세우고, 소유권 표는 `0x200`/`0x204` 조회로 확인) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
 - Secure Boot key enroll, BLS entry 형식 등 spec 표준에 정렬된 인터페이스만 사용.
 - **그래도 패치가 필요한 경우** (예: 가속기 PCIe IDE 가 부팅 시 어떻게 해야 하는 등): upstream 에 patch 제출이 1순위, 우리 트리의 fork 는 최후수단. fork 시에도 git submodule 로 격리 + 상시 upstream rebase.
 
@@ -221,12 +221,12 @@ Y4 자체 부팅 단계는 **자체 작성하지 않고 기존 검증된 OSS boo
 
 formal-first 가 가져다 주는 결과:
 - 가속기 lease capability 의 **OS-level 격리 보장이 수학적으로 증명됨** → 의료/항공/금융 인증 트랙 진입 시 강력
-- side-channel 회피 invariant (TLB flush, scheduler isolation) 가 증명 단계에서 명세화 → HIU 의 hardware 보호와 SW 보호가 동일 모델로 검증
+- side-channel 회피 invariant (파티션별 변환 flush, scheduler isolation) 가 증명 단계에서 명세화 → HIU 의 hardware 보호와 SW 보호가 동일 모델로 검증
 
 ### 우리 특화 layer (자체 작성)
 
 위 base 위에 다음만 자체 작성:
-- HIU 통합 — context_switch / partitioned TLB / shadow regions / XChaCha20 capability binding
+- HIU 통합 — 파티션별 변환 항목 / 임대 회전(파티션 flush + 재키잉) / 임대별 마스크 키·논스 capability binding / 페이지 소유권
 - 가속기 lease scheduler (wave-aligned preemption)
 - 가속기 daemon RPC (서버팜) / 로컬 IPC (워크스테이션) 를 동일 namespace API 로 노출
 - guest OS hosting (Linux/DragonFlyBSD) — paravirt 인터페이스
@@ -248,11 +248,11 @@ formal-first 가 가져다 주는 결과:
 │ │  Y4 (Type-1 Rust hypervisor)       │   │
 │ │  ─────────────────────────────────────  │   │
 │ │  ↑ 책임:                                │   │
-│ │   - boot, IOMMU, HIU shadow region 셋업 │   │
+│ │   - boot, IOMMU, HIU 변환 항목 셋업     │   │
 │ │   - lease scheduler (capability)        │   │
 │ │   - IPC (RPC / shared memory)           │   │
 │ │   - PCIe/USB/CXL host stack             │   │
-│ │   - 사이드채널 hygiene (TLB flush 등)    │   │
+│ │   - 사이드채널 hygiene (파티션 flush 등) │   │
 │ └────────────────────────────────────────┘   │
 │   │ caps                  │ caps             │
 │   ▼                       ▼                  │
@@ -271,23 +271,25 @@ formal-first 가 가져다 주는 결과:
 - **bare-metal**: A 에 OS 가 따로 없음. hypervisor 가 곧 OS 의 핵심
 - **accel-d**: 가속기 daemon 은 hypervisor 가 부여한 capability 로만 가속기 접근
 - **tenant compartment**: M 에서 잡 발사 시 A 에 lightweight compartment 생성 — 가속기 lease 부여, 끝나면 해제
-- **shared memory ring**: tenant ↔ daemon 사이 zero-copy (HIU 의 zero-copy 와 자연스럽게 결합)
+- **shared memory ring**: tenant ↔ daemon 사이 zero-copy (HIU 의 페이지 소유권 규약 위 zero-copy 와 결합 — 정본 의도이며 재구현에서는 아직 미착지)
 
 ## 가속기 입장에서의 의의
 
 ### HIU 의 기존 보안 메커니즘과 자연스럽게 맞물림
 
-`HIU.v` 가 이미 갖춘 기능들이 hypervisor 책임과 정확히 매핑됨:
+WaveTensor 정본(`docs/wt64v1-architecture-guide/` §3 · 부록 E)이 정한 HIU 기능이
+hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v0.1, `docs/glossary.md`):
 
-| HIU 기능 | hypervisor 측에서 활용 |
+| HIU 기능 (정본) | hypervisor 측에서 활용 |
 |---------|------------------------|
-| `context_switch` 신호 | tenant lease 전환 시 hypervisor 가 raise — 동일 cycle 에 TLB flush 발동 |
-| Partitioned TLB (4 partition) | tenant 4개 까지는 각 partition 격리 → 동시 multi-tenant 가능 |
-| Shadow regions (16 entries) | hypervisor 가 tenant 별 메모리 영역을 shadow 로 등록 → IOMMU 보호 |
-| XChaCha20 masking | tenant 별 key/nonce — 동일 가속기에서 다른 tenant 가 옛 데이터 reconstruct 불가 |
-| `flush-on-context-switch` | 자동 — 따로 OS 가 청소할 필요 없음 |
+| 파티션 + 변환 항목 배열 (`0xC00`, 파티션 ≤ 4 · 색인 ≤ 16) | 임대 = 파티션에 변환 권한 부여. Y4 가 항목을 기입·회수 |
+| 파티션별 flush (`0xE00`, 유효 비트만 — 데이터는 남음) | 임대 회전 ⑵. 전역 flush 는 없다 — Y4 가 파티션 단위로 회전 |
+| 임대별 마스크 키·논스 (키 `0xE80`–`0xE9C` · 논스 `0xEA4`–`0xEB8` WO, `0xEA0` MASK_PART 창으로 파티션 선택) | tenant 별 키 — 호스트가 생성·기입. `(키, 논스)` 유일성은 Y4 의무 |
+| 페이지 소유권 표 (`0x200`) | 하드웨어 일관성 없이 zero-copy — Y4 가 이양·회수 (zero-copy 자체는 정본 의도·재구현 미구현, 비소유 접근 loud 는 미측정 — 정본 §3.9) |
+| loud fault (`0xF80`) | 폴링 전용 — fault→IRQ 경로 없음(G2 는 v1.x 제안). 장치는 loud, fail-closed 는 Y4 정책(P10) |
+| 완료 링 통지 (E.6) | 기본 폴링, IRQ(`0x320`–`0x328`, 원천 = 완료 삽입) opt-in |
 
-→ 우리 가속기는 **이미 hypervisor-friendly 한 디자인**. Y4 가 그 잠재력을 실제로 활용.
+→ 우리 가속기는 **이미 hypervisor-friendly 한 디자인**. 다만 회전·청소는 *자동이 아니다* — 정본은 임대 회전(드레인 → flush → 재키잉)을 호스트 의무로 둔다. Y4 가 그것을 capability 연산 하나로 직렬화한다.
 
 ### Lease 의 OS-level 모델링
 
@@ -296,7 +298,7 @@ formal-first 가 가져다 주는 결과:
 - M이 RPC 로 lease 요청 → hypervisor 가 capability token 발급
 - token 이 tenant compartment 의 cap-table 에 등록
 - 그 compartment 가 가속기 MMIO/메모리에 접근 시 hypervisor 가 cap 검증
-- token 만료 시 hypervisor 가 (a) compartment teardown, (b) HIU `context_switch` raise, (c) 가속기 상태 sanitize 의 3-step atomic 청소 자동 수행
+- token 만료 시 hypervisor 가 (a) compartment teardown, (b) 그 파티션의 정본 E.9 6항 임대 회전(투입 정지 → `0xE00` flush → 새 키·논스 기입 → 재키잉), (c) 소유 페이지 회수를 단일 capability 연산으로 수행 (`lease_capability.md` I4 · §3.3, `hiu_abi.md` §3.1)
 
 Linux 위에서 사용자 공간 daemon 으로 같은 일을 하려면 syscall 다수 필요. hypervisor 라면 단일 op.
 
@@ -309,7 +311,7 @@ Linux 위에서 사용자 공간 daemon 으로 같은 일을 하려면 syscall �
 - **side-channel 강화**: Spectre/Meltdown 류 공격면 축소 (fewer privilege levels, fewer shared structures)
 - **lease 격리 OS-level**: capability 로 강제, 사용자 공간 버그가 cross-tenant leak 으로 이어지지 않음
 - **Rust 일관성**: SDK + imads stack 과 동일 ecosystem
-- **WaveTensor 기능 활용도 ↑**: HIU 의 partitioned TLB / shadow regions / XChaCha20 이 첫째날부터 의미 있게 동작
+- **WaveTensor 기능 활용도 ↑**: HIU 의 파티션별 변환·flush·임대별 마스킹·소유권 표 조회/전이가 첫째날부터 의미 있게 동작 (zero-copy 전송은 재구현 착지 후)
 
 ### 단점 / 큰 비용
 

@@ -96,7 +96,7 @@ Y4/
 ├── docs/
 │   ├── architecture.md           canonical design memo
 │   ├── glossary.md               WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0 (MMIO map, timing contracts, freeze policy) — v0 table is legacy-based; to be realigned to canonical App. E (glossary §10)
+│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0.1 (configuration surface per canonical App. E, order contracts, freeze policy)
 │   ├── lease_capability.md       lease capability schema v0 (invariants, lifecycle)
 │   ├── licensing.md              Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
