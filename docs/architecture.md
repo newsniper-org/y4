@@ -169,6 +169,10 @@ Y4 가 기반으로 삼을 컴포넌트 조합 (사용자 결정):
   가 흡수.
 - 가속기 메모리 할당 (zero-copy ring buffer 등) 에 결정론적 latency +
   보안 동시 확보.
+- **장치 버퍼 풀 제약 (2026-10-05):** HIU 변환 항목의 프레임이 32b 라 장치가 표현하는
+  물리 주소는 44b(16 TiB)다(정본 E.2 — 유도). 장치 버퍼는 PA < 2^44 풀에서만 내준다.
+  그 풀이 없는 플랫폼(높은 PA 에만 DRAM · CXL 창을 두는 대형 서버)은 v1.0 에서 지원하지
+  않는다 (`hiu_abi.md` §3).
 
 > **컴포넌트 변경 기록 (2026-05-04):** 원안의 "SLUB + lock-free SLAB +
 > mmap-only" 3-자 융합에서 SLUB 와 OpenBSD malloc 을 제거하고 scudo
@@ -198,7 +202,7 @@ Y4 자체 부팅 단계는 **자체 작성하지 않고 기존 검증된 OSS boo
 
 **최소 수정 원칙**:
 - 우리는 bootloader 의 **소스 트리를 fork 하지 않는다**. upstream 패키지 (또는 distro 빌드) 를 그대로 사용.
-- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업; 변환 항목은 WO·읽기 0 이라 확인할 수 없으므로 실재 파티션마다 `0xE00` flush 로 기지 상태를 세우고, 소유권 표는 `0x200`/`0x204` 조회로 확인) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
+- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업; HIU 초기화는 `hiu_abi.md` §2.5 순서 — 드레인 관측 → 실재 파티션마다 `0xE00` flush(변환 항목은 WO·읽기 0 이라 확인할 수 없으므로 flush 로 기지 상태를 세운다) → 전 파티션 키·논스 기입 → 파티션별 재키잉·완료 확인 → 소유 페이지 회수(`0x200`/`0x204` 조회로 확인) · `0xE14` ACTIVE_PART 설정) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
 - Secure Boot key enroll, BLS entry 형식 등 spec 표준에 정렬된 인터페이스만 사용.
 - **그래도 패치가 필요한 경우** (예: 가속기 PCIe IDE 가 부팅 시 어떻게 해야 하는 등): upstream 에 patch 제출이 1순위, 우리 트리의 fork 는 최후수단. fork 시에도 git submodule 로 격리 + 상시 upstream rebase.
 
@@ -278,11 +282,12 @@ formal-first 가 가져다 주는 결과:
 ### HIU 의 기존 보안 메커니즘과 자연스럽게 맞물림
 
 WaveTensor 정본(`docs/wt64v1-architecture-guide/` §3 · 부록 E)이 정한 HIU 기능이
-hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v0.1, `docs/glossary.md`):
+hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v0.2, `docs/glossary.md`):
 
 | HIU 기능 (정본) | hypervisor 측에서 활용 |
 |---------|------------------------|
-| 파티션 + 변환 항목 배열 (`0xC00`, 파티션 ≤ 4 · 색인 ≤ 16) | 임대 = 파티션에 변환 권한 부여. Y4 가 항목을 기입·회수 |
+| 파티션 + 변환 항목 창 (`0xC00`, 파티션 ≤ 4; 실재 파티션 수는 `0xFF8` HIU_SHAPE — WT 제안) | 임대 = 파티션에 변환 권한 부여. 권위는 Y4 의 임대별 장치 VA 사상이고 장치 항목은 그 캐시 — Y4 가 미적중마다 채운다. 창 안 배치는 Y4 가 형상 비노출 표면(VPN · FRAME · COMMIT)을 제안했다(합의 대기) |
+| 요청 → 파티션 결속 (`0xE14` ACTIVE_PART — WT 제안 · Y4 조건) | 패브릭은 한 순간 한 임대의 것. 임대 전환 = 드레인 + 결속 기입(flush · 재키잉 없음) |
 | 파티션별 flush (`0xE00`, 유효 비트만 — 데이터는 남음) | 임대 회전 ⑵. 전역 flush 는 없다 — Y4 가 파티션 단위로 회전 |
 | 임대별 마스크 키·논스 (키 `0xE80`–`0xE9C` · 논스 `0xEA4`–`0xEB8` WO, `0xEA0` MASK_PART 창으로 파티션 선택) | tenant 별 키 — 호스트가 생성·기입. `(키, 논스)` 유일성은 Y4 의무 |
 | 페이지 소유권 표 (`0x200`) | 하드웨어 일관성 없이 zero-copy — Y4 가 이양·회수 (zero-copy 자체는 정본 의도·재구현 미구현, 비소유 접근 loud 는 미측정 — 정본 §3.9) |
@@ -298,7 +303,7 @@ hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v0.1, `docs/glossar
 - M이 RPC 로 lease 요청 → hypervisor 가 capability token 발급
 - token 이 tenant compartment 의 cap-table 에 등록
 - 그 compartment 가 가속기 MMIO/메모리에 접근 시 hypervisor 가 cap 검증
-- token 만료 시 hypervisor 가 (a) compartment teardown, (b) 그 파티션의 정본 E.9 6항 임대 회전(투입 정지 → `0xE00` flush → 새 키·논스 기입 → 재키잉), (c) 소유 페이지 회수를 단일 capability 연산으로 수행 (`lease_capability.md` I4 · §3.3, `hiu_abi.md` §3.1)
+- token 만료 시 hypervisor 가 (a) compartment teardown, (b) 그 파티션의 정본 E.9 6항 임대 회전(드레인 — 그 파티션이 `0xE14` 에 결속돼 있을 때만 → `0xE00` flush → 새 키·논스 기입 → 재키잉 · 완료 확인), (c) 소유 페이지 회수를 단일 capability 연산으로 수행 (`lease_capability.md` I4 · §3.3, `hiu_abi.md` §3.1)
 
 Linux 위에서 사용자 공간 daemon 으로 같은 일을 하려면 syscall 다수 필요. hypervisor 라면 단일 op.
 
@@ -397,7 +402,7 @@ Phase 4  formal-verified 인증 트랙 + 외부 출시
   - CXL: 신생 표준 → 자체 작성
   - 일반 Ethernet NIC: DragonFlyBSD 1순위, 부족 시 NetBSD rump
   - GPU (display only, 가속기와 별개): 사용자가 게스트 OS 안에서 기존 driver 사용 — hypervisor 가 GPU 를 게스트에 passthrough
-- **scheduler**: 가속기 lease 전환은 wave 단위와 정렬되어야 함 — DragonFlyBSD LWKT 의 per-CPU 모델을 가속기 wave 단위로 확장
+- **scheduler**: 가속기 lease 전환은 wave 단위와 정렬되어야 함 — 전환 비용은 드레인(wave 경계) + `0xE14` ACTIVE_PART 기입이다(`hiu_abi.md` §2.4). DragonFlyBSD LWKT 의 per-CPU 모델을 가속기 wave 단위로 확장
 - **guest OS 호환**: Linux 와 DragonFlyBSD 가 paravirt interface 를 어떻게 쓰는가? Xen-PV 호환? virtio? 또는 자체 인터페이스?
 - ~~**부팅 / 펌웨어**~~ → **Bootloader 자체 개발 X, 기존 OSS bootloader 최소 수정 채택** 으로 확정 (위 §Bootloader). 1차 Limine, 2차 GRUB2-BLS, 3차 U-Boot, 4차 coreboot. systemd-boot / rEFInd 는 Y4 에서 제외 (이유는 §Bootloader 표 참조). 폼팩터별로 위 우선순위 안에서 선택.
 - **업데이트 / OTA**: hypervisor + guest OS 의 양면 업데이트 정책 (signed image, A/B partition 등)

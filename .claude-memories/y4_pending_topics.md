@@ -248,8 +248,13 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 2. **PR-2~PR-5 본격 작업** — Phase C 진입 차단 해제 단계 5~7 + 8 (PR-5a~d)
 3. ~~WaveTensor Phase 0 진입~~ — Phase 0 모델은 historical.  WaveTensor 는
    2026-08-20 부터 정본(`docs/wt64v1-architecture-guide/`) 기준 clean-room RTL
-   재구현 중.  Y4 측 할 일: WaveTensor 요청 2026-10-01 (질문 7개) 답변 +
-   `hiu_abi.md` 를 정본 부록 E 에 정합 ([[wavetensor-terms]])
+   재구현 중.  2026-10-01 요청(질문 7개) 답변 + `hiu_abi.md` v0.1 정합은 완료
+   (2026-10-02).  2026-10-05 WaveTensor §3.10 v1.0 묶음 제안에 Y4 확정 답을 보냄
+   (`.local-replies-to/WaveTensor/2026-10-05-reply-s310.md`) + `hiu_abi.md` ·
+   `lease_capability.md` v0.2 반영.  **대기:** WaveTensor 응답 — 특히 Y4 의 형상 비노출
+   변환 항목 표면 제안(색인 16 고정 거부 — 사용자 결정 2026-10-05), ACTIVE_PART 조건,
+   E.9 6항 ⑷ 정정 요청, 사실 확인 5개.  `LeaseInvariant` 처분(panic vs 장치 격리)은
+   사용자 결정 대기 ([[wavetensor-terms]])
 4. **Microbench measurement (P-redesign.6 의 baseline)** — Verus
    Verus `-V oxiz` (`just verify-oxiz`) 로 이미 가능 — 즉시 진입 가능 (item 14: `--backend=` flag 는 정의하지 않음)
 5. **Phase C 진입 후 신규 unresolved 처리** — power_safety.md §7.3 (4)

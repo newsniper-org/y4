@@ -1,6 +1,6 @@
 ---
 name: wavetensor-terms
-description: Y4 가 소비하는 WaveTensor HIU 계약의 핵심 사실 캐시 — 정본 docs/wt64v1-architecture-guide @97b0105 기준 (legacy HIU.v 기준 옛 판을 2026-10-01 전면 교체). 상세는 Y4/docs/glossary.md.
+description: Y4 가 소비하는 WaveTensor HIU 계약의 핵심 사실 캐시 — 정본 docs/wt64v1-architecture-guide @97b0105 기준 (645bed0 재확인, §3.10 v1.0 협의 상태 포함) (legacy HIU.v 기준 옛 판을 2026-10-01 전면 교체). 상세는 Y4/docs/glossary.md.
 metadata:
   node_type: memory
   type: reference
@@ -23,6 +23,7 @@ WaveTensor 정본(`docs/wt64v1-architecture-guide/`, 이하 `G/`)에서 Y4 가 A
   - LO(WO)는 물리 프레임이며 스테이징이다.
   - HI(WO)는 `[31]`V · `[30:28]`R/W/X · `[27:0]` 태그이고, 이 기입이 커밋한다.
 - **규범은 인코딩 상한 「파티션 ≤ 4 · 색인 ≤ 16」**이다. 4×16 형상은 측정값이다. 페이지는 4 KiB 고정이다.
+- 2026-10-05: WaveTensor 가 v1.0 에 「색인 16 고정 · 색인 = VPN[3:0]」을 제안했고, **사용자가 거부**했다(폼팩터 자유 · 64 KiB 도달 범위 고정 · 직접 사상 누출). Y4 대안 = **형상 비노출 표면**: 파티션 창에 VPN → FRAME → COMMIT, 배치 · 용량 · 연관도는 장치 안쪽, 축출은 같은 파티션 · 호스트 커밋으로만. 상세는 `Y4/docs/hiu_abi.md` v0.2 §1.3. WaveTensor 응답 대기.
 - **shadow region 은 정본에 없다.** 호스트가 항목을 직접 기입한다.
 - **미적중은 오류가 아니다.** 배압 정지가 걸리고, 호스트가 채우며, 장치는 타임아웃을 두지 않는다.
   - 관측: `0xE04`(STATUS) · `0xE08/0xE0C`(MISS_VPN). 값은 정지 게이트 스냅샷이다.
@@ -69,11 +70,16 @@ WaveTensor 정본(`docs/wt64v1-architecture-guide/`, 이하 `G/`)에서 Y4 가 A
 - wave 번호는 태그 80b 중 32b 를 차지하는 **불투명 식별자**다. 호스트가 짓고, 아무것도 게이트하지 않는다.
 - WT64v1 ISA 는 Y4 ABI 경계가 아니다(게스트 SDK 영역).
 
+## §3.10 v1.0 묶음 협의 (2026-10-05, 정본 `645bed0`)
+- WT 제안 · Y4 조건부 동의: `0xE14` XLATE_ACTIVE_PART(요청 → 파티션 결속, 드레인 판정 · 거절 + `[6]`), `0xFF8` HIU_SHAPE(Y4 는 `[23:8]` 용량 필드로 수정 제안), 판 `(major<<16)|minor` · v1.0 = `0x0001_0000`(sign-off 뒤에만 장치에), `[12]` 강등 유지.
+- Y4 자기 정정: `[12]` → 재시도 없음(`LeaseInvariant`) · ⑷ 완료는 `0xEC0[8]` 하강 뒤 준비 · `[6]/[12]/[13]` 확인 · 미적중 채움은 드레인 관측면이 0 이 될 때까지 되풀이 · G2 는 `0x32C` FAULT_IRQ_EN(reset 0) 안.
+- 기록: `Y4/.local-replies-to/WaveTensor/2026-10-05-reply-s310.md` · `Y4/docs/hiu_abi.md` v0.2 §5.3 상태표.
+
 ## WaveTensor 쪽 열린 상태 (2026-10-01)
 - 정본은 pre-stable 이다(`T_stable` 미정).
 - 아직 없는 것: 명령 링 소비 회로, 엔트로피원 유닛, 메모리 파이프, 상위 버스 어댑터.
 - Y4 에 걸린 판정 HP-1..7 · H1–H4 · G1/G2/G4 는 `.claude-memos/y4_hiu_abi_signoff_response.md` 에 있다.
-- Y4 는 요청 2026-10-01 의 질문 7개에 답해야 한다.
+- 요청 2026-10-01 의 질문 7개는 2026-10-02 에 답했다. `645bed0` 에서 Y4 가 짚은 정본 어긋남 셋(난수 공급 [구현] · 엔트로피 ↔ 마스크 · 키 한 벌)이 정정됐다.
 
 ## 출처 (읽기 전용 — [[wavetensor-read-policy]])
 - 정본 HIU: `G/chapters/03-hiu.typ` · 레지스터: `G/appendix/e-defined.typ` · 보안: `G/chapters/05-security.typ`

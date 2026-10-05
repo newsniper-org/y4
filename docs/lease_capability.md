@@ -1,14 +1,19 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors -->
 
-# Y4 Lease Capability — 스키마 v0.1 (draft, not frozen)
+# Y4 Lease Capability — 스키마 v0.2 (draft, not frozen)
 
 본 문서는 `architecture.md` §"Lease 의 OS-level 모델링" 의 lease 를
-**seL4 capability** 로 모델링한 첫 스키마 초안이다. 모든 attribute 는
-장치-대면 attribute(`partition_id` · `key` · `nonce` · `xlate_entries`)는
-`docs/hiu_abi.md` v0.1 §3 의 구성 표면과 1:1 매핑된다 — 즉 lease 는 HIU 상태의
-호스트-측 type-safe 표현. 나머지 attribute 는 호스트 전용이다. 소유 페이지 집합은
-Y4 가 cap 밖에서 추적한다.
+**seL4 capability** 로 모델링한 첫 스키마 초안이다. 장치-대면 attribute
+(`partition_id` · `key` · `nonce` · `dva_map`)는 `docs/hiu_abi.md` v0.2 §3 의 구성
+표면과 매핑된다 — 즉 lease 는 HIU 상태의 호스트-측 type-safe 표현. 나머지 attribute
+는 호스트 전용이다. 소유 페이지 집합은 Y4 가 cap 밖에서 추적한다.
+
+> **v0.1 → v0.2 (2026-10-05).** WaveTensor §3.10 v1.0 묶음 제안에 대한 Y4 확정 답 반영.
+> 항목 집합 · 할당기 모델(임의 색인 예약)을 「임대별 장치 VA 사상(권위) + 장치 항목은
+> 캐시」로 바꿨다(형상 비노출 표면 — Y4 제안). 요청 결속 `0xE14` ACTIVE_PART(WT 제안)
+> 와 스케줄 전환 불변식 I7 을 더했다. `[12]` 처분 · 드레인 루프 · ⑷ 완료 관측 · 부팅
+> 순서를 고쳤다.
 
 > **v0 → v0.1 (2026-10-02).** WaveTensor 정본(부록 E.2 · E.9) 정합. shadow slot →
 > 파티션별 변환 항목, `context_switch` 5-step → 정본 E.9 6항 회전, TRNG 의존 제거
@@ -29,18 +34,18 @@ pub struct LeaseCap {
     pub lease_serial: LeaseSerial,        // 파티션별 단조 일련번호 — 키 유도 입력
     pub key: MaskKey,                     // 256-bit — sealed, no read-out (0xE80 WO)
     pub nonce: MaskNonce,                 // 192-bit — never reused (0xEA4 WO)
-    pub xlate_entries: XlateEntrySet,     // ⊆ 실재 색인 — 파티션마다 ≤ 16 (0xC00, 색인 = VPN 하위 비트)
+    pub dva_map: DvaMap,                  // 임대별 장치 VA 사상 — 권위. 장치 항목(0xC00)은 그 캐시
     pub expiry: Timestamp,                // wall-clock or wave-aligned deadline
     pub isa_conformance: IsaLevel,        // WT64v1-base | WT64v1+C | WT64v2 ...
     pub heartbeat_period: Duration,       // tenant must renew within
     pub revocation_token: RevocationToken,// hypervisor-side single-use
 }
 
-pub enum PartitionId { P0, P1, P2, P3 } // 실재 파티션 수는 형상 파라미터 — 상한 4
+pub enum PartitionId { P0, P1, P2, P3 } // 실재 파티션 수는 0xFF8 HIU_SHAPE[7:0] — 상한 4
 pub struct LeaseSerial(u64);
 pub struct MaskKey([u8; 32]);     // sealed type — no Debug, no Serialize
 pub struct MaskNonce([u8; 24]);   // sealed type — issued by Y4 NonceAllocator
-pub struct XlateEntrySet(u16);    // bitmask over the partition's real entry indices (≤ 16; 16 = 측정 형상)
+pub struct DvaMap { /* VPN(VA 44b) → (frame: PA < 2^44, perm: R/W/X) — 4 KiB 페이지 */ }
 pub enum IsaLevel { Wt64v1Base, Wt64v1C, Wt64v2 }
 ```
 
@@ -61,33 +66,37 @@ pub enum IsaLevel { Wt64v1Base, Wt64v1C, Wt64v2 }
 > 임의의 두 활성 lease `L1, L2` 가 서로 다른 `partition_id` 를 가진다:
 > `L1 ≠ L2 ⇒ L1.partition_id ≠ L2.partition_id`.
 
-따름 정리: 동시에 보유되는 lease 수 ≤ 실재 파티션 수 ≤ 4 (정본 E.2 5항 인코딩
-상한). 단 패브릭 안에서 진행하는 일은 어느 순간에도 한 테넌트의 것이다 —
-드레인 후 교체(시간 분할, `glossary.md` §3–§4).
+따름 정리: 동시에 보유되는 lease 수 ≤ 실재 파티션 수(`0xFF8[7:0]`) ≤ 4 (창 인코딩
+`addr[8:7]` 상한). 단 패브릭 안에서 진행하는 일은 어느 순간에도 한 임대 —
+`0xE14` ACTIVE_PART 에 결속된 임대 — 의 것이다(시간 분할, I7).
 
-### I2. 변환 항목의 파티션 귀속
+### I2. 변환 항목의 파티션 귀속과 내용
 
-> lease `L` 이 기입하는 모든 변환 항목은 `L.partition_id` 의 창
-> (`0xC00 + (L.partition_id ≪ 7) + (i ≪ 3)`, `i ∈ L.xlate_entries`) 안에 있다.
+> lease `L` 을 위해 기입하는 모든 변환 항목 커밋은 `L.partition_id` 의 창 기저
+> (`0xC00 + (L.partition_id ≪ 7)`) 안에 있다. 그리고 V=1 커밋의 (VPN, 프레임, 권한)은
+> `L.dva_map` 의 원소이거나 거부 항목(권한 0)이다.
 
-파티션마다 항목 16 — 임대 간 합집합 상한(옛 「≤ 16 across all leases」)은 없다.
-임대 간 분리는 Y4 불변식이 아니라 장치 쪽 세 가지가 준다: 주소 인코딩
-`addr[8:7]`, 없는 파티션 주소 기입의 거절 + `[6]`, 파티션 간 저장 비공유 규범
-(SEC-4) (H4-4 · H4-5, `glossary.md` §3). Y4 가 증명하는 것은 「자기 파티션 창
-밖에 쓰지 않는다」 하나다.
+장치 항목은 `dva_map` 의 캐시다(형상 비노출 표면 — `hiu_abi.md` §1.3, Y4 제안). 파티션당
+용량 · 연관도는 형상이고 정합성은 그에 기대지 않는다. 임대 간 분리는 Y4 불변식이 아니라
+장치 쪽 셋이 준다: 창 인코딩 `addr[8:7]`, 없는 파티션 기저 기입의 거절 + `[6]`, 파티션 간
+비축출(3.6.1 결과 3 · 결과 규범 (c)). Y4 가 증명하는 것은 「자기 파티션 창 밖에 쓰지 않고,
+사상에 없는 프레임을 V=1 · 권한 ≠ 0 으로 커밋하지 않는다」다.
 
 ### I3. `(키, 논스)` 쌍 유일성 (정본 E.9 2항 — 장치 비강제 호스트 의무)
 
 > Y4 의 `NonceAllocator` 가 한 번이라도 발급한 nonce 는 다시 발급되지
 > 않는다 (단조 증가 카운터 + 호스트-식별자 prefix). 그리고 키는 호스트 마스터
 > 시크릿에서 `(partition_id, lease_serial)` 로 유도되므로 임대마다 새 키다.
-> ⇒ 발급된 모든 `(key, nonce)` 쌍은 서로 다르다. 빈 임대(§3.3)도 같은 경로
-> (`lease_serial` 하나 + `NonceAllocator` 값 하나 소비)를 쓰므로 모든 회전이 이 결론
-> 안에 든다.
+> ⇒ 발급된 모든 `(key, nonce)` 쌍은 서로 다르다. 빈 임대(§3.3)와 부팅 초기화도 같은 경로
+> (`lease_serial` 하나 + `NonceAllocator` 값 하나 이상 — 재키잉 재시도마다 하나 — 소비)를
+> 쓰므로 모든 회전이 이 결론 안에 든다.
 >
 > 부속: 마스크가 유효한 두 파티션의 논스는 서로 다르다 — 정본 E.9 2항 첫 절(「논스는
-> 파티션마다 다르다」, 개정 후에도 규범). 전역 단조 `NonceAllocator` 가 함께
-> 만족한다. `FAULT_STATUS[12]` 는 이 절의 장치 쪽 부분 검사일 뿐이다.
+> 파티션마다 다르다」, 개정 후에도 규범). 전역 단조 `NonceAllocator` 가 한 부팅 안에서
+> 함께 만족한다. 부팅을 건너서는 `hiu_abi.md` §2.5 의 초기화 순서(전 파티션 flush →
+> 전 파티션 키·논스 기입 → 파티션별 재키잉)가 전제다. `FAULT_STATUS[12]` 는 이 절의
+> 장치 쪽 부분 검사일 뿐이고, **`[12]` 발화 = 이 부속의 위반(또는 장치 결함) →
+> `LeaseInvariant`, 재시도 없음**이다.
 >
 > 신선도 근거: `host_secret` 은 **부팅마다 새로 짓는다**(임대는 재부팅을 넘지 않는다).
 > 그래서 카운터와 `lease_serial` 이 부팅마다 다시 시작해도 쌍이 반복되지 않는다.
@@ -101,28 +110,47 @@ tenant 주소 복원을 가능하게 한다 — Coq 측 high-level 보안 정리
 ### I4. atomic-rotate 시퀀스 (lease release / hand-off)
 
 lease `L_old` 를 회수하고 `L_new` 를 같은 `partition_id = p` 에 발급할 때, Y4
-가 발행하는 명령 시퀀스는 정본 E.9 6항 4단계 + 항목 기입으로 **단일 capability
+가 발행하는 명령 시퀀스는 정본 E.9 6항 4단계 + 선택적 사전 채움으로 **단일 capability
 invocation 안에서 직렬화** 된다 (`hiu_abi.md` §2.3, H1-3 · H1-6):
 
 ```
+
+// entry_vpn/frame/commit(p) = 0xC00 + (p≪7) + 0x00 / 0x04 / 0x08   (hiu_abi §1.3)
+// active_part = Y4 가 마지막으로 수락을 확인한 0xE14 값.  모든 wait/deadline 은 유계.
 0. cap_table.invalidate(L_old.revocation_token)
 1. drain(p)                         // 정본 ⑴ = 3.7.2 드레인 의무 (기계에 드레인 모드 없음)
-   a. quiesce(p)                    //   투입 정지 — 게스트 IPC 차단 (step 0 과 함께)
-   b. if read(0xE04)[0]: fill_entry(); write(0xE10, 1)   // 걸린 미적중 정지 해소 (B.5 미결 · Y4 처분)
-   c. drain_completion_ring()       //   CQ_HEAD 전진 — DRAIN_ALLZERO 는 CQ_OCC 포함
-   d. abort_lost_reassembly()       //   0xF40 태그 지정 소거 (DRAIN[4] 미완 문맥)
-   e. wait_until(read(0x37C) == 1)  //   DRAIN_ALLZERO — 정의역 여섯 + 완료 큐 (유계)
-2. mmio.write(0xE00, p)             // XLATE_FLUSH — 유효 비트만; p 를 래치한 LO 스테이징 유효도 하강 (⑵)
-3. mmio.write(0xEA0, p)             // MASK_PART 창 (⑶)
-   mmio.write(0xE80..0xE9C, L_new.key)      // 8 워드, WO
-   mmio.write(0xEA4..0xEB8, L_new.nonce)    // 6 워드, WO
-4. wait_until(read(0xEC0)[9] == 1)  // 재키잉 수락 가능 — 아니면 발화가 불수락 (⑷)
-   mmio.write(0xEBC, p)             // MASK_REKEY 발화
-   wait_until(read(0xEC0) bit p == 1)       // MASK_STATUS — 완료 관측
-   // 모든 wait 는 유계. 시간 초과 · 0xF80[13]/[12] 는 ⑶ 재시도 또는 파티션 fail-closed (P10)
-5. for i in L_new.xlate_entries:    // Y4 선택: ⑷ 뒤. 정본 귀결: ⑵ 뒤 첫 기입은 LO
-       mmio.write(entry_lo(p, i), frame)    // 스테이징 — 장치에 하나뿐 → LO→HI 쌍 직렬화
-       mmio.write(entry_hi(p, i), V|perm|tag)
+   if p == active_part:             //   아니면 결속이 p 를 떠날 때 이미 충족 (I7)
+     a. quiesce(p)                  //   투입 정지 — 게스트 IPC 차단 (step 0 과 함께)
+     b. until read(0x37C)[0] == 1 or deadline(T_DRAIN):        // DRAIN_ALLZERO — 정의역 여섯 + 완료 큐
+          while read(0xE04)[0] == 1 and !deadline(T_DRAIN):   //   정지가 다시 설 수 있으므로 [1] 이 아니라 [0]
+              require read(0xE04)[15:8] == p ∧ read(0xE0C) == 0   // 어기면 fail-closed (hiu_abi §1.2.1)
+              lock(xlate_staging): fill(p, read(0xE08))          // 보고된 VPN 만 — 옛 사상 또는 거부 채움 (B.5 갈래 ⑴)
+          drain_completion_ring()   //   CQ_HEAD 전진 — DRAIN_ALLZERO 는 CQ_OCC 포함
+          abort_lost_reassembly()   //   0xF40 태그 지정 소거 (DRAIN[4] 미완 문맥)
+     c. write(0xE10, 1)             //   sticky 해제는 루프 뒤 한 번 (항목 기입 → 해제)
+     // deadline 도달 → 장치 전체 격리 + 장치 reset (결속을 옮길 길 없음 — I7 과 같음). flush 로 진행하지 않음
+2. mmio.write(0xE00, p)             // XLATE_FLUSH — p 의 항목 전부 무효 · p 를 래치한 스테이징 유효 하강 (⑵)
+3–4. lock(mask_window):             // 0xEA0 창은 하나 — ⑶→⑷ 전체(재시도 포함)를 장치 전역 직렬화
+   require FAULT[6,12,13] == 0      //   기준선 — 서 있으면 앞 사건으로 처분하고 0xF84 로 해제한 뒤 진입 (sticky)
+   nonce = L_new.nonce
+   for attempt in 0..REKEY_RETRY_MAX:
+     3. mmio.write(0xEA0, p)                      // MASK_PART 창 (⑶)
+        mmio.write(0xE80..0xE9C, L_new.key)       // 8 워드, WO
+        mmio.write(0xEA4..0xEB8, nonce)           // 6 워드, WO
+     4. if wait_until(read(0xEC0)[9] == 1, T_REKEY):            // 재키잉 수락 가능 (⑷)
+          mmio.write(0xEBC, p)                    // MASK_REKEY 발화
+          if wait_until(read(0xEC0)[8] == 0, T_REKEY):          // 엔진 busy 하강 — 정본 「파티션 비트 대기」 대신 (개정 요청)
+            f = read(0xF80)
+            if f[12]: raise LeaseInvariant        //   재시도 없음 (같은 논스면 결정론적으로 다시 선다)
+            if f[6]:  raise Y4Defect              //   값 오류
+            if read(0xEC0)[p] == 1 ∧ f[13] == 0: break   // 성공
+        mmio.write(0xF84, read(0xF80))            //   [13] 등 해제 — 남기면 다음 판정이 계속 실패
+        nonce = NonceAllocator.next()             //   재시도는 같은 키 + 새 논스 (I3)
+   else: quarantine(p)                            //   재시도 소진 → 그 파티션 fail-closed
+5. lock(xlate_staging):             // 스테이징은 장치에 하나 — 모든 0xC00 기입 열 직렬화
+   for (vpn, frame, perm) in prefill(L_new.dva_map):   // 선택 — 상주 보장 없음, 성능 힌트
+       mmio.write(entry_vpn(p), vpn); mmio.write(entry_frame(p), frame)
+       mmio.write(entry_commit(p), V | perm)
 ```
 
 invariant:
@@ -131,7 +159,10 @@ invariant:
   대기가 **함께** 정본 ⑴ 의무의 Y4 쪽 이행이다 — 차단만으로는 패브릭에 이미 들어간
   일을 멈추지 못한다.
 - 시퀀스는 **파티션 `p` 에만** 건다. 다른 살아 있는 임대의 변환·마스크 유효는 건드리지
-  않는다. 전역 flush 는 없다.
+  않는다. 전역 flush 는 없다. step 1 의 드레인 관측(`DRAIN_ALLZERO`)은 장치 전역이지만,
+  p 가 결속돼 있지 않으면 step 1 자체가 필요 없다 — 이 분기는 3.7.2 드레인 의무를
+  「결속된 파티션의 구성 교체」로 좁히는 정본 개정을 전제한다(Y4 요청).
+- 장치 전역 락 둘: `0xEA0` 창(⑶→⑷ 와 그 재시도 전체), `0xC00` 스테이징(모든 기입 열 — 미적중 채움 포함).
 - step 1–4 의 순서를 어기면 요청이 미준비 마스크로 통과하고 `FAULT_STATUS[11]` 이
   선다(정지 보호 없음). Verus 명세가 순서를 강제한다.
 - 회전마다 에포크를 올리는 호스트 의무(규약 미정, B.5)는 `hiu_abi.md` §5.3-6 데이터
@@ -145,8 +176,9 @@ invariant:
 
 키·논스는 I3 대로 장치 엔트로피에 의존하지 않으므로 `[17]` 이 lease 발급이나
 회전을 막지 않는다. 이 좁힘의 근거는 정본 E.9 1항(호스트가 키를 기입, 장치는 생성하지
-않음)이다. 정본 안의 옛 해설 문장(`03-hiu.typ:32-33` · `05-security.typ:376` — 장치
-엔트로피가 마스킹을 먹인다)은 임대별 호스트 키 이전의 것이며 WaveTensor 쪽 정합 대상이다. 이 처분은 **Y4 정책이지 정본 요구가 아니다.** 완료
+않음)이다. 정본도 `645bed0` 에서 같은 좁힘을 적는다(`03-hiu.typ:33` 「마스크 키는
+엔트로피가 아니라 *호스트가 기입한다*」 · `05-security.typ:376`). 이 처분은 **Y4 정책이지
+정본 요구가 아니다.** 완료
 디스크립터 CD_TAG1 `[27]` poison 은 값 단위 신호다. (재구현에는 엔트로피원 유닛이
 아직 없어 둘 다 상수 0 이다.)
 
@@ -154,6 +186,37 @@ invariant:
 
 > `LeaseCap.expiry` 는 lease 객체 lifetime 동안 단조 비감소이며, expiry
 > 도달 시 atomic-rotate (I4) 가 1 회 자동 트리거된다.
+
+### I7. 스케줄 전환 — 결속 (`0xE14` ACTIVE_PART, WT 제안 · Y4 조건)
+
+> 투입이 열려 있는 동안 장치의 결속은 스케줄된 임대의 파티션이다:
+> `submissions_open ⇒ active_part == scheduled.partition_id ∧ scheduled 는 살아 있고 빈 임대가 아니다`.
+> 결속은 드레인된 상태에서만 바뀐다.
+
+전환 열 (`hiu_abi.md` §2.4) — flush · 재키잉 없음:
+
+```
+
+1. quiesce(cur)                      // cur = 지금 결속된(스케줄된) 임대 — 투입 정지
+2. drain loop (I4 step 1.b 와 같음)  // 미적중은 cur 의 *살아 있는* 사상으로 채움.
+                                     // 사상 없는 VPN 은 거부 채움하고 그 VPN 을 denied 에 모은다
+   // deadline 도달 → 결속을 옮길 길 없음 → 장치 전체 격리 + 장치 reset
+3. lock(xlate_staging):              // DRAIN_ALLZERO 관측 뒤, 재개 전에 한 번에 (hiu_abi §2.2)
+     for vpn in denied:
+       mmio.write(entry_vpn(cur.partition_id), vpn)
+       mmio.write(entry_commit(cur.partition_id), 0)   // V=0 단일 무효화 (VPN 만 요구)
+   write(0xE10, 1)                   // sticky 해제 — 「항목 기입 → 해제」 (I4 step 1.c)
+4. require FAULT[6] == 0             // 기준선 — 서 있으면 앞 사건으로 처분 · 0xF84 해제
+   mmio.write(0xE14, next.partition_id)
+   check: FAULT[6] == 0 ∧ read(0xE14) == next.partition_id
+   //   거절 → Y4 결함(투입 정지 실패 또는 드레인 오판) → 전환 fail-closed
+5. active_part ← next.partition_id; resume(next)
+```
+
+장치는 「옛 결속 아래 받아들인 일이 하나도 남지 않았을 때」만 기입을 수락한다(v1.0
+판정식 `DRAIN_ALLZERO` = 1 ∧ `SQ_HEAD` == `SQ_TAIL`, Y4 조건). v1.0 에서는 일의 원천이
+외부 제시라 Y4 가 투입을 멈출 수 없으므로, I7 의 격리 주장은 명령 링 소비 회로가 착지한
+판에서 한다 — v1.0 의 I7 은 mock 검증 대상이다.
 
 ---
 
@@ -169,7 +232,7 @@ invariant:
                       │ Y4 LeaseManager         │
                       │  - allocate partition   │
                       │  - derive key/nonce     │
-                      │  - reserve xlate entries│
+                      │  - build DVA map        │
                       │  - emit LeaseCap token  │
                       └──────┬──────────────────┘
                              │ atomic-rotate (I4) on partition entry
@@ -202,9 +265,10 @@ invariant:
    불사용.
 3. `KeyDeriver.derive(host_secret, partition_id, lease_serial) -> MaskKey` — 호스트
    마스터 시크릿(boot-time, 캡슐 외부 노출 불가)에서 도출.
-4. `XlateAllocator.reserve(partition_id, req_attrs.entry_count)` — 그 파티션의 색인
-   0..15 중에서. 미적중 정지가 영구가 되지 않도록 임대 메모리는 기본적으로
-   pre-pin 하고 항목을 미리 기입한다(`hiu_abi.md` §2.2).
+4. `dva_map` 구성 — 임대 메모리를 장치 VA 공간(v1.0 VA 44b)에 사상한다. 프레임은
+   PA < 2^44 풀에서만 내준다(`hiu_abi.md` §3). 미적중 정지가 영구가 되지 않도록 임대
+   메모리는 pre-pin 해 두어 언제나 채울 수 있게 한다. 사전 채움은 성능 힌트다
+   (`hiu_abi.md` §2.2).
 5. `RevocationTokenStore.issue()` — 단조 카운터 + HMAC.
 6. `LeaseCap` 조립 → atomic-rotate (I4) → tenant 에게 cap 핸들 반환.
 
@@ -214,7 +278,8 @@ invariant:
 수 없으므로 Y4 가 페이지 전체를 capability 검증 뒤 대행한다(Y4 결정, `hiu_abi.md` §1
 머리). 게스트 SDK 가 LNID/LBID 사상표·step 적재·재조립 소거를 요청하는 형식은
 `docs/y4_abi.md` 소관이다. 장치 쪽에서 요청의 파티션은 「어느 임대
-아래 도착했는가」가 정한다(정본 §3.6) — 토큰 값이 아니다.
+아래 도착했는가」가 정한다(정본 §3.6) — 토큰 값이 아니다. 그 결속을 장치에 알리는 표면은
+`0xE14` ACTIVE_PART(WT 제안, I7)다.
 
 ### 3.3 release / expiry / revoke
 
@@ -225,11 +290,12 @@ invariant:
 
 ---
 
-## 4. 비-목표 (out of scope for v0.1)
+## 4. 비-목표 (out of scope for v0.2)
 
-- **Wave-aligned preemption 알고리즘 자체** — 「wave-aligned」는 Y4 스케줄러
+- **Wave-aligned preemption 알고리즘 자체** — 전환 비용은 드레인(wave 경계)이다(I7).
+  LNID/LBID · step 표를 임대별로 나눌지 전환마다 재적재할지도 미결이다. 「wave-aligned」는 Y4 스케줄러
   정책 이름이다. 정본에서 wave 번호는 호스트가 짓는 불투명 식별자이고 아무것도
-  게이트하지 않는다 — 장치 측 근거는 드레인(I4 step 1)이다. 어느 경계에서
+  게이트하지 않는다 — 장치 측 근거는 드레인(I4 step 1 · I7 step 2)이다. 어느 경계에서
   atomic-rotate 를 발화할지의 scheduler 디자인은 Phase C 의 `kernel/scheduler` 영역. 본 lease 스키마는 expiry 가 도래했을 때
   atomic-rotate 를 보장한다는 invariant 만 진다.
 - **Multi-Pod / Multi-HIU** — 현 스펙은 Pod 1 = HIU 1 가정. 다중 Pod 는 정본에서
@@ -241,7 +307,7 @@ invariant:
 
 ---
 
-## 5. v0.1 미해결 항목
+## 5. v0.2 미해결 항목
 
 1. (§1) `IsaLevel` 에 WT64v2 자리잡기 — WT64v1 lock 이후 v2 가 등장하면
    변경. 현재는 enum 의 미래 변종으로 reserved.
@@ -253,15 +319,23 @@ invariant:
 4. (§3.2) cap 검증 경로의 IPC overhead 측정 — Phase C mock 으로 estimate.
 5. (§I4) atomic-rotate 의 IRQ-disable / preempt-disable 경계 — seL4
    notification 모델과 정합성 확인. 드레인·재키잉 대기의 시간 상한 값.
-6. (§3.1 step 1, I1) 실재 파티션 수를 Y4 가 어떻게 아는가 — 정본 E.1 에 그 표면이 없다
-   (`0xFC0` 구역은 `0xFFC` 만 정의). 보드·어댑터 층 또는 §3.10 요청(`hiu_abi.md` §5.3-3).
+6. ~~(§3.1 step 1, I1) 실재 파티션 수를 Y4 가 어떻게 아는가~~ — `0xFF8` HIU_SHAPE
+   `[7:0]`(WT 제안 · Y4 조건부 동의, `hiu_abi.md` §1.4)로 닫는다. 정본 반영 대기.
+7. (I4 · I7) `LeaseInvariant` 의 처분 — `proofs/verus/src/error.rs` 는 「항상 하이퍼바이저
+   panic」으로 정의한다. `[12]` 는 Y4 결함과 장치 결함을 런타임에 가를 수 없다. panic 으로
+   둘지 장치 격리(전 임대 회수 + 장치 reset)로 둘지는 사용자 결정이다. 정해지면 `error.rs`
+   의 `LeaseInvariant` doc 주석(과 ipc/alloc/capsules 거울)에 「유효 파티션 간 논스 중복
+   (`FAULT_STATUS[12]`, I3 부속)」을 예로 더하고, 장치 격리로 정하면 「Always paired with a
+   panic」 문구를 고친다.
+8. (I2 · §3.1) 형상 비노출 표면(Y4 제안)이 받아들여지지 않으면 이 절의 `dva_map` 모델과
+   `hiu_abi.md` §1.3 을 다시 연다.
 
 ---
 
 ## 6. 다음 단계
 
-- 본 v0.1 → `hiu_abi.md` §5.3 합의 묶음과 함께 양측 sign-off → `v1.0 frozen` 마킹.
+- 본 v0.2 → `hiu_abi.md` §5.3 합의 묶음과 함께 양측 sign-off → `v1.0 frozen` 마킹.
 - Phase C 진입(hiu_abi v1.0 frozen) 전에 본 spec 을 `proofs/lease/spec.rs` (Verus) 로 옮겨
-  invariant I1–I6 의 machine-checked 버전 작성.
+  invariant I1–I7 의 machine-checked 버전 작성(`hiu_abi.md` §6 목록).
 - `kernel/lease/` Rust 구현은 그 spec 이 통과한 후에만 land
   (formal-first 원칙).
