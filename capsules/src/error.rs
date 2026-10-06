@@ -16,8 +16,11 @@ pub enum Y4Error {
     Timeout,
     /// Caller violated a precondition.
     InvalidArg,
-    /// Lease invariant broke — paired with hypervisor panic.
+    /// Lease invariant broke on the Y4 side — paired with hypervisor panic.
     LeaseInvariant,
+    /// Accelerator state Y4 did not produce (or unattributable) —
+    /// paired with device quarantine, not a hypervisor panic.
+    DeviceFault,
     /// Allocator detected a security-relevant violation.
     SecurityViolation,
 }

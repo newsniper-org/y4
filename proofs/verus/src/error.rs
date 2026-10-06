@@ -35,12 +35,25 @@ pub enum Y4Error {
     /// scheme path with bad encoding).
     InvalidArg,
 
-    /// Lease invariant broke (partition disjointness, (key, nonce)
-    /// reuse, translation entry written outside the lease's partition
-    /// window).  Always paired with a panic in the
-    /// hypervisor — the variant exists for spec clients that observe
-    /// the failure model.
+    /// Lease invariant broke *on the Y4 side* (partition disjointness,
+    /// (key, nonce) reuse, two mask-valid partitions given the same nonce
+    /// by Y4 — `FAULT_STATUS[12]` attributed to `FaultOrigin::Y4Intent`
+    /// or `Y4Procedure` — translation entry written outside the lease's
+    /// partition window).  Y4's own verified bookkeeping is wrong, so it
+    /// is always paired with a panic in the hypervisor — the variant
+    /// exists for spec clients that observe the failure model.
     LeaseInvariant,
+
+    /// The accelerator reported a state that Y4's verified bookkeeping
+    /// did not produce (e.g. `FAULT_STATUS[12]` while Y4's nonce ledger
+    /// shows every mask-valid partition with a distinct nonce written
+    /// this boot — `FaultOrigin::DeviceSide`), or the origin cannot be
+    /// attributed (`FaultOrigin::Unattributed`).  Paired with *device*
+    /// quarantine — every lease on that HIU revoked, device reset,
+    /// device marked faulty — not with a hypervisor panic: Y4's state is
+    /// consistent, so other devices and guests keep running.
+    /// `docs/hiu_abi.md` §2.6.
+    DeviceFault,
 
     /// Allocator reported a security-relevant violation (use-after-free
     /// detected by scudo, guard-page write, randomization disabled).
@@ -59,7 +72,49 @@ pub proof fn y4error_is_total(e: Y4Error)
             || e == Y4Error::Timeout
             || e == Y4Error::InvalidArg
             || e == Y4Error::LeaseInvariant
+            || e == Y4Error::DeviceFault
             || e == Y4Error::SecurityViolation,
+{
+}
+
+/// Where a device-observed lease fault came from (`docs/hiu_abi.md` §2.6).
+/// Decided by comparing the device report against Y4's nonce ledger.
+#[derive(PartialEq, Eq, Structural)]
+pub enum FaultOrigin {
+    /// The ledger itself holds two mask-valid partitions with the same
+    /// nonce — Y4's allocator / bookkeeping broke.
+    Y4Intent,
+    /// The colliding partition was not written by Y4 this boot — Y4
+    /// skipped the boot initialisation order (or the device kept state
+    /// across a host reboot that Y4 assumed reset).
+    Y4Procedure,
+    /// The ledger is consistent and was written this boot, yet the device
+    /// reports a collision — write path, storage or comparator fault.
+    DeviceSide,
+    /// The ledger is consistent but the device did not report which
+    /// partition collided, so `Y4Procedure` vs `DeviceSide` is undecided.
+    Unattributed,
+}
+
+/// Disposition of an attributed fault.  Y4-side origins panic the
+/// hypervisor; device-side and unattributed origins quarantine the device.
+pub open spec fn fault_disposition(o: FaultOrigin) -> Y4Error {
+    match o {
+        FaultOrigin::Y4Intent => Y4Error::LeaseInvariant,
+        FaultOrigin::Y4Procedure => Y4Error::LeaseInvariant,
+        FaultOrigin::DeviceSide => Y4Error::DeviceFault,
+        FaultOrigin::Unattributed => Y4Error::DeviceFault,
+    }
+}
+
+/// A hypervisor panic (`LeaseInvariant`) is reached exactly when the
+/// origin is Y4's own; a device-side or unattributed origin never panics.
+pub proof fn fault_disposition_separates_origin(o: FaultOrigin)
+    ensures
+        (fault_disposition(o) == Y4Error::LeaseInvariant)
+            <==> (o == FaultOrigin::Y4Intent || o == FaultOrigin::Y4Procedure),
+        (fault_disposition(o) == Y4Error::DeviceFault)
+            <==> (o == FaultOrigin::DeviceSide || o == FaultOrigin::Unattributed),
 {
 }
 

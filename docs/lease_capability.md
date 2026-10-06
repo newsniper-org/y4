@@ -95,8 +95,13 @@ pub enum IsaLevel { Wt64v1Base, Wt64v1C, Wt64v2 }
 > 파티션마다 다르다」, 개정 후에도 규범). 전역 단조 `NonceAllocator` 가 한 부팅 안에서
 > 함께 만족한다. 부팅을 건너서는 `hiu_abi.md` §2.5 의 초기화 순서(전 파티션 flush →
 > 전 파티션 키·논스 기입 → 파티션별 재키잉)가 전제다. `FAULT_STATUS[12]` 는 이 절의
-> 장치 쪽 부분 검사일 뿐이고, **`[12]` 발화 = 이 부속의 위반(또는 장치 결함) →
-> `LeaseInvariant`, 재시도 없음**이다.
+> 장치 쪽 부분 검사일 뿐이고, **`[12]` 발화 = 장치 안에 이 부속의 위반이 실재한다 →
+> 재시도 없이 원인을 귀속한다**(`hiu_abi.md` §2.6): Y4 쪽이면 `LeaseInvariant`, 장치 쪽 ·
+> 귀속 불가면 `DeviceFault`.
+>
+> **논스 장부:** `NonceLedger` 는 실재 파티션마다 `(현재 기입 논스, 기입 부팅, 마스크 유효)` 를
+> 진다. 불변식: 마스크 유효인 두 파티션의 장부 논스는 서로 다르다(이 부속의 Y4 쪽 형태).
+> `[12]` 귀속은 이 장부와 장치 보고(`0xEC4` 캡처 — Y4 제안)를 대조한다.
 >
 > 신선도 근거: `host_secret` 은 **부팅마다 새로 짓는다**(임대는 재부팅을 넘지 않는다).
 > 그래서 카운터와 `lease_serial` 이 부팅마다 다시 시작해도 쌍이 반복되지 않는다.
@@ -141,7 +146,7 @@ invocation 안에서 직렬화** 된다 (`hiu_abi.md` §2.3, H1-3 · H1-6):
           mmio.write(0xEBC, p)                    // MASK_REKEY 발화
           if wait_until(read(0xEC0)[8] == 0, T_REKEY):          // 엔진 busy 하강 — 정본 「파티션 비트 대기」 대신 (개정 요청)
             f = read(0xF80)
-            if f[12]: raise LeaseInvariant        //   재시도 없음 (같은 논스면 결정론적으로 다시 선다)
+            if f[12]: attribute_nonce_dup(p)      //   재시도 없음 — hiu_abi §2.6 귀속 → LeaseInvariant | DeviceFault
             if f[6]:  raise Y4Defect              //   값 오류
             if read(0xEC0)[p] == 1 ∧ f[13] == 0: break   // 성공
         mmio.write(0xF84, read(0xF80))            //   [13] 등 해제 — 남기면 다음 판정이 계속 실패
@@ -321,12 +326,11 @@ invariant:
    notification 모델과 정합성 확인. 드레인·재키잉 대기의 시간 상한 값.
 6. ~~(§3.1 step 1, I1) 실재 파티션 수를 Y4 가 어떻게 아는가~~ — `0xFF8` HIU_SHAPE
    `[7:0]`(WT 제안 · Y4 조건부 동의, `hiu_abi.md` §1.4)로 닫는다. 정본 반영 대기.
-7. (I4 · I7) `LeaseInvariant` 의 처분 — `proofs/verus/src/error.rs` 는 「항상 하이퍼바이저
-   panic」으로 정의한다. `[12]` 는 Y4 결함과 장치 결함을 런타임에 가를 수 없다. panic 으로
-   둘지 장치 격리(전 임대 회수 + 장치 reset)로 둘지는 사용자 결정이다. 정해지면 `error.rs`
-   의 `LeaseInvariant` doc 주석(과 ipc/alloc/capsules 거울)에 「유효 파티션 간 논스 중복
-   (`FAULT_STATUS[12]`, I3 부속)」을 예로 더하고, 장치 격리로 정하면 「Always paired with a
-   panic」 문구를 고친다.
+7. ~~(I4 · I7) `LeaseInvariant` 의 처분~~ — 2026-10-06 사용자 결정으로 닫음: 원인을 먼저
+   귀속하고(`hiu_abi.md` §2.6), Y4 쪽 원인만 `LeaseInvariant`(하이퍼바이저 정지), 장치 쪽 ·
+   귀속 불가는 새 변형 `DeviceFault`(장치 격리)로 처리한다. `error.rs` 에 `DeviceFault` ·
+   `FaultOrigin` · `fault_disposition` 착지(거울 크레이트 포함). Y4 의도 결함과 절차 결함을
+   가르려면 겹친 상대 파티션이 필요하다 — WaveTensor 에 `0xEC4` 캡처 워드를 요청한다.
 8. (I2 · §3.1) 형상 비노출 표면(Y4 제안)이 받아들여지지 않으면 이 절의 `dva_map` 모델과
    `hiu_abi.md` §1.3 을 다시 연다.
 

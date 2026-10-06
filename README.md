@@ -108,7 +108,7 @@ Y4/
 ├── scudo-sys/                    y4-scudo-sys — LLVM scudo C++ FFI (4 link-smoke tests)
 ├── boot/                         Limine config + seL4 cmake rules (logicutils-driven)
 ├── proofs/
-│   ├── verus/                    Verus specs (54 verified, snapshot) — alloc / capsules / error / ipc / amdv
+│   ├── verus/                    Verus specs (55 verified, snapshot) — alloc / capsules / error / ipc / amdv
 │   ├── coq/                      Rocq theories (Verus-inexpressible, Y4-side)
 │   └── isabelle/                 Isabelle/HOL emit — seL4 inbound (R7)
 ├── tools/
@@ -132,7 +132,7 @@ Subsystem status:
 
 | Subsystem | Status | First milestone |
 |-----------|--------|-----------------|
-| `proofs/` | ✅ harness green, 54 verified (snapshot; `just verus`) | placeholder + scaffold + amdv AV1 |
+| `proofs/` | ✅ harness green, 55 verified (snapshot; `just verus`) | placeholder + scaffold + amdv AV1 |
 | `boot/`   | ✅ qemu-smoke PASS                       | Limine → seL4 → "Boot config" |
 | `ipc/`    | ✅ 18 tests, Verus refinement proofs     | scheme verbs + LWKT msgport hybrid |
 | `alloc/`  | ✅ 22+2 tests, Verus refinement proofs   | DragonFly SLAB + hardened backend |
@@ -179,7 +179,7 @@ cargo test -p y4-alloc            # 22 tests (24 with --features scudo)
 cargo test -p y4-capsules         # 16 tests
 cargo test -p y4-ipc              # 18 tests
 cargo test -p y4-scudo-sys        # 4 C++ link-smoke tests
-just verus                        # → 54 verified, 0 errors (snapshot; this recipe is authoritative)
+just verus                        # → 55 verified, 0 errors (snapshot; this recipe is authoritative)
 just coq                          # Rocq theories
 ```
 
