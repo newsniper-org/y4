@@ -253,8 +253,11 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
    (`.local-replies-to/WaveTensor/2026-10-05-reply-s310.md`) + `hiu_abi.md` ·
    `lease_capability.md` v0.2 반영.  **대기:** WaveTensor 응답 — 특히 Y4 의 형상 비노출
    변환 항목 표면 제안(색인 16 고정 거부 — 사용자 결정 2026-10-05), ACTIVE_PART 조건,
-   E.9 6항 ⑷ 정정 요청, 사실 확인 5개.  `LeaseInvariant` 처분(panic vs 장치 격리)은
-   사용자 결정 대기 ([[wavetensor-terms]])
+   E.9 6항 ⑷ 정정 요청, 사실 확인 5개.  `[12]` 처분은 2026-10-06 사용자 결정:
+   원인 귀속 먼저(Y4 쪽 → `LeaseInvariant` 정지, 장치 쪽 · 귀속 불가 → `DeviceFault`
+   장치 격리; `209c8dc`).  WaveTensor 에 `0xEC4` MASK_DUP_CAPTURE 요청
+   (`.local-requests-to/WaveTensor/2026-10-06-nonce-dup-capture.md`) — 2026-10-09 WaveTensor 가 v1.0 포함으로 받음.  2026-10-09 양측 입장 확정(WT 답 `2026-10-09-reply-s310.md` · Y4 둘째 답 `2026-10-09-reply-s310-r2.md` · hiu_abi/lease_capability v0.3).  남은 것: WT 의 C1 · C2(0xE14 `[9:8]` 쓰기 무시 · A·D 갱신 의미) 수용 회신 → 정본 spec 커밋 diff 대조 → RTL 파도 → v1.0 frozen + sign-off → 판 값 커밋
+   ([[wavetensor-terms]])
 4. **Microbench measurement (P-redesign.6 의 baseline)** — Verus
    Verus `-V oxiz` (`just verify-oxiz`) 로 이미 가능 — 즉시 진입 가능 (item 14: `--backend=` flag 는 정의하지 않음)
 5. **Phase C 진입 후 신규 unresolved 처리** — power_safety.md §7.3 (4)

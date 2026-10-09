@@ -51,6 +51,8 @@ first)** 을 "하드웨어 메커니즘" 축으로 구체화한 것.
 | confidential VM | vendor/ISA-neutral confidential-VM capability | AMD SEV-SNP / Intel TDX / RISC-V CoVE |
 | device attestation | "device 가 identity+config 를 attest" | SPDM 채택 범위 (⏳ `hiu_abi.md` / RTL) |
 | (일반) arch-특화 코드 | trait 뒤의 arch-neutral 로직 | per-arch backend (`sel4_backend` 형태) |
+| HIU 장치 클록 하한 (2026-10-09) | 플랫폼이 장치 클록 하한 `f_dev_min` 을 알린다 — Y4 는 사상표 소거 대기 ≥ 2^LNID_W / f_dev_min 로 쓴다 (`hiu_abi.md` §2.5) | 보드 기술 · 펌웨어 표 |
+| HIU 장치 reset 경로 (2026-10-09) | 플랫폼이 *증명한* reset 경로만 쓴다 — 없으면 장치 격리 뒤 결함 표시 (`hiu_abi.md` §2.6) | FLR ↔ reset 핀 결선 · 보드 리셋 회로 |
 
 이 표는 **living registry** — 새 하드웨어 메커니즘이 등장하면 (추상 계약,
 realization) 쌍으로 항목을 추가한다.

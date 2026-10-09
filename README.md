@@ -96,8 +96,8 @@ Y4/
 ├── docs/
 │   ├── architecture.md           canonical design memo
 │   ├── glossary.md               WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0.2 (configuration surface per canonical App. E + §3.10 v1.0 positions, order contracts, freeze policy)
-│   ├── lease_capability.md       lease capability schema v0.2 (invariants, lifecycle)
+│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0.3 (configuration surface per canonical App. E + agreed §3.10 v1.0 positions, order contracts, freeze policy)
+│   ├── lease_capability.md       lease capability schema v0.3 (invariants, lifecycle)
 │   ├── licensing.md              Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
 ├── alloc/                        y4-alloc — DragonFly SLAB + hardened backend (22 tests, +2 with `--features scudo`)

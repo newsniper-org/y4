@@ -81,6 +81,13 @@ Y4 ABI 는 세 표면으로 구성된다:
   - **lease** — `lease_capability.md` 스키마 (accelerator 시간·자원; ⏳ 일부
     `hiu_abi.md` v1.0 의존).
   - **MMIO 접근 / memory region** — 원칙 2·4.
+  - **가속기 장치 VA 사상**(lease 하위) — 게스트가 자기 임대 메모리를 장치 VA 공간(v1.0 VA 44b,
+    4 KiB 정렬)에 사상 · 해제한다. 표면 상세는 v0 미결(§6). 의미는 정해 둔다(2026-10-09, 사용자
+    결정): **unmap 반환 ≠ 프레임 즉시 해제.** 장치의 사상 철회는 철회 에지 뒤에 판정되는 접근에만
+    효력이 있으므로, Y4 는 해제된 프레임을 회수 대기에 두었다가 다음 드레인 지점 뒤에 재사용한다
+    (`hiu_abi.md` §2.7). 회수 지연분은 임대 메모리 예산에 계상한다. 장치 버퍼 프레임은 PA < 2^44
+    풀에서만 나온다. **map 도 즉시가 아닐 수 있다:** 즉시 효력은 임대에 이미 이양된 장치 소유 풀
+    안에서뿐이고, 풀 확장(소유권 이양)은 다음 전환 창에서 효력을 낸다.
   - **service capability** — 예: WWAN voice/SMS/MCX/data bearer
     (`.brainstormings/20260827-000813-wwan-modem-switch-hub.md` §2/§5).
 
@@ -121,6 +128,8 @@ raw 하드웨어 세부는 노출하지 않음 — §5):
 - capability handle 인코딩(seL4 cap ↔ 게스트 handle 매핑).
 - virtio 가상 디바이스 목록 확정(§4).
 - service-specific 인터페이스 상세 — 일부는 `hiu_abi.md`/RTL 의존(⏳).
+- 가속기 장치 VA 사상 hypercall(map/unmap)의 인자 · 반환 · 예산 초과 처분(§3) — 비동기 해제 의미는
+  정함.
 
 **이 문서가 여는 것**:
 - "게스트↔하이퍼바이저 ABI 문서 부재" **블로커 해소**(v0 draft 존재) →

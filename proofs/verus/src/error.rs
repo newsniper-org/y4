@@ -46,12 +46,17 @@ pub enum Y4Error {
 
     /// The accelerator reported a state that Y4's verified bookkeeping
     /// did not produce (e.g. `FAULT_STATUS[12]` while Y4's nonce ledger
-    /// shows every mask-valid partition with a distinct nonce written
+    /// shows every mask-valid partition with a distinct nonce rekeyed
     /// this boot — `FaultOrigin::DeviceSide`), or the origin cannot be
     /// attributed (`FaultOrigin::Unattributed`).  Paired with *device*
-    /// quarantine — every lease on that HIU revoked, device reset,
-    /// device marked faulty — not with a hypervisor panic: Y4's state is
-    /// consistent, so other devices and guests keep running.
+    /// quarantine — every lease on that HIU revoked and the device marked
+    /// faulty — not with a hypervisor panic: Y4's state is consistent, so
+    /// other devices and guests keep running.  The device is reset only
+    /// through a platform-attested reset path (device state is snapshotted
+    /// first); without one it stays out of service until a host reboot or
+    /// an attested reset (user decision 2026-10-09).  A host reboot is not
+    /// a device reset, so a persistent device defect may be re-admitted
+    /// after reboot and re-detected by the same attribution.
     /// `docs/hiu_abi.md` §2.6.
     DeviceFault,
 
@@ -84,15 +89,18 @@ pub enum FaultOrigin {
     /// The ledger itself holds two mask-valid partitions with the same
     /// nonce — Y4's allocator / bookkeeping broke.
     Y4Intent,
-    /// The colliding partition was not written by Y4 this boot — Y4
-    /// skipped the boot initialisation order (or the device kept state
-    /// across a host reboot that Y4 assumed reset).
+    /// The colliding partition was not made mask-valid (rekeyed) by Y4
+    /// this boot — Y4 skipped or mis-ran the boot neutralisation
+    /// (`docs/hiu_abi.md` §2.5 step 4: every partition's mask validity
+    /// dropped and checked) or rekeyed without updating the ledger.
     Y4Procedure,
     /// The ledger is consistent and was written this boot, yet the device
     /// reports a collision — write path, storage or comparator fault.
     DeviceSide,
     /// The ledger is consistent but the device did not report which
-    /// partition collided, so `Y4Procedure` vs `DeviceSide` is undecided.
+    /// partition collided (no `0xEC4` capture, or `[12]` set while the
+    /// capture valid bit `[16]` was cleared by a non-Y4 source), so
+    /// `Y4Procedure` vs `DeviceSide` is undecided.
     Unattributed,
 }
 
