@@ -4,7 +4,7 @@
 - [Y4 formal-first verification rule](y4_formal_first.md) — proofs land before privileged code; Verus 1st-tier, Rocq manual + Isabelle auto-emit, Lean 4 excluded (R1=a').
 - [Y4 ↔ WaveTensor relationship](y4_wavetensor_relation.md) — sibling repo; ABI = WaveTensor canonical guide's MMIO configuration surface (§3.10 agreement); request/reply channels; legacy root *.v never an ABI source.
 - [WaveTensor 소스 읽기 방침](wavetensor_read_policy.md) — 「읽기 전용 조건부」 6 조건 (2026-10-01 사용자 지시): 쓰기·git 변경·트리 내 실행 금지, 정본 > rtl > memos > legacy, sha+축자 인용, clean-room, 라이선스.
-- [WaveTensor 용어 — 정본 기준 캐시](wavetensor_terms.md) — 정본 @97b0105/645bed0: 변환 항목 0xC00(≤4 파티션·≤16 — 색인 16 고정은 사용자 거부, Y4 형상 비노출 안 제안), 파티션별 flush 0xE00(전역 금지), 임대 회전 E.9 6항, 임대별 키 0xE80(WO, 호스트 생성), FAULT[17], 판 0=약속 없음, §3.10 v1.0 협의 상태. 상세는 docs/glossary.md · hiu_abi.md v0.2.
+- [WaveTensor 용어 — 정본 기준 캐시](wavetensor_terms.md) — 정본 @97b0105/645bed0, §3.10 v1.0 묶음은 정본 spec 커밋 6a25359(2026-10-09)에 착지(형상 비노출 표면 · 판정 래치 · 0xE14 A/D · 0xEC4 · 판 분할). Y4 요청 대기: 비소유 접근 전용 FAULT 비트 · 겹치는 LBID 구간 v1.0 처분. 상세는 docs/glossary.md · hiu_abi.md v0.4.
 - [Y4 build & dev 결정 (D1–D4)](y4_build_decisions.md) — Cargo workspace + justfile/logicutils(adsmt 흡수), x86_64 first, hybrid submodule+cargo deps, seL4 16.0.0 / Limine v12.6.1.
 - [Y4 ipc/alloc 사전점검 결정](y4_ipc_alloc_preflight.md) — SMP-first, 공통 Y4Error(proofs/verus spec + crate mirror), ipc/alloc 독립(d), scheme+raw msgport 하이브리드, alloc=DragonFly SLAB+scudo, seL4 bare page API.
 - [y4-drivers + y4-hypercall + 게스트 호스팅 계획](y4_drivers_and_guest_plan.md) — 별도 repo(미개설, y4_abi v1.0 대기), driver matrix, smoltcp/acpi-rs/xhci, FS matrix, AMD-V = ARCH-II'(v1.0 frozen), KernelVTX 안 미적용.

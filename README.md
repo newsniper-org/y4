@@ -96,8 +96,8 @@ Y4/
 ├── docs/
 │   ├── architecture.md           canonical design memo
 │   ├── glossary.md               WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0.3 (configuration surface per canonical App. E + agreed §3.10 v1.0 positions, order contracts, freeze policy)
-│   ├── lease_capability.md       lease capability schema v0.3 (invariants, lifecycle)
+│   ├── hiu_abi.md                Y4 ↔ HIU ABI v0.4 (configuration surface per canonical App. E + §3.10 v1.0 bundle as committed in canonical 6a25359, order contracts, freeze policy)
+│   ├── lease_capability.md       lease capability schema v0.4 (invariants, lifecycle)
 │   ├── licensing.md              Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
 ├── alloc/                        y4-alloc — DragonFly SLAB + hardened backend (22 tests, +2 with `--features scudo`)
@@ -108,7 +108,7 @@ Y4/
 ├── scudo-sys/                    y4-scudo-sys — LLVM scudo C++ FFI (4 link-smoke tests)
 ├── boot/                         Limine config + seL4 cmake rules (logicutils-driven)
 ├── proofs/
-│   ├── verus/                    Verus specs (55 verified, snapshot) — alloc / capsules / error / ipc / amdv
+│   ├── verus/                    Verus specs (59 verified, snapshot) — alloc / capsules / error / ipc / amdv / lease
 │   ├── coq/                      Rocq theories (Verus-inexpressible, Y4-side)
 │   └── isabelle/                 Isabelle/HOL emit — seL4 inbound (R7)
 ├── tools/
@@ -132,7 +132,7 @@ Subsystem status:
 
 | Subsystem | Status | First milestone |
 |-----------|--------|-----------------|
-| `proofs/` | ✅ harness green, 55 verified (snapshot; `just verus`) | placeholder + scaffold + amdv AV1 |
+| `proofs/` | ✅ harness green, 59 verified (snapshot; `just verus`) | placeholder + scaffold + amdv AV1 |
 | `boot/`   | ✅ qemu-smoke PASS                       | Limine → seL4 → "Boot config" |
 | `ipc/`    | ✅ 18 tests, Verus refinement proofs     | scheme verbs + LWKT msgport hybrid |
 | `alloc/`  | ✅ 22+2 tests, Verus refinement proofs   | DragonFly SLAB + hardened backend |
@@ -179,7 +179,7 @@ cargo test -p y4-alloc            # 22 tests (24 with --features scudo)
 cargo test -p y4-capsules         # 16 tests
 cargo test -p y4-ipc              # 18 tests
 cargo test -p y4-scudo-sys        # 4 C++ link-smoke tests
-just verus                        # → 55 verified, 0 errors (snapshot; this recipe is authoritative)
+just verus                        # → 59 verified, 0 errors (snapshot; this recipe is authoritative)
 just coq                          # Rocq theories
 ```
 

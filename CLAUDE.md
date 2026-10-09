@@ -31,7 +31,7 @@ if a change crosses into WaveTensor's RTL ABI.
 capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로 격리.
 
 5개 Phase B 단계 모두 그린:
-1. `proofs/` Verus + Rocq + Isabelle 하네스 (55 verified, 0 errors — 스냅샷; `just verus` 권위)
+1. `proofs/` Verus + Rocq + Isabelle 하네스 (59 verified, 0 errors — 스냅샷; `just verus` 권위)
 2. `boot/` Limine v12.6.1 + seL4 16.0.0 → QEMU `qemu-smoke` PASS
 3. `ipc/` (18 tests) + `alloc/` (22 tests, +2 with `--features scudo`)
    Rust 크레이트 + Verus refinement proof
@@ -43,7 +43,7 @@ capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로
 표시되고 (Y4 + WaveTensor 양측 sign-off), `HIU_ABI_VERSION` 레지스터
 (`0xFFC`)의 비0 판 값이 양측 합의(정본 §3.10)로 고정될 때까지. 판 분할은
 `(major << 16) | minor`, v1.0 = `0x0001_0000` 이다(Y4 제안 · WaveTensor 동의
-2026-10-05, 정본 반영 대기). 비0 판 값은 양측 sign-off 뒤에만 장치에 들어간다
+2026-10-05, 정본 spec 커밋 `6a25359` 에 착지). 비0 판 값은 양측 sign-off 뒤에만 장치에 들어간다
 (`docs/hiu_abi.md` §0). 합의 전 장치 값은 0 이고,
 판 0 은 레이아웃을 약속하지 않는다 (`docs/glossary.md` §10).
 
@@ -114,9 +114,9 @@ Y4/
 ├── docs/
 │   ├── architecture.md     canonical design memo
 │   ├── glossary.md         WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v0.3 draft·미동결, 정본 부록 E + §3.10 v1.0 묶음 양측 확정 2026-10-09 — 동결 시 `hiu/` unblock)
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v0.4 draft·미동결, 정본 부록 E + §3.10 v1.0 묶음 — 정본 spec 커밋 `6a25359` 대조 2026-10-09 — 동결 시 `hiu/` unblock)
 │   ├── y4_abi.md           게스트↔하이퍼바이저 ABI (Y4 ABI) v0 draft (게스트-대면)
-│   ├── lease_capability.md lease capability schema v0.3
+│   ├── lease_capability.md lease capability schema v0.4
 │   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md       Phase A → Phase E progression + entry triggers
 ├── alloc/               y4-alloc (DragonFly SLAB + hardened backend)

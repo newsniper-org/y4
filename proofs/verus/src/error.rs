@@ -97,10 +97,12 @@ pub enum FaultOrigin {
     /// The ledger is consistent and was written this boot, yet the device
     /// reports a collision — write path, storage or comparator fault.
     DeviceSide,
-    /// The ledger is consistent but the device did not report which
-    /// partition collided (no `0xEC4` capture, or `[12]` set while the
-    /// capture valid bit `[16]` was cleared by a non-Y4 source), so
-    /// `Y4Procedure` vs `DeviceSide` is undecided.
+    /// The ledger is consistent but the device report carries no capture
+    /// that would split `Y4Procedure` from `DeviceSide`.  Not reachable for
+    /// `[12]` on a v1.0 device (canonical `6a25359` invariant `[16]` ⇔
+    /// `[12]`, so `[12]` with `[16]` = 0 is a device contract violation —
+    /// `DeviceSide`); it is the origin of a blocked non-owned frame access
+    /// under a consistent ownership ledger (`nonowned_access_origin`).
     Unattributed,
 }
 
@@ -113,6 +115,32 @@ pub open spec fn fault_disposition(o: FaultOrigin) -> Y4Error {
         FaultOrigin::DeviceSide => Y4Error::DeviceFault,
         FaultOrigin::Unattributed => Y4Error::DeviceFault,
     }
+}
+
+/// Origin of a blocked non-owned frame access — the dedicated FAULT_STATUS
+/// bit Y4 asked WaveTensor to split out of `[4]` before the v1.0 freeze
+/// (`docs/hiu_abi.md` §1.3 fault table).  A tenant cannot cause it: Y4 maps
+/// only frames it has `OWN_SET`.  If Y4's ownership ledger itself is
+/// inconsistent (a frame in some `dva_map` or `pending_reclaim` that the
+/// ledger does not hold device-owned) the origin is Y4's; otherwise the
+/// device gives no capture, so Y4 procedure vs device stays undecided.
+pub open spec fn nonowned_access_origin(ownership_ledger_consistent: bool) -> FaultOrigin {
+    if ownership_ledger_consistent {
+        FaultOrigin::Unattributed
+    } else {
+        FaultOrigin::Y4Intent
+    }
+}
+
+/// A non-owned access panics the hypervisor exactly when Y4's ownership
+/// ledger is inconsistent; with a consistent ledger it quarantines the
+/// device.  (That it is never reported to the tenant is the disposition
+/// table's choice in `docs/hiu_abi.md` §1.3, not a property proved here.)
+pub proof fn nonowned_access_panics_iff_ledger_broken(c: bool)
+    ensures
+        (fault_disposition(nonowned_access_origin(c)) == Y4Error::LeaseInvariant) <==> !c,
+        (fault_disposition(nonowned_access_origin(c)) == Y4Error::DeviceFault) <==> c,
+{
 }
 
 /// A hypervisor panic (`LeaseInvariant`) is reached exactly when the

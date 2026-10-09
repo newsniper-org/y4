@@ -31,7 +31,9 @@
 //! │   ├── cxl.rs
 //! │   └── README.md
 //! ├── kernel/       ← seL4 root-task + cap bootstrap (Phase B step 5+)
-//! └── lease/        ← LeaseCap I1–I6 (deferred — needs hiu_abi v1.0)
+//! └── lease/        ← LeaseCap I1–I7 (deferred — needs hiu_abi v1.0);
+//!     ├── mod.rs        early: LBID proxied-write precondition
+//!     └── lbid.rs
 //! ```
 //!
 //! All `proof fn ... ensures true {}` are placeholders that establish
@@ -45,6 +47,7 @@ pub mod alloc;
 pub mod ipc;
 pub mod capsules;
 pub mod amdv;
+pub mod lease;
 
 verus! {
 

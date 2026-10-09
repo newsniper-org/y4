@@ -1,6 +1,6 @@
 ---
 name: wavetensor-terms
-description: Y4 가 소비하는 WaveTensor HIU 계약의 핵심 사실 캐시 — 정본 docs/wt64v1-architecture-guide @97b0105 기준 (645bed0 재확인, §3.10 v1.0 협의 상태 포함) (legacy HIU.v 기준 옛 판을 2026-10-01 전면 교체). 상세는 Y4/docs/glossary.md.
+description: Y4 가 소비하는 WaveTensor HIU 계약의 핵심 사실 캐시 — 정본 docs/wt64v1-architecture-guide @97b0105 기준 (645bed0 재확인, §3.10 v1.0 묶음은 6a25359 정본 착지) (legacy HIU.v 기준 옛 판을 2026-10-01 전면 교체). 상세는 Y4/docs/glossary.md.
 metadata:
   node_type: memory
   type: reference
@@ -74,6 +74,10 @@ WaveTensor 정본(`docs/wt64v1-architecture-guide/`, 이하 `G/`)에서 Y4 가 A
 - WT 제안 · Y4 조건부 동의: `0xE14` XLATE_ACTIVE_PART(요청 → 파티션 결속, 드레인 판정 · 거절 + `[6]`), `0xFF8` HIU_SHAPE(Y4 는 `[23:8]` 용량 필드로 수정 제안), 판 `(major<<16)|minor` · v1.0 = `0x0001_0000`(sign-off 뒤에만 장치에), `[12]` 강등 유지.
 - Y4 자기 정정: `[12]` → 재시도 없음(`LeaseInvariant`) · ⑷ 완료는 `0xEC0[8]` 하강 뒤 준비 · `[6]/[12]/[13]` 확인 · 미적중 채움은 드레인 관측면이 0 이 될 때까지 되풀이 · G2 는 `0x32C` FAULT_IRQ_EN(reset 0) 안.
 - 기록: `Y4/.local-replies-to/WaveTensor/2026-10-05-reply-s310.md` · `Y4/docs/hiu_abi.md` v0.2 §5.3 상태표.
+
+## §3.10 v1.0 묶음 — 정본 spec 커밋 `6a25359` (2026-10-09)
+- 형상 비노출 `0xC00` 표면 · 판정 래치(신설) · 철회 효력 범위 · `0xE14` APPLIED/DRAINED · E.1.1 호스트 해석 규범 · `0xEC4`(불변식 `[16]`⇔`[12]`) · `0xFF8` · 판 분할 · reset 값 규범이 정본에 착지(RTL 은 파도 대기 — 오늘 RTL 은 옛 LO/HI). 옛 줄 번호는 `6a25359` 에서 안 맞는다.
+- `6a25359` 는 비소유 접근을 `[4]` 에 접고, 겹치는 LBID 구간을 v1.0 배정 밖(RTL 은 수락)으로 뒀다 — Y4 는 전용 비트와 v1.0 처분 문면을 요청(spec 정정 대기), 그동안 LBID 겹침 방벽은 Y4 대행 검증뿐(hiu_abi §2.8).
 
 ## WaveTensor 쪽 열린 상태 (2026-10-01)
 - 정본은 pre-stable 이다(`T_stable` 미정).
