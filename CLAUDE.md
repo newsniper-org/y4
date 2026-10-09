@@ -114,9 +114,9 @@ Y4/
 ├── docs/
 │   ├── architecture.md     canonical design memo
 │   ├── glossary.md         WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v0.4 draft·미동결, 정본 부록 E + §3.10 v1.0 묶음 — 정본 spec 커밋 `6a25359` 대조 2026-10-09 — 동결 시 `hiu/` unblock)
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v0.5 draft·미동결, 정본 부록 E + §3.10 v1.0 묶음 — 정본 spec 커밋 `6a25359` · 정정 `8af46df` 대조 2026-10-09 — 동결 시 `hiu/` unblock)
 │   ├── y4_abi.md           게스트↔하이퍼바이저 ABI (Y4 ABI) v0 draft (게스트-대면)
-│   ├── lease_capability.md lease capability schema v0.4
+│   ├── lease_capability.md lease capability schema v0.5
 │   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md       Phase A → Phase E progression + entry triggers
 ├── alloc/               y4-alloc (DragonFly SLAB + hardened backend)

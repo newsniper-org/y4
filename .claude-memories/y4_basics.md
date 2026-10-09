@@ -13,7 +13,7 @@ metadata:
 **Status (2026-10-01):** Phase B complete.
 - `proofs/` (Verus/Rocq/Isabelle), `boot/` (Limine v12.6.1 + seL4 16.0.0, qemu-smoke PASS), `ipc/`, `alloc/`, `capsules/` (PCIe enum) and `kernel/` (root task prints `Hello, Y4`) are all green.
 - FIP crates `fip/{core,macros,x86_64,aarch64,riscv64}` live on topic branch `fip/isa-subcrates`.
-- Only `hiu/` is missing. It waits for `docs/hiu_abi.md` v1.0 frozen, which needs WaveTensor + Y4 sign-off and a non-zero `HIU_ABI_VERSION` (`0xFFC`) value set by the §3.10 agreement. Y4 docs (CLAUDE.md §2, phase_plan) name `0x0001_0000`, but that is a **Y4 proposal**, not yet agreed.
+- Only `hiu/` is missing. It waits for `docs/hiu_abi.md` v1.0 frozen, which needs WaveTensor + Y4 sign-off and a non-zero `HIU_ABI_VERSION` (`0xFFC`) value set by the §3.10 agreement. `0x0001_0000` (`(major<<16)|minor`) is agreed (Y4 proposal, WaveTensor agreed 2026-10-05, landed in canonical 6a25359 and kept in correction 8af46df). The non-zero value enters the device only in a separate commit after both sides sign off; until then the device reads 0.
 - Phase model: `docs/phase_plan.md` (A → E). The old Phase 0–4 numbering (Linux + Rust daemon first) is historical (`docs/architecture.md` §Phase).
 
 **License:** single Apache-2.0. Intentionally simpler than WaveTensor's multi-license split (SHL-2.1/CERN-OHL-W for HW, LGPL/BSD-2/Apache-2 for SW, CC-BY-4.0 for docs).

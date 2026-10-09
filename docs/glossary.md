@@ -46,7 +46,9 @@ ABI 근거가 될 수 없다.** 호스트가 보는 구성 표면(§2, 부록 E.
 (`03-hiu.typ:32-33` · `:1256` · `05-security.typ:376`)뿐이라 줄 번호는 그대로다. **`6a25359`(2026-10-09)
 는 §3.10 v1.0 묶음의 정본 spec 커밋이다** — 정본 6파일이 크게 바뀌어 옛 줄 번호는 그 sha 에서 맞지
 않는다. 이 문서에서 `@6a25359` 를 단 인용만 그 기준이고, 나머지(특히 §3 의 LO/HI 표면 서술)는
-`645bed0` 정본 — 오늘 RTL 의 배치 — 그대로다. 일괄 재출처는 동결 sha 에서 한 번에 한다. WaveTensor 는 HEAD 와 정본 줄 번호가 자주 움직인다. 그래서 새 인용에는
+`645bed0` 정본 — 오늘 RTL 의 배치 — 그대로다. 정정 커밋 **`8af46df`(2026-10-09)** 는 모든 파일의 줄
+수를 보존했으므로 `@6a25359` 인용은 `8af46df` 에서도 같은 줄이다. `@8af46df` 는 그 커밋이 새로 쓴 문면이다.
+일괄 재출처는 동결 sha 에서 한 번에 한다. WaveTensor 는 HEAD 와 정본 줄 번호가 자주 움직인다. 그래서 새 인용에는
 커밋 sha 와 그 줄의 축자 문구를 함께 적는다. 따옴표 안 문구는 정본
 (CC-BY-4.0)의 축자 인용이다. 단 「옛 Y4 판」이라고 밝힌 따옴표는 예외로,
 정본이 아니라 이 사전의 이전 판 문구다.
@@ -417,9 +419,13 @@ E.9 이전에 쓰인 정본 문장 두 곳(해설 `03-hiu.typ:32-33`, 5.5 규범
 **loud fault** — 조용한 실패 금지가 원칙이다. 장치 전역 fault 구역은 다음과 같다
 (`03-hiu.typ:1156-1158`, `e-defined.typ:494-499`, 비트 배정 `:509-524`):
 - `0xF80` FAULT_STATUS (RO) — 원천별 sticky 비트맵(접지 않음). Y4 가 자주 마주칠
-  비트: `[6]` 거절된 구성 기입, `[11]` 미준비 마스크 통과, `[17]` 엔트로피 건강성.
-- `0xF84` FAULT_CLEAR (WO) — 같은 배치의 W1C. 해제와 발화가 같은 사이클이면 발화가
-  이긴다.
+  비트: `[4]` 변환 권한 위반(자격 거부), `[6]` 거절된 구성 기입, `[11]` 미준비 마스크 통과,
+  `[17]` 엔트로피 건강성, `[19]` 비소유 프레임 접근. v1.0 배정은 `[0]`–`[19]` · `[31:20]` RO 예약이다
+  (`e-defined.typ:495` · `:509-529` @8af46df). **비소유 프레임 접근** — 자격(권한 비트)은 허용했으나 승인
+  단의 소유권 판정이 장치 소유가 아니라서 거부된 접근. *자격이 먼저*라 권한 불허는 소유와 무관하게
+  `[4]` 만 세운다. `8af46df` 가 Y4 요청으로 `[4]` 에서 갈라 신설했다(오늘 RTL 은 아직 `[4]` 로 세운다).
+- `0xF84` FAULT_CLEAR (WO) — 같은 배치의 W1C · `[31:20]` 예약 엄격(비0 이면 기입 전체 거절). 해제와
+  발화가 같은 사이클이면 발화가 이긴다.
 - `0xF88` FAULT_SUMMARY (RO) — `[0]` 논리합. 개별 노출에 덧붙는 값이다.
 
 **완료 통지** — **완료 링에 항목을 넣는 것이 유일한 통지 수단이다**
@@ -518,10 +524,10 @@ mapping 만 책임진다.
 
 | # | 표면 | 방향 | 정의 위치 | 상태 |
 |---|---|---|---|---|
-| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | v0.4 draft (2026-10-09 정본 spec 커밋 `6a25359` 대조 반영), Y4 정정 요청의 spec 정정 커밋 · RTL 파도 · sign-off 대기.  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) |
+| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | v0.5 draft (2026-10-09 정본 spec 커밋 `6a25359` · 정정 커밋 `8af46df` 대조 반영 — Y4 요청 전부 착지), RTL 파도 · sign-off 대기.  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) |
 | B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **`docs/y4_abi.md` §2** (v0 draft) | 정의됨 (2026-09-14).  core VMM 은 워크스페이스 안, `y4-hypercall` repo 는 §5.3 재정의 후 사용자 CLI 전용(디스크 미존재) |
 | C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
-| D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0.4 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
+| D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0.5 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
 | — | WT64v1 ISA | 게스트 SDK **→** 가속기 | WaveTensor 정본 `G/chapters/01-isa-asm.typ` | §10 대로 **Y4 의 ABI 경계 아님** |
 
 **「Y4용 드라이버 / SDK」가 실제로 부르는 면이 위 넷 중 무엇인지는

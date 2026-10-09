@@ -1,13 +1,18 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors -->
 
-# Y4 Lease Capability — 스키마 v0.4 (draft, not frozen)
+# Y4 Lease Capability — 스키마 v0.5 (draft, not frozen)
 
 본 문서는 `architecture.md` §"Lease 의 OS-level 모델링" 의 lease 를
 **seL4 capability** 로 모델링한 첫 스키마 초안이다. 장치-대면 attribute
-(`partition_id` · `key` · `nonce` · `dva_map`)는 `docs/hiu_abi.md` v0.4 §3 의 구성
+(`partition_id` · `key` · `nonce` · `dva_map`)는 `docs/hiu_abi.md` v0.5 §3 의 구성
 표면과 매핑된다 — 즉 lease 는 HIU 상태의 호스트-측 type-safe 표현. 나머지 attribute
 는 호스트 전용이다. 소유 페이지 집합은 Y4 가 cap 밖에서 추적한다.
+
+> **v0.4 → v0.5 (2026-10-09).** WaveTensor 정정 커밋 `8af46df` 대조 반영(`hiu_abi.md` v0.5). 겹치는 LBID
+> 구간의 v1.0 처분(장치는 판정하지 않음 · 비겹침은 호스트 의무 — `03-hiu.typ:1094` · `e-defined.typ:208`)이
+> 정본에 착지해 LBID 대행 검증이 정본 호스트 의무가 됐다. 비소유 프레임 접근은 `[19]` 로 갈라졌다(§5-11
+> 닫음). 스키마 변경은 없다.
 
 > **v0.3 → v0.4 (2026-10-09).** WaveTensor 정본 spec 커밋 `6a25359` 대조 반영(`hiu_abi.md` v0.4). C1–C4 가
 > 정본에 착지해 I7 의 조건 표지를 걷었고, `0xE14` 기입을 RMW 꼴로 바꿨다. 판정 래치의 귀결로 I2 부속에
@@ -336,8 +341,8 @@ A · `[9]` D 로 보고된다. 같은 값 기입은 fault 없이 A=1 과 D 를 �
 머리). 게스트 SDK 가 LNID/LBID 사상표·step 적재·재조립 소거를 요청하는 형식은
 `docs/y4_abi.md` 소관이다. 장치 쪽에서 요청의 파티션은 「어느 임대
 아래 도착했는가」가 정한다(정본 §3.6) — 토큰 값이 아니다. 그 결속을 장치에 알리는 표면은
-`0xE14` ACTIVE_PART(정본 @6a25359, I7)다. LBID 사상 요청은 Y4 가 대행 검증한다(`hiu_abi.md` §2.8 — 오늘 RTL 은
-겹치는 구간을 판정하지 않고, v1.0 처분 문면은 Y4 요청 대기다).
+`0xE14` ACTIVE_PART(정본 @6a25359, I7)다. LBID 사상 요청은 Y4 가 대행 검증한다(`hiu_abi.md` §2.8 — v1.0 장치는
+겹치는 구간을 판정하지 않고 수락하며 비겹침은 호스트 의무다, 정본 `03-hiu.typ:1094` · `e-defined.typ:208` @8af46df).
 
 ### 3.3 release / expiry / revoke
 
@@ -350,7 +355,7 @@ A · `[9]` D 로 보고된다. 같은 값 기입은 fault 없이 A=1 과 D 를 �
 
 ---
 
-## 4. 비-목표 (out of scope for v0.4)
+## 4. 비-목표 (out of scope for v0.5)
 
 - **Wave-aligned preemption 알고리즘 자체** — 전환 비용은 드레인(wave 경계)이다(I7).
   LNID/LBID · step 표는 전역 구성이라 전환 창에서 적재한다(I7 step 3) — 「전환마다 재적재」
@@ -368,7 +373,7 @@ A · `[9]` D 로 보고된다. 같은 값 기입은 fault 없이 A=1 과 D 를 �
 
 ---
 
-## 5. v0.4 미해결 항목
+## 5. v0.5 미해결 항목
 
 1. (§1) `IsaLevel` 에 WT64v2 자리잡기 — WT64v1 lock 이후 v2 가 등장하면
    변경. 현재는 enum 의 미래 변종으로 reserved.
@@ -394,14 +399,14 @@ A · `[9]` D 로 보고된다. 같은 값 기입은 fault 없이 A=1 과 D 를 �
    회수 가능 — B.5 신설 행 @6a25359).
 10. (§3.2 · `hiu_abi.md` §2.8) LBID 슬롯 수 — `0xFF8` 에 없어 플랫폼 레지스트리 값을 쓴다. 엔트리 「길이」의
    뜻(B.5 미결)이 닫히면 `lbid_entry_ok` 를 다시 본다.
-11. (`hiu_abi.md` §1.3) 비소유 접근 전용 fault 비트 — WaveTensor spec 정정 대기(사용자 결정 2026-10-09).
-   받아들여지지 않으면 거부 채움 창 밖의 `[4]` 를 귀속 불가로 처리한다.
+11. ~~(`hiu_abi.md` §1.3) 비소유 접근 전용 fault 비트~~ — 2026-10-09 WaveTensor 가 받아 `[19]` 「비소유 프레임
+   접근」으로 신설했다(정본 `8af46df` `e-defined.typ:523`). 처분은 `error.rs` `nonowned_access_origin`.
 
 ---
 
 ## 6. 다음 단계
 
-- 본 v0.4 → `hiu_abi.md` §5.3 묶음과 함께 양측 sign-off → `v1.0 frozen` 마킹.
+- 본 v0.5 → `hiu_abi.md` §5.3 묶음과 함께 양측 sign-off → `v1.0 frozen` 마킹.
 - Phase C 진입(hiu_abi v1.0 frozen) 전에 본 spec 을 `proofs/lease/spec.rs` (Verus) 로 옮겨
   invariant I1–I7 의 machine-checked 버전 작성(`hiu_abi.md` §6 목록).
 - `kernel/lease/` Rust 구현은 그 spec 이 통과한 후에만 land

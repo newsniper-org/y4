@@ -117,9 +117,10 @@ pub open spec fn fault_disposition(o: FaultOrigin) -> Y4Error {
     }
 }
 
-/// Origin of a blocked non-owned frame access — the dedicated FAULT_STATUS
-/// bit Y4 asked WaveTensor to split out of `[4]` before the v1.0 freeze
-/// (`docs/hiu_abi.md` §1.3 fault table).  A tenant cannot cause it: Y4 maps
+/// Origin of a blocked non-owned frame access — FAULT_STATUS `[19]`, which
+/// WaveTensor split out of `[4]` at Y4's request before the v1.0 freeze
+/// (canonical `8af46df` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
+/// entitlement check comes first, so Y4's deny-fill entries raise `[4]` only.  A tenant cannot cause it: Y4 maps
 /// only frames it has `OWN_SET`.  If Y4's ownership ledger itself is
 /// inconsistent (a frame in some `dva_map` or `pending_reclaim` that the
 /// ledger does not hold device-owned) the origin is Y4's; otherwise the

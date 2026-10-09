@@ -282,7 +282,7 @@ formal-first 가 가져다 주는 결과:
 ### HIU 의 기존 보안 메커니즘과 자연스럽게 맞물림
 
 WaveTensor 정본(`docs/wt64v1-architecture-guide/` §3 · 부록 E)이 정한 HIU 기능이
-hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v0.4, `docs/glossary.md`):
+hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v0.5, `docs/glossary.md`):
 
 | HIU 기능 (정본) | hypervisor 측에서 활용 |
 |---------|------------------------|

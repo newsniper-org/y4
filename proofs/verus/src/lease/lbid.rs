@@ -4,10 +4,11 @@
 //! LBID mapping-table write precondition (`docs/hiu_abi.md` §2.8).
 //!
 //! The LBID table (`0x800`–`0xBFF`, 256 × 4 B) is one device-global table
-//! with no partition tag.  WaveTensor canonical `6a25359` 3.7.1 lists the
-//! overlapping slot range as the fifth write-time rejection, but today's RTL
-//! does not judge it (it accepts), the v1.0 disposition text is a pending
-//! Y4 request, and no v1.0 fault bit carries it.
+//! with no partition tag.  WaveTensor canonical 3.7.1 lists the overlapping
+//! slot range as the fifth write-time rejection, but its v1.0 disposition
+//! (`8af46df` `03-hiu.typ:1094`) is that a v1.0 device does not judge it and
+//! accepts; non-overlap is a host duty (E.1.1 duty 4, `e-defined.typ:208`),
+//! and no v1.0 fault bit carries it.  Today's RTL accepts as well.
 //! Two valid entries naming overlapping ranges land two fragment streams in
 //! the same slots (FAB-4).  In v1.0 the only barrier is therefore Y4's own
 //! check before every proxied write — this module states it.
