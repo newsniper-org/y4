@@ -40,8 +40,11 @@ pub enum Y4Error {
     /// a rekeyed partition given the nonce of a mask-valid other partition
     /// by Y4 — `FAULT_STATUS[12]` attributed to `FaultOrigin::Y4Intent`
     /// or `Y4Procedure` — translation entry written outside the lease's
-    /// partition window, a `0xE14` switch value rejection —
-    /// `lease::active_part::SwitchOutcome::ValueRejected`).  Y4's own
+    /// partition window, a `0xE14` switch or boot-binding value rejection —
+    /// `lease::active_part::SwitchOutcome::ValueRejected` — or a
+    /// global-configuration-window write refused with `FAULT_STATUS[5]` or
+    /// `[6]` — `lease::window::WindowVerdict::Y4Defect`, the only window
+    /// verdict that maps here; `[7]` and `[15]` never do).  Y4's own
     /// verified bookkeeping is wrong, so it is always paired with a panic
     /// in the hypervisor — the variant exists for spec clients that
     /// observe the failure model.
@@ -54,7 +57,14 @@ pub enum Y4Error {
     /// written by Y4 this boot — `FaultOrigin::DeviceSide`), or the origin
     /// cannot be attributed (`FaultOrigin::Unattributed`), or a `0xE14` readback
     /// the canonical (A, D) table does not allow / a rejection without
-    /// `[6]` inside the bound (`lease::active_part`).  Paired with *device*
+    /// `[6]` inside the bound / a same-value probe that is not A = 1 with the
+    /// binding unchanged (`lease::active_part`), or a window the device
+    /// contradicted — `[7]` not explained by a refused `OWN_SET` readback of
+    /// the same window, an `OWN_SET` refused on readback without `[7]`
+    /// (silent refusal), an `OWN_CLR` still device-owned on readback, a
+    /// sticky `[15]` seen at the FP gate gone by the post-window read
+    /// (`lease::window::WindowVerdict::DeviceContradiction`,
+    /// `OwnReadback::Contradiction`).  Paired with *device*
     /// quarantine — every lease on that HIU revoked and the device marked
     /// faulty — not with a hypervisor panic: Y4's state is consistent, so
     /// other devices and guests keep running.  The device is reset only
@@ -130,7 +140,10 @@ pub open spec fn fault_disposition(o: FaultOrigin) -> Y4Error {
 /// WaveTensor split out of `[4]` at Y4's request before the v1.0 freeze
 /// (canonical `e88f6f4` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
 /// entitlement check comes first, so Y4's deny-fill entries raise `[4]` only.  A tenant cannot cause it: Y4 maps
-/// only frames it has `OWN_SET`.  If Y4's ownership ledger itself is
+/// only frames whose `OWN_SET` the `OWN_STATUS` readback confirmed device-owned
+/// (`lease::window::own_readback` · `ledger_device_owned_only_if_confirmed` — a
+/// refused `OWN_SET` leaves the frame host-owned in the ledger and unmapped).
+/// If Y4's ownership ledger itself is
 /// inconsistent (a frame in some `dva_map` or `pending_reclaim` that the
 /// ledger does not hold device-owned) the origin is Y4's; otherwise the
 /// device gives no capture, so Y4 procedure vs device stays undecided.

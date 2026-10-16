@@ -34,8 +34,10 @@
 //! └── lease/        ← LeaseCap I1–I7 (deferred — needs hiu_abi v1.0);
 //!     ├── mod.rs        early: canonical-fixed Y4-side specs
 //!     ├── lbid.rs       LBID proxied-write precondition
+//!     ├── lnid.rs       LNID proxied-write + FP_PROG/FP_BIND preconditions
 //!     ├── nonce.rs      FAULT_STATUS[12] origin attribution
-//!     └── active_part.rs  0xE14 switch readback classification
+//!     ├── window.rs     global configuration window verdict (W = [5][6][7][15])
+//!     └── active_part.rs  0xE14 switch / boot / probe readback classification
 //! ```
 //!
 //! All `proof fn ... ensures true {}` are placeholders that establish

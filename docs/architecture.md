@@ -202,7 +202,7 @@ Y4 자체 부팅 단계는 **자체 작성하지 않고 기존 검증된 OSS boo
 
 **최소 수정 원칙**:
 - 우리는 bootloader 의 **소스 트리를 fork 하지 않는다**. upstream 패키지 (또는 distro 빌드) 를 그대로 사용.
-- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업; HIU 초기화는 `hiu_abi.md` §2.5 순서 — 드레인 관측 → 실재 파티션마다 `0xE00` flush(변환 항목은 WO·읽기 0 이라 확인할 수 없으므로 flush 로 기지 상태를 세운다) → 전 파티션 새 키·논스 기입으로 마스크 유효 하강(`0xEC0[7:0]` == 0 확인 — 재키잉은 임대 발급 때) → flush 뒤 드레인 재관측 → 소유 페이지 회수(`0x200`/`0x204` 조회로 확인) · 사상표 전 엔트리 V=0 → `0xE14` ACTIVE_PART 결속 확립(되읽기 A = D = 1)) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
+- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업; HIU 초기화는 `hiu_abi.md` §2.5 순서 — 드레인 관측 → 실재 파티션마다 `0xE00` flush(변환 항목은 WO·읽기 0 이라 확인할 수 없으므로 flush 로 기지 상태를 세운다) → 전 파티션 새 키·논스 기입으로 마스크 유효 하강(`0xEC0[7:0]` == 0 확인 — 재키잉은 임대 발급 때) → flush 뒤 드레인 재관측 → 소유 페이지 회수(`0x200`/`0x204` 조회로 확인) · 사상표 V=0(LNID 는 등록 용량 아래 · LBID 전 엔트리) · 선택 열쇠 전 범위 FP_BIND en = 0 → `0xE14` ACTIVE_PART 결속 확립(되읽기 A = D = 1)) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
 - Secure Boot key enroll, BLS entry 형식 등 spec 표준에 정렬된 인터페이스만 사용.
 - **그래도 패치가 필요한 경우** (예: 가속기 PCIe IDE 가 부팅 시 어떻게 해야 하는 등): upstream 에 patch 제출이 1순위, 우리 트리의 fork 는 최후수단. fork 시에도 git submodule 로 격리 + 상시 upstream rebase.
 
@@ -282,7 +282,7 @@ formal-first 가 가져다 주는 결과:
 ### HIU 의 기존 보안 메커니즘과 자연스럽게 맞물림
 
 WaveTensor 정본(`docs/wt64v1-architecture-guide/` §3 · 부록 E)이 정한 HIU 기능이
-hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v1.0-rc1 — 동결 후보 WaveTensor `e88f6f4`, 양측 sign-off 대기 · `docs/glossary.md`):
+hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v1.0-rc2 — 동결 후보 WaveTensor `e88f6f4`, D1 · D2 해소 대기(Y4 sign-off 차단) 뒤 양측 sign-off · `docs/glossary.md`):
 
 | HIU 기능 (정본) | hypervisor 측에서 활용 |
 |---------|------------------------|

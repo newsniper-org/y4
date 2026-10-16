@@ -21,7 +21,7 @@ Y4 의 capability 스키마·HIU ABI 문서·Verus/Coq 명세가 이 사전을 �
 > W2 `aa91e86` · W3 `f67e3d6` · W4 `e88f6f4` 로 그 묶음을 따라잡았다. 그래서 §3 의 옛 LO/HI
 > 표면 서술은 이력으로 내렸다(형상 비노출 표면으로 대체 · W3 에서 재구현 문 은퇴). 옛 Y4 판의 「RTL
 > 파도 대기」 · 「오늘 RTL 은 아직 …」 표지(`0xE14` · `0xEC4` · `0xFF8` · `[19]` · 판정 래치 · 내부
-> 포트 결속)는 모두 해소됐다. 상태 표지는 `docs/hiu_abi.md` v1.0-rc1 과 맞춘다.
+> 포트 결속)는 모두 해소됐다. 상태 표지는 `docs/hiu_abi.md` v1.0-rc2 와 맞춘다.
 
 ---
 
@@ -536,6 +536,24 @@ E.1.2 의 배정(`[31:0]`)을 그대로 고정했다 (`e-defined.typ:786-790`, `
     있을 때 선다(p 자신은 비교에 들지 않는다 — `e-defined.typ:345`). 강등 유지이고, 겹친 상대는
     `0xEC4` 가 낸다(§5). `[12]` = 1 이면 그 HIU 의 모든 파티션의 준비 비트를 신뢰하지 않는다
     (`e-defined.typ:1544`).
+  - **창 거절 집합 W** = `[5]` · `[6]` · `[7]` · `[15]` — Y4 가 전역 구성 창의 기입 뒤 `T_FLT` 를
+    기다려 확인하는 거절 loud 비트들이다(`docs/hiu_abi.md` §1.3 · §2.4 3 — `[5]` · `[6]` 만 정지
+    `LeaseInvariant` 에 이른다). `[6]` 밖의 셋:
+    - `[5]` 「구성 — 소유 서로소 위반 (D2)」(`e-defined.typ:519`) — LNID V=1 기입의 서로소성(1.4.5)
+      위반은 `[6]` 에 접지 않고 `[5]` 가 따로 받는다(`03-hiu.typ:1096`). 엔트리를 쓰는 주체는 Y4
+      뿐이라 시점과 무관하게 Y4 결함이다.
+    - `[7]` 「페이지 소유권 표 충돌」(`e-defined.typ:521`) — 정본은 이름만 두고 원천을 적지 않는다.
+      OWN_SET 은 「예약 비트가 없고 표현 불가 프레임도 없다」(`:227`)고, 소유권 표 용량은 호스트에게
+      보이지 않는다(`b-gaps.typ:2121-2126`). 재구현은 64칸 직접 사상의 충돌 이양 기입을 「쓰기 무효 +
+      loud sticky fault」로 낸다(RTL 사실 — 규범 아님: `rtl/spinal/src/main/scala/wt64/hiu/OwnershipTable.scala:92-96` · `:159`).
+      그래서 Y4 는 OWN_SET 마다 `OWN_STATUS` 되읽기로 수락을 확인하고, 확인된 프레임만 장부에 올린다.
+    - `[15]` 「step 프로그램 불량」(`e-defined.typ:520`) — 정본이 적은 원천은 FP_PROG 의 「용량 밖
+      슬롯·색인 기입은 거절 + loud fault」(`:459`) 하나다. 재구현은 step 워드 `[15:14]` 예약 거절 ·
+      용량 밖 FP_BIND · 실행 중 runaway 도 같은 sticky 에 접는다(RTL 사실 — 규범 아님:
+      `rtl/spinal/src/main/scala/wt64/fp/StepSequencer.scala:296` · `:309` · `:460-462`). 그래서 Y4 는
+      `[15]` 로 정지하지 않고 FP 관문(FP_PROG 뒤 `[15]` 확인 후에만 FP_BIND)으로 받는다.
+    - `[7]` · `[15]` 의 원천 정렬은 WaveTensor 에 돌려보낸 물음 D1 · D2 이고, 동결 전에 풀려야 하는
+      Y4 sign-off 차단 조건이다 — 동결 뒤 기존 비트에 새 원천을 접는 것은 major 다(`03-hiu.typ:1683-1686`).
   - **비소유 프레임 접근** `[19]` — 자격(권한 비트)은 허용했으나 승인 단의 소유권 판정이 장치
     소유가 아니라서 거부된 접근. *자격이 먼저*라 권한 불허는 소유와 무관하게 `[4]` 만 세우고, 한
     접근에 둘이 함께 서지 않는다. 거부 채움(V=1 · R = W = X = 0)은 프레임이 무엇이든 `[4]` 로만
@@ -646,10 +664,10 @@ mapping 만 책임진다.
 
 | # | 표면 | 방향 | 정의 위치 | 상태 |
 |---|---|---|---|---|
-| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | **v1.0-rc1 — 동결 후보** (WaveTensor `e88f6f4` — RTL 파도 W0–W4 착지 대조 반영), 양측 sign-off 대기.  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) — 비0 판 값 `0x0001_0000` 은 sign-off 뒤 별도 커밋 |
+| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | **v1.0-rc2 — 동결 후보** (WaveTensor `e88f6f4` — RTL 파도 W0–W4 착지 대조 · WaveTensor rc1 대조 답 반영), D1 · D2 해소 대기(Y4 sign-off 차단) 뒤 양측 sign-off.  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) — 비0 판 값 `0x0001_0000` 은 sign-off 뒤 별도 커밋 |
 | B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **`docs/y4_abi.md` §2** (v0 draft) | 정의됨 (2026-09-14).  core VMM 은 워크스페이스 안, `y4-hypercall` repo 는 §5.3 재정의 후 사용자 CLI 전용(디스크 미존재) |
 | C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
-| D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0.6 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
+| D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0.7 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
 | — | WT64v1 ISA | 게스트 SDK **→** 가속기 | WaveTensor 정본 `G/chapters/01-isa-asm.typ` | §10 대로 **Y4 의 ABI 경계 아님** |
 
 **「Y4용 드라이버 / SDK」가 실제로 부르는 면이 위 넷 중 무엇인지는
@@ -695,7 +713,7 @@ spec 의 소재지는 **해소됐다**: ⒜ `Y4/docs/` 안 신설 — `docs/y4_a
 
 Y4 의 다른 문서(`hiu_abi.md`, `lease_capability.md`, `architecture.md` 등)에 남은
 옛 용어를 읽을 때 쓴다. `hiu_abi.md` · `lease_capability.md` · `architecture.md` 본문은 2026-10-02 에
-정본 기준(H1–H4 · HP-1..7 반영)으로 정정됐고, 지금은 `hiu_abi.md` v1.0-rc1 · `lease_capability.md` v0.6 이다(§11). 이 표는 이력·다른 문서용이다.
+정본 기준(H1–H4 · HP-1..7 반영)으로 정정됐고, 지금은 `hiu_abi.md` v1.0-rc2 · `lease_capability.md` v0.7 이다(§11). 이 표는 이력·다른 문서용이다.
 
 | 옛 용어 (legacy 기준) | 정본 대응물 | 비고 |
 |---|---|---|

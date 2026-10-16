@@ -81,7 +81,7 @@ WaveTensor 정본(`docs/wt64v1-architecture-guide/`, 이하 `G/`)에서 Y4 가 A
 - (2026-10-12 W1 전까지의 RTL: `[19]` 상수 0 · 비소유 접근은 `[4]` · `0xF84` `[31:19]` 엄격 — W1 에서 해소.)
 - `b81df18`(2026-10-11, 줄 수 보존): S-3 `[12]` · `0xEC4` 정의역 = 마스크 유효한 *다른* q ≠ p 가 p 의 *새* 논스와 같음(bit p 늘 0) · S-2 비정렬 `0xE15`–`0xE17` 은 정의역 밖(거절 + `[6]`, A·D·결속 불변) · F-1 HIU-4 「증명됨」은 항진 불변식이었다.
 - RTL 파도 W0 `3b80087` · W1 `9b6eee6`(`[19]` 원인별 · `N_BITS = 20` · `0xFF8` = `0x0000_1004` 참조 형상 4×16 · `0xEC4`) · W2 `aa91e86`(판정 래치) · W3 `f67e3d6`(형상 비노출 `0xC00` 문, LO/HI 은퇴) · W4 `e88f6f4`(`0xE14` α 판정 — 판정 사이클에 HIU 접수 · 정렬 `0xE14` 만 정지, 최상위 `hiuReq.part` 은퇴). 정본 규범 불변, 3.9 행 셋은 `03-hiu.typ:1556` 으로 이동. `[6]` 가시 시점은 정본에 없음 → Y4 정책(되읽기 뒤 유계 폴링). 측정 한정: HIU-2 V=0 · HIU-4 = 모델 위 + RTL 유계(bmc 16), HIU-5/6 합성 서술.
-- 2026-10-16 Y4 전부 수용(`2026-10-16-reply-rtl-wave-e88f6f4.md`) → hiu_abi v1.0-rc1 (`e88f6f4` 일괄 재출처) → 다음: WT rc1 대조 · sign-off → Y4 sign-off · `v1.0 frozen` 표지 → WT 판 값 커밋.
+- 2026-10-16 Y4 전부 수용(`2026-10-16-reply-rtl-wave-e88f6f4.md`) → hiu_abi v1.0-rc1 (`e88f6f4` 일괄 재출처) → WT rc1 대조 답(`2026-10-16-reply-rc1-crosscheck.md`: major 1 창 기준선 · minor 16) → Y4 전부 수용 + 넓힘(사용자 결정 「D1과 D2 둘 다 sign-off 차단 조건들로 걸어놔. 권고안들은 전부 수용.」) → hiu_abi v1.0-rc2 · lease v0.7 · Verus 113(`lease::window` · `lease::lnid`) · 답 `2026-10-16-reply-rc1-crosscheck-rc2.md`. 창 거절 집합 W=[5][6][7][15], 정지는 [5]·[6] 뿐, [15] 는 정지 금지(FP 관문), OWN_SET/OWN_CLR 은 OWN_STATUS 되읽기. **D1([7] 원천 · OWN_SET 거절 — 정본엔 거절 없음, RTL 64칸 충돌) · D2([15] 원천 정렬) = Y4 sign-off 차단**; D3·D4 비차단. 다음: WT rc2 diff 대조 + D1·D2 답 → (필요 시 rc3) → 양측 sign-off → `v1.0 frozen` → WT 판 값 커밋.
 
 ## WaveTensor 쪽 열린 상태 (2026-10-01)
 - 정본은 pre-stable 이다(`T_stable` 미정).
