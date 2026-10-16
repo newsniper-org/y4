@@ -32,8 +32,10 @@
 //! │   └── README.md
 //! ├── kernel/       ← seL4 root-task + cap bootstrap (Phase B step 5+)
 //! └── lease/        ← LeaseCap I1–I7 (deferred — needs hiu_abi v1.0);
-//!     ├── mod.rs        early: LBID proxied-write precondition
-//!     └── lbid.rs
+//!     ├── mod.rs        early: canonical-fixed Y4-side specs
+//!     ├── lbid.rs       LBID proxied-write precondition
+//!     ├── nonce.rs      FAULT_STATUS[12] origin attribution
+//!     └── active_part.rs  0xE14 switch readback classification
 //! ```
 //!
 //! All `proof fn ... ensures true {}` are placeholders that establish

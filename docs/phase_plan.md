@@ -20,8 +20,8 @@
 | `docs/architecture.md` (CC-BY-4.0 → Apache-2.0 inbound) | ✅ |
 | `docs/licensing.md`, `docs/phase_plan.md` (본 문서) | ✅ |
 | `docs/glossary.md` — 용어 사전 (2026-10-01 WaveTensor 정본 기준으로 재출처) | ✅ |
-| `docs/hiu_abi.md` — v0.5 draft (2026-10-09 정정 커밋 `8af46df` 대조 반영 — Y4 요청 전부 착지; v0.4 = 같은 날 정본 spec 커밋 `6a25359` 대조; v0.3 = 같은 날 양측 확정, v0.2 = 2026-10-05 Y4 답, v0.1 = 2026-10-02 정본 부록 E 정합) | ✅ |
-| `docs/lease_capability.md` — capability 스키마 v0.5 | ✅ |
+| `docs/hiu_abi.md` — v1.0-rc1 동결 후보 (2026-10-16 WaveTensor `e88f6f4` — `b81df18` 명확화 · RTL 파도 W0–W4 착지 대조 반영, 양측 sign-off 대기; v0.5 = 2026-10-09 정정 커밋 `8af46df` 대조 — Y4 요청 전부 착지; v0.4 = 같은 날 정본 spec 커밋 `6a25359` 대조; v0.3 = 같은 날 양측 확정, v0.2 = 2026-10-05 Y4 답, v0.1 = 2026-10-02 정본 부록 E 정합) | ✅ |
+| `docs/lease_capability.md` — capability 스키마 v0.6 | ✅ |
 | **`docs/hiu_abi.md` v1.0 동결 (Y4 + WaveTensor 양측 sign-off)** | ⏳ 진행 |
 
 **Phase A → Phase B 진입 트리거:** `docs/hiu_abi.md` 가 `v1.0 frozen`
@@ -37,7 +37,7 @@
 
 | Step | 영역 | 마일스톤 | 결과 |
 |---|---|---|---|
-| 1 | `proofs/` Verus + Rocq 하네스 + CI gate | placeholder + 모듈 트리 | **54 verified, 0 errors** (스냅샷; `just verus` 권위) |
+| 1 | `proofs/` Verus + Rocq 하네스 + CI gate | placeholder + 모듈 트리 | **70 verified, 0 errors** (스냅샷; `just verus` 권위) |
 | 2 | `boot/` Limine → seL4 QEMU | seL4 boot path reached | qemu boot OK |
 | 3a | `ipc/` Rust 크레이트 — scheme + LWKT msgport hybrid | open/send/wait/forward/abort/priority | **18 tests** |
 | 3b | `alloc/` Rust 크레이트 — DragonFly SLAB + hardened backend | bump + slab + scudo contract + integrated | **22 tests** |

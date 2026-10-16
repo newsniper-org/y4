@@ -36,19 +36,25 @@ pub enum Y4Error {
     InvalidArg,
 
     /// Lease invariant broke *on the Y4 side* (partition disjointness,
-    /// (key, nonce) reuse, two mask-valid partitions given the same nonce
+    /// (key, nonce) reuse — two mask-valid partitions sharing a nonce, or
+    /// a rekeyed partition given the nonce of a mask-valid other partition
     /// by Y4 — `FAULT_STATUS[12]` attributed to `FaultOrigin::Y4Intent`
     /// or `Y4Procedure` — translation entry written outside the lease's
-    /// partition window).  Y4's own verified bookkeeping is wrong, so it
-    /// is always paired with a panic in the hypervisor — the variant
-    /// exists for spec clients that observe the failure model.
+    /// partition window, a `0xE14` switch value rejection —
+    /// `lease::active_part::SwitchOutcome::ValueRejected`).  Y4's own
+    /// verified bookkeeping is wrong, so it is always paired with a panic
+    /// in the hypervisor — the variant exists for spec clients that
+    /// observe the failure model.
     LeaseInvariant,
 
     /// The accelerator reported a state that Y4's verified bookkeeping
     /// did not produce (e.g. `FAULT_STATUS[12]` while Y4's nonce ledger
-    /// shows every mask-valid partition with a distinct nonce rekeyed
-    /// this boot — `FaultOrigin::DeviceSide`), or the origin cannot be
-    /// attributed (`FaultOrigin::Unattributed`).  Paired with *device*
+    /// shows no collision — none among mask-valid partitions, none with
+    /// the rekeyed partition's new nonce — and every captured partition
+    /// written by Y4 this boot — `FaultOrigin::DeviceSide`), or the origin
+    /// cannot be attributed (`FaultOrigin::Unattributed`), or a `0xE14` readback
+    /// the canonical (A, D) table does not allow / a rejection without
+    /// `[6]` inside the bound (`lease::active_part`).  Paired with *device*
     /// quarantine — every lease on that HIU revoked and the device marked
     /// faulty — not with a hypervisor panic: Y4's state is consistent, so
     /// other devices and guests keep running.  The device is reset only
@@ -87,21 +93,24 @@ pub proof fn y4error_is_total(e: Y4Error)
 #[derive(PartialEq, Eq, Structural)]
 pub enum FaultOrigin {
     /// The ledger itself holds two mask-valid partitions with the same
-    /// nonce — Y4's allocator / bookkeeping broke.
+    /// nonce, or the rekeyed partition's new nonce equals a mask-valid
+    /// other partition's ledger nonce (canonical `e88f6f4`
+    /// `e-defined.typ:345`) — Y4's allocator / bookkeeping broke
+    /// (`lease::nonce::nonce_dup_origin` step 2).
     Y4Intent,
-    /// The colliding partition was not made mask-valid (rekeyed) by Y4
-    /// this boot — Y4 skipped or mis-ran the boot neutralisation
-    /// (`docs/hiu_abi.md` §2.5 step 4: every partition's mask validity
-    /// dropped and checked) or rekeyed without updating the ledger.
+    /// The colliding partition had no key/nonce written by Y4 this boot —
+    /// Y4 skipped or mis-ran the boot neutralisation (`docs/hiu_abi.md`
+    /// §2.5 step 4: every partition's key and nonce written, mask validity
+    /// dropped and checked) or wrote without updating the ledger.
     Y4Procedure,
     /// The ledger is consistent and was written this boot, yet the device
     /// reports a collision — write path, storage or comparator fault.
     DeviceSide,
     /// The ledger is consistent but the device report carries no capture
     /// that would split `Y4Procedure` from `DeviceSide`.  Not reachable for
-    /// `[12]` on a v1.0 device (canonical `6a25359` invariant `[16]` ⇔
-    /// `[12]`, so `[12]` with `[16]` = 0 is a device contract violation —
-    /// `DeviceSide`); it is the origin of a blocked non-owned frame access
+    /// `[12]` on a v1.0 device (canonical `e88f6f4` `e-defined.typ:347`
+    /// invariant `[16]` ⇔ `[12]`, so `[12]` with `[16]` = 0 is a device
+    /// contract violation — `DeviceSide`); it is the origin of a blocked non-owned frame access
     /// under a consistent ownership ledger (`nonowned_access_origin`).
     Unattributed,
 }
@@ -119,7 +128,7 @@ pub open spec fn fault_disposition(o: FaultOrigin) -> Y4Error {
 
 /// Origin of a blocked non-owned frame access — FAULT_STATUS `[19]`, which
 /// WaveTensor split out of `[4]` at Y4's request before the v1.0 freeze
-/// (canonical `8af46df` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
+/// (canonical `e88f6f4` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
 /// entitlement check comes first, so Y4's deny-fill entries raise `[4]` only.  A tenant cannot cause it: Y4 maps
 /// only frames it has `OWN_SET`.  If Y4's ownership ledger itself is
 /// inconsistent (a frame in some `dva_map` or `pending_reclaim` that the
