@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
 
-//! LNID ownership-table and step-load write preconditions
-//! (`docs/hiu_abi.md` §1.2.1 (C) · §2.7 · §2.8).
+//! LNID ownership-table write preconditions (`docs/hiu_abi.md` §1.2.1 (C) · §2.7 · §2.8).
 //!
 //! LNID 소유 표(`0x400`, 256 × 4 B)는 장치 전역 한 벌이고 엔트리에 파티션 태그가
-//! 없다(정본 `e88f6f4` `03-hiu.typ:992-995` — `[31]` V · `[30:24]` 「예약 — 0 이어야
+//! 없다(정본 `f6bc4df` `03-hiu.typ:992-995` — `[31]` V · `[30:24]` 「예약 — 0 이어야
 //! 한다」 · `[23:16]` 소유 지점 · `[15:0]` LNID).  기입 시점 거절은 3.7.1 의 넷
 //! (「용량 밖 슬롯」 · 「없는 배달 지점」 · 「점유 엔트리의 유효 재기입」 · 「엔트리
 //! 예약 비트의 비0」, `03-hiu.typ:1070-1077`, `[6]` 에 접힌다 `:1087`)과 1.4.5 서로소
@@ -16,30 +15,23 @@
 //! Y4 는 `lnid_write_ok` 로 그 넷과 1.4.5 서로소 위반을 모두 미리 피하고 장치 거절에
 //! 기대지 않는다.
 //! 그래서 창의 `[5]` · `[6]` 은 Y4 결함이다(`lease::window`).  상한(등록 용량
-//! `cap` · 배달 지점 수 `n_points`)은 `0xFF8` 에 없으므로 플랫폼 레지스트리 값이다
-//! (`hw_mechanism_abstraction.md` §2).
+//! `cap` · 배달 지점 수 `n_points`)은 알리는 장치 워드가 없으므로 플랫폼 레지스트리 값이다
+//! (`hw_mechanism_abstraction.md` §2 — 장치 워드는 WaveTensor 에 보내는 C10 의 v1.x 후보).
 //!
-//! 「용량 밖 슬롯」 거절이 V=0 기입에도 걸리는지는 정본 문면이 없다(WaveTensor 에
-//! 보낸 D3, 비차단 — 재구현은 무연산이다, RTL 사실 `rtl/…/hiu/MmioConfig.scala:428-430`).
-//! 여기서는 보수적으로 모든 기입에 slot < `cap` 을 건다.  용량 밖 슬롯은 등록이
-//! 거절되므로 유효일 수 없어, 부팅 sweep(§2.5 5)은 `cap` 아래로 좁혀 쓰고 장부의 초기
-//! 상태 「전 엔트리 무효」(`lnid_all_invalid_ok`)는 같다 — D3 의 어느 답에서도 sweep 이
-//! `lnid_write_ok` 안에 든다.  필드 폭(지점 < 256 · LNID < 2^16)은 V 와 무관하게 건다 —
-//! 넘치면 `[30:24]` 예약에 비트가 들고, 예약 비트 검사는 V=0 기입에도 걸린다(RTL 사실 —
-//! 규범 아님: `rtl/…/hiu/MmioConfig.scala:399-401`).
+//! 「용량 밖 슬롯」은 「이 원인은 V = 1 등록에만 걸린다」 — 「용량 밖 슬롯에 대한 V = 0
+//! 기입은 이 원인으로 거절되지 않고 효과도 fault 도 없다」(`03-hiu.typ:1072` — WaveTensor 에
+//! 보낸 D3 의 답, 재구현도 같다: `rtl/…/hiu/MmioConfig.scala:398-430`).  `lnid_rejected6` 는 이
+//! 명확화대로 「용량 밖 슬롯」을 V=1 에만 건다(`lnid_invalidate_never_rejected6`).
+//! `lnid_write_ok` 는 보수적으로 모든 기입에 slot < `cap` 을 건다 — 장치 거절을 피하는 조건이
+//! 아니라 Y4 정책이다.  용량 밖 슬롯은 등록이 거절되므로 유효일 수 없어, 부팅 sweep(§2.5 5)은
+//! `cap` 아래로 좁혀 쓰고 장부의 초기 상태 「전 엔트리 무효」(`lnid_all_invalid_ok`)는 같다.
+//! 「없는 배달 지점」도 V=1 에만 거는 것은 재구현 사실이고(RTL 사실 — 규범 아님:
+//! `rtl/…/hiu/MmioConfig.scala:404-409`) 그 문면의 명확화는 WaveTensor 에 보내는 C7(비차단)이다
+//! — Y4 의 V=0 기입은 지점 0 을 쓴다.
+//! 필드 폭(지점 < 256 · LNID < 2^16)은 V 와 무관하게 건다 — 넘치면 `[30:24]` 예약에
+//! 비트가 들고, 「예약 비트가 비0 이면 넷째가 그대로 받는다」(`03-hiu.typ:1072`).
 //!
-//! step 적재(`0xF00` FP_PROG · `0xF04` FP_BIND)는 `fp_prog_ok` · `fp_bind_ok` 를
-//! 통과한 것만 쓴다.  FP_PROG 는 「`[31:24]` 슬롯 · `[23:16]` step 색인 · `[15:0]`
-//! step 워드. 예약 비트 없음. 읽기 0. 용량 밖 슬롯·색인 기입은 거절 + loud fault
-//! (FAULT_STATUS `[15]`)」(`e-defined.typ:459`), FP_BIND 는 「`[31]` en (1 = 결속 ·
-//! 0 = 해제) · `[30:24]` 예약 = 0 (엄격) · `[23:16]` 슬롯 · `[15:0]` 선택 열쇠」
-//! (`e-defined.typ:461`)다.  P · stepMax 도 플랫폼 레지스트리 값이다 — 정본은 이
-//! 거절을 파티션 값 거절과 「같은 형태」로 두되 읽을 길은 파티션 수만 준다
-//! (`e-defined.typ:416-418`).  step 워드의 내용은 판정하지 않는다: 재구현의
-//! `[15:14]` 예약 거절(RTL 사실 `rtl/…/fp/StepSequencer.scala:296`)과 정본 「예약 비트
-//! 없음」의 어긋남은 D2(sign-off 차단)다.  그래서 FP 관문의 `[15]` 는 Y4 결함이 아니라
-//! 적재 실패 보고다(`lease::window::WindowVerdict::FpLoadRefused`).  용량 밖 슬롯
-//! 결속의 처분은 정본에 없으므로 FP_BIND 도 en 과 무관하게 slot < P 로만 쓴다.
+//! step 적재(`0xF00` FP_PROG · `0xF04` FP_BIND)의 사전조건과 적재 순서는 `lease::step` 이다.
 
 use vstd::prelude::*;
 
@@ -98,7 +90,9 @@ pub open spec fn lnid_write_ok(
 }
 
 /// 정본의 `[6]` 거절 넷(3.7.1, `03-hiu.typ:1070-1077`) — 장부가 장치 표를 비춘다는
-/// 전제에서.
+/// 전제에서.  「용량 밖 슬롯」은 V=1 등록에만 걸린다(`03-hiu.typ:1072`).  「없는 배달
+/// 지점」의 V=1 한정은 RTL 사실이다(규범 아님 — `rtl/…/hiu/MmioConfig.scala:404-409`,
+/// 명확화는 C7).
 pub open spec fn lnid_rejected6(
     t: Seq<LnidEntry>,
     idx: int,
@@ -106,7 +100,7 @@ pub open spec fn lnid_rejected6(
     cap: nat,
     n_points: nat,
 ) -> bool {
-    ||| idx >= cap
+    ||| (e.valid && idx >= cap)
     ||| (e.valid && e.point >= n_points)
     ||| (e.valid && t[idx].valid)
     ||| e.reserved != 0
@@ -137,6 +131,35 @@ pub proof fn lnid_write_ok_avoids_rejection(
             0 <= j < t.len() && j != idx && #[trigger] t[j].valid && t[j].lnid == e.lnid;
         assert(lnid_dup(e, t[j]));
     }
+}
+
+/// 예약 0 인 V=0 기입은 슬롯이 용량 밖이어도 `[6]` 에도 `[5]` 에도 걸리지 않는다 — D3 의 답
+/// 「용량 밖 슬롯에 대한 V = 0 기입은 이 원인으로 거절되지 않고 효과도 fault 도 없다」
+/// (`03-hiu.typ:1072`).  그러니 `lnid_write_ok` 의 slot < `cap` 은 장치 거절을 피하는 조건이 아니라
+/// Y4 의 보수 정책이다.
+pub proof fn lnid_invalidate_never_rejected6(t: Seq<LnidEntry>, idx: int, cap: nat, n_points: nat)
+    ensures
+        !lnid_rejected6(t, idx, lnid_cleared(), cap, n_points),
+        !lnid_rejected5(t, idx, lnid_cleared()),
+{
+}
+
+/// V=1 등록은 용량 밖 슬롯이면 다른 필드와 무관하게 `[6]` 이다 — 「용량 밖 슬롯」은 등록에
+/// 걸린다(`lnid_write_ok` 도 그 기입을 내지 않는다).
+pub proof fn lnid_register_out_of_cap_rejected6(
+    t: Seq<LnidEntry>,
+    idx: int,
+    e: LnidEntry,
+    cap: nat,
+    n_points: nat,
+)
+    requires
+        e.valid,
+        idx >= cap,
+    ensures
+        lnid_rejected6(t, idx, e, cap, n_points),
+        !lnid_write_ok(t, idx, e, cap, n_points),
+{
 }
 
 /// `lnid_write_ok` 를 통과한 기입은 표 불변식을 보존한다.
@@ -267,76 +290,6 @@ pub proof fn lnid_all_invalid_ok(t: Seq<LnidEntry>, cap: nat, n_points: nat)
         0 <= i < t.len() && 0 <= j < t.len() && i != j implies !#[trigger] lnid_dup(t[i], t[j]) by {
         assert(!t[i].valid);
     }
-}
-
-// --- step 적재 (`0xF00` FP_PROG · `0xF04` FP_BIND) -------------------------
-
-/// FP_PROG 기입의 사전조건: 슬롯 < P · step 색인 < stepMax (둘 다 8 비트 필드).
-/// step 워드 `[15:0]` 의 내용은 판정하지 않는다(D2).
-pub open spec fn fp_prog_ok(slot: nat, idx: nat, p: nat, step_max: nat) -> bool {
-    &&& slot < p
-    &&& idx < step_max
-    &&& slot < 256
-    &&& idx < 256
-}
-
-/// 정본의 FP_PROG 거절 — 용량 밖 슬롯 · 색인(`e-defined.typ:459`, `[15]`).
-pub open spec fn fp_prog_capacity_refused(slot: nat, idx: nat, p: nat, step_max: nat) -> bool {
-    slot >= p || idx >= step_max
-}
-
-/// FP_BIND 기입의 사전조건: `[30:24]` 예약 = 0 · 슬롯 < P · 필드 폭 안.  en=1
-/// (결속) · en=0 (해제 — 나가는 임대의 선택 열쇠를 창에서 푼다, §2.7) 모두에 건다.
-pub open spec fn fp_bind_ok(reserved: nat, slot: nat, key: nat, p: nat) -> bool {
-    &&& reserved == 0
-    &&& slot < p
-    &&& slot < 256
-    &&& key < 0x1_0000
-}
-
-/// 정본의 FP_BIND 거절 — 예약 비트 비0(엄격, `e-defined.typ:461`, `[6]`).
-pub open spec fn fp_bind_reserved_refused(reserved: nat) -> bool {
-    reserved != 0
-}
-
-/// `fp_prog_ok` 를 지킨 FP_PROG 는 정본의 용량 거절에 걸리지 않는다 — 그러니 FP
-/// 관문의 `[15]` 는 정본 원천으로는 Y4 기입에 귀속되지 않는다.
-pub proof fn fp_prog_ok_avoids_capacity_refusal(slot: nat, idx: nat, p: nat, step_max: nat)
-    requires
-        fp_prog_ok(slot, idx, p, step_max),
-    ensures
-        !fp_prog_capacity_refused(slot, idx, p, step_max),
-{
-}
-
-/// `fp_bind_ok` 를 지킨 FP_BIND 는 예약 비트 거절(`[6]`)에 걸리지 않는다.
-pub proof fn fp_bind_ok_avoids_reserved_refusal(reserved: nat, slot: nat, key: nat, p: nat)
-    requires
-        fp_bind_ok(reserved, slot, key, p),
-    ensures
-        !fp_bind_reserved_refused(reserved),
-{
-}
-
-/// 결속을 적재한 열쇠는 해제(en=0 · 슬롯 0 · 같은 열쇠 — P ≥ 1, `02-fabric-alu.typ:489`)도
-/// 사전조건을 만족한다 — 나가는 임대의 FP_BIND 해제는 언제나 쓸 수 있다.
-pub proof fn fp_unbind_ok_after_bind(reserved: nat, slot: nat, key: nat, p: nat)
-    requires
-        fp_bind_ok(reserved, slot, key, p),
-    ensures
-        fp_bind_ok(0, 0, key, p),
-{
-}
-
-/// 부팅의 선택 열쇠 전 범위 해제(en=0 · 슬롯 0 · 열쇠 k < 2^16)는 P ≥ 1 이면 사전조건을
-/// 만족한다(`docs/hiu_abi.md` §2.5 5).
-pub proof fn fp_unbind_all_ok(key: nat, p: nat)
-    requires
-        p >= 1,
-        key < 0x1_0000,
-    ensures
-        fp_bind_ok(0, 0, key, p),
-{
 }
 
 } // verus!

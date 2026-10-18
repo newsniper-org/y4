@@ -6,18 +6,28 @@
 //! The LeaseCap invariants themselves are deferred until `docs/hiu_abi.md`
 //! is `v1.0 frozen`.  What lands here early are Y4-side preconditions and
 //! attribution / classification specs whose need is already fixed by the
-//! canonical text (WaveTensor `e88f6f4`, the v1.0 freeze candidate)
-//! regardless of the final surface:
+//! canonical text (WaveTensor `f6bc4df`, the citation basis of
+//! `docs/hiu_abi.md` v1.0-rc3) regardless of the final surface:
 //!
 //! - `lbid` — LBID proxied-write check (`docs/hiu_abi.md` §2.8).
-//! - `lnid` — LNID proxied-write check `lnid_write_ok` and step-load checks
-//!   `fp_prog_ok` · `fp_bind_ok` (`docs/hiu_abi.md` §1.2.1 (C) · §2.7 · §2.8,
-//!   `03-hiu.typ:1070-1077` · `:1096`, `e-defined.typ:459` · `:461`).
+//! - `lnid` — LNID proxied-write check `lnid_write_ok` (`docs/hiu_abi.md`
+//!   §1.2.1 (C) · §2.7 · §2.8, `03-hiu.typ:1070-1077` · `:1072` · `:1096`).
+//! - `step` — step program load: FP_PROG / FP_BIND preconditions
+//!   `fp_prog_ok` · `fp_bind_ok` · `fp_unbind_ok` against the closed four
+//!   `[15]` sources (`fp_prog_refused15` · `fp_bind_refused15`), the `0xF0C`
+//!   FP_SHAPE decode `fp_shape_verdict`, the image policy `fp_image_ok`, the
+//!   slot ledger `SlotState` / `fp_mirror` (Unloaded → Loaded → Bound →
+//!   Unbound → Quiesced), `fp_quiesce_action` and the FP gate `StepGate`
+//!   (`docs/hiu_abi.md` §1.2.1 (A) 4 · (C) · §1.4 · §2.5 step 5 · §2.7,
+//!   `e-defined.typ:208` · `:459` · `:461` · `:463` · `:464` · `:466`,
+//!   `03-hiu.typ:1692`).
 //! - `window` — global configuration window: the refusal set W = `[5]` ·
 //!   `[6]` · `[7]` · `[15]`, pre-window disposition `dispose_pre_window` (가),
-//!   post-window `window_verdict` (나) — only `[5]` · `[6]` halt — and the
-//!   OWN_SET/OWN_CLR readback `own_readback` and FP gate `fp_gate_binds`
-//!   (`docs/hiu_abi.md` §2.4 step 3 · §2.7 · §1.3).
+//!   post-window `window_verdict` (나) — only `[5]` · `[6]` halt, `[7]`
+//!   explained by a refused OWN_SET is `OwnSetRefused`, `[15]` is recorded
+//!   unattributed — and the OWN_SET/OWN_CLR readback `own_readback`
+//!   (`docs/hiu_abi.md` §2.4 step 3 · §2.7 · §1.3, `e-defined.typ:527` ·
+//!   `:1387` · `:1388`).
 //! - `nonce` — `FAULT_STATUS[12]` origin attribution against Y4's nonce
 //!   ledger (`docs/hiu_abi.md` §2.6, `e-defined.typ:345` · `:347`).
 //! - `active_part` — `0xE14` readback (A, D) classification for the switch
@@ -30,4 +40,5 @@ pub mod active_part;
 pub mod lbid;
 pub mod lnid;
 pub mod nonce;
+pub mod step;
 pub mod window;

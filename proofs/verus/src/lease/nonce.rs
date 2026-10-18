@@ -4,7 +4,7 @@
 //! `FAULT_STATUS[12]` origin attribution (`docs/hiu_abi.md` §2.6,
 //! `docs/lease_capability.md` I3).
 //!
-//! WaveTensor canonical `e88f6f4` `e-defined.typ:345` (`0xEBC` MASK_REKEY)
+//! WaveTensor canonical `f6bc4df` `e-defined.typ:345` (`0xEBC` MASK_REKEY)
 //! fixes the domain of the nonce-reuse check: when a rekey that *started*
 //! targets partition p, `[12]` rises iff some *other* partition q ≠ p whose
 //! mask is valid carries a nonce equal to p's *new* nonce — p itself is not

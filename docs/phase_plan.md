@@ -20,12 +20,12 @@
 | `docs/architecture.md` (CC-BY-4.0 → Apache-2.0 inbound) | ✅ |
 | `docs/licensing.md`, `docs/phase_plan.md` (본 문서) | ✅ |
 | `docs/glossary.md` — 용어 사전 (2026-10-01 WaveTensor 정본 기준으로 재출처) | ✅ |
-| `docs/hiu_abi.md` — v1.0-rc2 동결 후보 (2026-10-16 WaveTensor rc1 대조 답 반영 — 창 거절 집합 W = `[5]` · `[6]` · `[7]` · `[15]`; D1 `[7]` · D2 `[15]` 원천 정렬 해소 대기 = Y4 sign-off 차단 조건, 그 뒤 양측 sign-off; v1.0-rc1 = 같은 날 WaveTensor `e88f6f4` — `b81df18` 명확화 · RTL 파도 W0–W4 착지 대조 반영; v0.5 = 2026-10-09 정정 커밋 `8af46df` 대조 — Y4 요청 전부 착지; v0.4 = 같은 날 정본 spec 커밋 `6a25359` 대조; v0.3 = 같은 날 양측 확정, v0.2 = 2026-10-05 Y4 답, v0.1 = 2026-10-02 정본 부록 E 정합) | ✅ |
-| `docs/lease_capability.md` — capability 스키마 v0.7 | ✅ |
+| `docs/hiu_abi.md` — v1.0-rc3 동결 후보 (2026-10-18 WaveTensor 정본 spec 커밋 `f6bc4df` 대조 — D1–D4 답 · rc2 대조 답 반영: `[7]` = E.7 6항 OWN_SET 거절 하나 · `[15]` = 닫힌 넷 · step 워드 배치 동결 · `0xF0C` FP_SHAPE 신설; 남은 Y4 sign-off 차단 조건 = C1 동결 sha 서면 지명 · C2 `0xF08` `[1]` 읽기 순서 한 문장, 그 뒤 양측 sign-off → FP_SHAPE 배선 RTL 파도 → 판 값 커밋; v1.0-rc2 = 2026-10-16 WaveTensor rc1 대조 답 반영 — 창 거절 집합 W = `[5]` · `[6]` · `[7]` · `[15]`, D1 · D2 를 Y4 sign-off 차단 조건으로 올림; v1.0-rc1 = 같은 날 WaveTensor `e88f6f4` — `b81df18` 명확화 · RTL 파도 W0–W4 착지 대조 반영; v0.5 = 2026-10-09 정정 커밋 `8af46df` 대조 — Y4 요청 전부 착지; v0.4 = 같은 날 정본 spec 커밋 `6a25359` 대조; v0.3 = 같은 날 양측 확정, v0.2 = 2026-10-05 Y4 답, v0.1 = 2026-10-02 정본 부록 E 정합) | ✅ |
+| `docs/lease_capability.md` — capability 스키마 v0.8 | ✅ |
 | **`docs/hiu_abi.md` v1.0 동결 (Y4 + WaveTensor 양측 sign-off)** | ⏳ 진행 |
 
 **Phase A → Phase B 진입 트리거:** `docs/hiu_abi.md` 가 `v1.0 frozen`
-으로 표시되고 `HIU_ABI_VERSION`(`0xFFC`) 비0 판 값이 양측 합의(WaveTensor 정본 §3.10)로 고정 — `(major << 16) | minor`, v1.0 = `0x0001_0000`(Y4 제안 · WaveTensor 동의 2026-10-05). 장치의 판 값 커밋은 sign-off 뒤다(`hiu_abi.md` §0).
+으로 표시되고 `HIU_ABI_VERSION`(`0xFFC`) 비0 판 값이 양측 합의(WaveTensor 정본 §3.10)로 고정 — `(major << 16) | minor`, v1.0 = `0x0001_0000`(Y4 제안 · WaveTensor 동의 2026-10-05). 장치의 판 값 커밋은 sign-off 뒤, `0xF0C` FP_SHAPE 배선과 함께이거나 그 뒤다(`hiu_abi.md` §0, WaveTensor 정본 `f6bc4df` `03-hiu.typ:1655`).
 *(HIU 와 무관한 Phase B 산출물은 본 동결 전이라도 진행 가능 —
 실제로 Phase B 의 5개 단계는 모두 mock 위에서 완료됨.)*
 
@@ -37,7 +37,7 @@
 
 | Step | 영역 | 마일스톤 | 결과 |
 |---|---|---|---|
-| 1 | `proofs/` Verus + Rocq 하네스 + CI gate | placeholder + 모듈 트리 | **113 verified, 0 errors** (스냅샷; `just verus` 권위) |
+| 1 | `proofs/` Verus + Rocq 하네스 + CI gate | placeholder + 모듈 트리 | **184 verified, 0 errors** (스냅샷; `just verus` 권위) |
 | 2 | `boot/` Limine → seL4 QEMU | seL4 boot path reached | qemu boot OK |
 | 3a | `ipc/` Rust 크레이트 — scheme + LWKT msgport hybrid | open/send/wait/forward/abort/priority | **18 tests** |
 | 3b | `alloc/` Rust 크레이트 — DragonFly SLAB + hardened backend | bump + slab + scudo contract + integrated | **22 tests** |

@@ -44,9 +44,10 @@ pub enum Y4Error {
     /// `lease::active_part::SwitchOutcome::ValueRejected` — or a
     /// global-configuration-window write refused with `FAULT_STATUS[5]` or
     /// `[6]` — `lease::window::WindowVerdict::Y4Defect`, the only window
-    /// verdict that maps here; `[7]` and `[15]` never do).  Y4's own
-    /// verified bookkeeping is wrong, so it is always paired with a panic
-    /// in the hypervisor — the variant exists for spec clients that
+    /// verdict that maps here; `[7]` and `[15]` never do, and no step-path
+    /// disposition does either — `lease::step::step_path_never_halts`).
+    /// Y4's own verified bookkeeping is wrong, so it is always paired with
+    /// a panic in the hypervisor — the variant exists for spec clients that
     /// observe the failure model.
     LeaseInvariant,
 
@@ -61,10 +62,17 @@ pub enum Y4Error {
     /// binding unchanged (`lease::active_part`), or a window the device
     /// contradicted — `[7]` not explained by a refused `OWN_SET` readback of
     /// the same window, an `OWN_SET` refused on readback without `[7]`
-    /// (silent refusal), an `OWN_CLR` still device-owned on readback, a
-    /// sticky `[15]` seen at the FP gate gone by the post-window read
+    /// (silent refusal), an `OWN_CLR` still device-owned on readback
     /// (`lease::window::WindowVerdict::DeviceContradiction`,
-    /// `OwnReadback::Contradiction`).  Paired with *device*
+    /// `OwnReadback::Contradiction`) — or a step path the device
+    /// contradicted (user decision U2, 2026-10-18): the FP gate seeing
+    /// `[15]` again after one reload of the same image
+    /// (`lease::step::StepGate::Refused`), `0xF08[1]` = 0 not observed
+    /// within `T_WALK` after the last unbinding write for `K_WALK` consecutive
+    /// windows (`lease::step::fp_quiesce_action`), or a `0xF0C` FP_SHAPE
+    /// word that contradicts major 1 or the platform registry
+    /// (`lease::step::FpShapeVerdict::Contradiction` — encoding number ≠ 1,
+    /// P = 0, P or stepMax > 256, registry mismatch).  Paired with *device*
     /// quarantine — every lease on that HIU revoked and the device marked
     /// faulty — not with a hypervisor panic: Y4's state is consistent, so
     /// other devices and guests keep running.  The device is reset only
@@ -104,7 +112,7 @@ pub proof fn y4error_is_total(e: Y4Error)
 pub enum FaultOrigin {
     /// The ledger itself holds two mask-valid partitions with the same
     /// nonce, or the rekeyed partition's new nonce equals a mask-valid
-    /// other partition's ledger nonce (canonical `e88f6f4`
+    /// other partition's ledger nonce (canonical `f6bc4df`
     /// `e-defined.typ:345`) — Y4's allocator / bookkeeping broke
     /// (`lease::nonce::nonce_dup_origin` step 2).
     Y4Intent,
@@ -118,7 +126,7 @@ pub enum FaultOrigin {
     DeviceSide,
     /// The ledger is consistent but the device report carries no capture
     /// that would split `Y4Procedure` from `DeviceSide`.  Not reachable for
-    /// `[12]` on a v1.0 device (canonical `e88f6f4` `e-defined.typ:347`
+    /// `[12]` on a v1.0 device (canonical `f6bc4df` `e-defined.typ:347`
     /// invariant `[16]` ⇔ `[12]`, so `[12]` with `[16]` = 0 is a device
     /// contract violation — `DeviceSide`); it is the origin of a blocked non-owned frame access
     /// under a consistent ownership ledger (`nonowned_access_origin`).
@@ -138,11 +146,13 @@ pub open spec fn fault_disposition(o: FaultOrigin) -> Y4Error {
 
 /// Origin of a blocked non-owned frame access — FAULT_STATUS `[19]`, which
 /// WaveTensor split out of `[4]` at Y4's request before the v1.0 freeze
-/// (canonical `e88f6f4` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
+/// (canonical `f6bc4df` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
 /// entitlement check comes first, so Y4's deny-fill entries raise `[4]` only.  A tenant cannot cause it: Y4 maps
 /// only frames whose `OWN_SET` the `OWN_STATUS` readback confirmed device-owned
-/// (`lease::window::own_readback` · `ledger_device_owned_only_if_confirmed` — a
-/// refused `OWN_SET` leaves the frame host-owned in the ledger and unmapped).
+/// (canonical E.1.1 host-interpretation rule 5, `e-defined.typ:208`;
+/// `lease::window::own_readback` · `ledger_device_owned_only_if_confirmed` — a
+/// refused `OWN_SET` (E.7 item 6, `e-defined.typ:1387`) leaves the frame
+/// host-owned in the ledger and unmapped).
 /// If Y4's ownership ledger itself is
 /// inconsistent (a frame in some `dva_map` or `pending_reclaim` that the
 /// ledger does not hold device-owned) the origin is Y4's; otherwise the

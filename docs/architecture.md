@@ -202,7 +202,7 @@ Y4 자체 부팅 단계는 **자체 작성하지 않고 기존 검증된 OSS boo
 
 **최소 수정 원칙**:
 - 우리는 bootloader 의 **소스 트리를 fork 하지 않는다**. upstream 패키지 (또는 distro 빌드) 를 그대로 사용.
-- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업; HIU 초기화는 `hiu_abi.md` §2.5 순서 — 드레인 관측 → 실재 파티션마다 `0xE00` flush(변환 항목은 WO·읽기 0 이라 확인할 수 없으므로 flush 로 기지 상태를 세운다) → 전 파티션 새 키·논스 기입으로 마스크 유효 하강(`0xEC0[7:0]` == 0 확인 — 재키잉은 임대 발급 때) → flush 뒤 드레인 재관측 → 소유 페이지 회수(`0x200`/`0x204` 조회로 확인) · 사상표 V=0(LNID 는 등록 용량 아래 · LBID 전 엔트리) · 선택 열쇠 전 범위 FP_BIND en = 0 → `0xE14` ACTIVE_PART 결속 확립(되읽기 A = D = 1)) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
+- Y4 에 필요한 추가 항목 (예: HIU 부팅 단계의 IOMMU 사전 셋업; HIU 초기화는 `hiu_abi.md` §2.5 순서 — `0xFFC` · `0xFF8` · `0xF0C` 읽기(major 1 · `fp_shape_verdict` — `Contradiction` 이면 `DeviceFault`, `NoStep` 이면 step 적재 없음) → 드레인 관측 → 실재 파티션마다 `0xE00` flush(변환 항목은 WO·읽기 0 이라 확인할 수 없으므로 flush 로 기지 상태를 세운다) → 전 파티션 새 키·논스 기입으로 마스크 유효 하강(`0xEC0[7:0]` == 0 확인 — 재키잉은 임대 발급 때) → flush 뒤 드레인 재관측 → 소유 페이지 회수(`0x200`/`0x204` 조회로 확인) · 사상표 V=0(LNID 는 등록 용량 아래 · LBID 전 엔트리) · `0xF08[0]` 폴링 → 선택 열쇠 전 범위 FP_BIND en = 0 → `[1]` = 0 정지 확인(`T_WALK`) → `[15]` 꼬리 읽기 → step 장부 「결속 없음 · 전 슬롯 Unloaded」 → `0xE14` ACTIVE_PART 결속 확립(되읽기 A = D = 1)) 은 **bootloader 가 아니라 Y4 의 첫 stage** 에서 처리. bootloader 는 단순히 Y4 를 load + execute 만.
 - Secure Boot key enroll, BLS entry 형식 등 spec 표준에 정렬된 인터페이스만 사용.
 - **그래도 패치가 필요한 경우** (예: 가속기 PCIe IDE 가 부팅 시 어떻게 해야 하는 등): upstream 에 patch 제출이 1순위, 우리 트리의 fork 는 최후수단. fork 시에도 git submodule 로 격리 + 상시 upstream rebase.
 
@@ -282,7 +282,7 @@ formal-first 가 가져다 주는 결과:
 ### HIU 의 기존 보안 메커니즘과 자연스럽게 맞물림
 
 WaveTensor 정본(`docs/wt64v1-architecture-guide/` §3 · 부록 E)이 정한 HIU 기능이
-hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v1.0-rc2 — 동결 후보 WaveTensor `e88f6f4`, D1 · D2 해소 대기(Y4 sign-off 차단) 뒤 양측 sign-off · `docs/glossary.md`):
+hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v1.0-rc3 — 동결 후보, 인용 기준 WaveTensor 정본 `f6bc4df`; C1 동결 sha 서면 지명 · C2 `0xF08` `[1]` 읽기 순서 문장 대기(Y4 sign-off 차단) 뒤 양측 sign-off → FP_SHAPE 배선 RTL 파도 → 판 값 커밋 · `docs/glossary.md`):
 
 | HIU 기능 (정본) | hypervisor 측에서 활용 |
 |---------|------------------------|
@@ -290,7 +290,8 @@ hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v1.0-rc2 — 동결
 | 요청 → 파티션 결속 (`0xE14` ACTIVE_PART — 정본 `6a25359` · RTL W4 착지) | 패브릭은 한 순간 한 임대의 것. 임대 전환 = 드레인 + 결속 기입(flush · 재키잉 없음). v1.0 결속은 격리를 주장하지 않는다(그 주장은 명령 링 소비 회로 착지 뒤) |
 | 파티션별 flush (`0xE00`, 유효 비트만 — 데이터는 남음) | 임대 회전 ⑵. 전역 flush 는 없다 — Y4 가 파티션 단위로 회전 |
 | 임대별 마스크 키·논스 (키 `0xE80`–`0xE9C` · 논스 `0xEA4`–`0xEB8` WO, `0xEA0` MASK_PART 창으로 파티션 선택) | tenant 별 키 — 호스트가 생성·기입. `(키, 논스)` 유일성은 Y4 의무 |
-| 페이지 소유권 표 (`0x200`) | 하드웨어 일관성 없이 zero-copy — Y4 가 이양·회수 (zero-copy 자체는 정본 의도·재구현 미구현, 비소유 접근 loud(`[19]`)는 RTL W1 착지 · 후-formal *부분* — 정본 §3.9) |
+| 페이지 소유권 표 (`0x200`) | 하드웨어 일관성 없이 zero-copy — Y4 가 이양·회수 (zero-copy 자체는 정본 의도·재구현 미구현, 비소유 접근 loud(`[19]`)는 RTL W1 착지 · 후-formal *부분* — 정본 §3.9). 이양(OWN_SET)은 형상 · 점유에 따라 거절될 수 있어(정본 E.7 6항, `f6bc4df` — loud `[7]` · 무효과) Y4 는 되읽기로 커밋을 확인한 프레임만 장부에 올리고, 거절되면 다른 프레임으로 상한 `K_OWN` 회 다시 이양한다 |
+| step 프로그램 적재 (`0xF00`–`0xF0C`) | v1.0 에서는 플랫폼이 지정한 이미지만 Y4 가 싣고 테넌트는 선택 열쇠로 고른다(사용자 결정 2026-10-18). 형상은 `0xF0C` FP_SHAPE 가 알린다(정본 `f6bc4df` 신설 · RTL 미배선). `[15]`(step 프로그램 불량)는 임대에 귀속하지 않고 기록만 한다 — runaway 가 어느 결속의 것인지 v1.0 이 가르지 않는다 |
 | loud fault (`0xF80`) | 폴링 전용 — v1.0 에 fault→IRQ 경로 없음(G2 는 v1.x 합의 2026-10-09 — `0x32C` FAULT_IRQ_EN, `hiu_abi.md` §4). 장치는 loud, fail-closed 는 Y4 정책(P10) |
 | 완료 링 통지 (E.6) | 기본 폴링, IRQ(`0x320`–`0x328`, 원천 = 완료 삽입) opt-in |
 
