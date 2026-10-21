@@ -43,9 +43,12 @@ pub enum Y4Error {
     /// partition window, a `0xE14` switch or boot-binding value rejection —
     /// `lease::active_part::SwitchOutcome::ValueRejected` — or a
     /// global-configuration-window write refused with `FAULT_STATUS[5]` or
-    /// `[6]` — `lease::window::WindowVerdict::Y4Defect`, the only window
-    /// verdict that maps here; `[7]` and `[15]` never do, and no step-path
-    /// disposition does either — `lease::step::step_path_never_halts`).
+    /// `[6]` — `lease::window::WindowVerdict::Y4Defect` — or a step fault
+    /// `[15]` while Y4's own step ledger is inconsistent
+    /// (`step_fault_origin` → `FaultOrigin::Y4Intent`, the `[19]` precedent);
+    /// `[7]` never maps here, and a `[15]` under a consistent step ledger
+    /// does not either — `lease::window::window_halts_only_on_y4_evidence` ·
+    /// `lease::step::step_path_halts_only_on_ledger`).
     /// Y4's own verified bookkeeping is wrong, so it is always paired with
     /// a panic in the hypervisor — the variant exists for spec clients that
     /// observe the failure model.
@@ -64,15 +67,13 @@ pub enum Y4Error {
     /// the same window, an `OWN_SET` refused on readback without `[7]`
     /// (silent refusal), an `OWN_CLR` still device-owned on readback
     /// (`lease::window::WindowVerdict::DeviceContradiction`,
-    /// `OwnReadback::Contradiction`) — or a step path the device
-    /// contradicted (user decision U2, 2026-10-18): the FP gate seeing
-    /// `[15]` again after one reload of the same image
-    /// (`lease::step::StepGate::Refused`), `0xF08[1]` = 0 not observed
-    /// within `T_WALK` after the last unbinding write for `K_WALK` consecutive
-    /// windows (`lease::step::fp_quiesce_action`), or a `0xF0C` FP_SHAPE
+    /// `OwnReadback::Contradiction`) — or a step fault `[15]` under a
+    /// consistent step ledger (`step_fault_origin` → `Unattributed`, user
+    /// decision 2026-10-22; the FP gate included — `lease::step::StepGate`),
+    /// or a `0xF0C` FP_SHAPE
     /// word that contradicts major 1 or the platform registry
     /// (`lease::step::FpShapeVerdict::Contradiction` — encoding number ≠ 1,
-    /// P = 0, P or stepMax > 256, registry mismatch).  Paired with *device*
+    /// P = 0, P or stepMax > 256, registry mismatch — user decision U2).  Paired with *device*
     /// quarantine — every lease on that HIU revoked and the device marked
     /// faulty — not with a hypervisor panic: Y4's state is consistent, so
     /// other devices and guests keep running.  The device is reset only
@@ -112,7 +113,7 @@ pub proof fn y4error_is_total(e: Y4Error)
 pub enum FaultOrigin {
     /// The ledger itself holds two mask-valid partitions with the same
     /// nonce, or the rekeyed partition's new nonce equals a mask-valid
-    /// other partition's ledger nonce (canonical `f6bc4df`
+    /// other partition's ledger nonce (canonical `b16fc07`
     /// `e-defined.typ:345`) — Y4's allocator / bookkeeping broke
     /// (`lease::nonce::nonce_dup_origin` step 2).
     Y4Intent,
@@ -126,7 +127,7 @@ pub enum FaultOrigin {
     DeviceSide,
     /// The ledger is consistent but the device report carries no capture
     /// that would split `Y4Procedure` from `DeviceSide`.  Not reachable for
-    /// `[12]` on a v1.0 device (canonical `f6bc4df` `e-defined.typ:347`
+    /// `[12]` on a v1.0 device (canonical `b16fc07` `e-defined.typ:347`
     /// invariant `[16]` ⇔ `[12]`, so `[12]` with `[16]` = 0 is a device
     /// contract violation — `DeviceSide`); it is the origin of a blocked non-owned frame access
     /// under a consistent ownership ledger (`nonowned_access_origin`).
@@ -146,7 +147,7 @@ pub open spec fn fault_disposition(o: FaultOrigin) -> Y4Error {
 
 /// Origin of a blocked non-owned frame access — FAULT_STATUS `[19]`, which
 /// WaveTensor split out of `[4]` at Y4's request before the v1.0 freeze
-/// (canonical `f6bc4df` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
+/// (canonical `b16fc07` `e-defined.typ:523`; `docs/hiu_abi.md` §1.3).  The
 /// entitlement check comes first, so Y4's deny-fill entries raise `[4]` only.  A tenant cannot cause it: Y4 maps
 /// only frames whose `OWN_SET` the `OWN_STATUS` readback confirmed device-owned
 /// (canonical E.1.1 host-interpretation rule 5, `e-defined.typ:208`;
@@ -173,6 +174,37 @@ pub proof fn nonowned_access_panics_iff_ledger_broken(c: bool)
     ensures
         (fault_disposition(nonowned_access_origin(c)) == Y4Error::LeaseInvariant) <==> !c,
         (fault_disposition(nonowned_access_origin(c)) == Y4Error::DeviceFault) <==> c,
+{
+}
+
+/// Origin of a step-program fault — FAULT_STATUS `[15]` (canonical `b16fc07`
+/// `e-defined.typ:464`; `docs/hiu_abi.md` §1.3, user decision 2026-10-22 —
+/// the `[19]` precedent).  Y4 avoids sources (1)–(3) before writing
+/// (`lease::step::fp_prog_ok` · `fp_bind_ok`), and source (4) runaway is
+/// excluded by the bind precondition and the reload order Y4 keeps
+/// (`e-defined.typ:208` · `:466` — "a `[15]` it sees is a load/bind duty
+/// violation on its own side (driver · platform) or another own-side duty
+/// violation").  Tenants supply no images (U1) and Y4 is the only writer, so
+/// a tenant cannot cause it.  If Y4's step ledger is itself inconsistent
+/// (`lease::step::fp_mirror` / `fp_ledger_wf` broken, or a write in this
+/// reset generation that broke its precondition), the fault is Y4's intent
+/// defect.  With a consistent ledger, Y4's procedure, the platform (a device
+/// reset Y4 was not told of) and a non-conforming device cannot be told
+/// apart — unattributed.
+pub open spec fn step_fault_origin(step_ledger_consistent: bool) -> FaultOrigin {
+    if step_ledger_consistent {
+        FaultOrigin::Unattributed
+    } else {
+        FaultOrigin::Y4Intent
+    }
+}
+
+/// A step fault panics the hypervisor exactly when Y4's step ledger is
+/// inconsistent; with a consistent ledger it quarantines the device.
+pub proof fn step_fault_panics_iff_ledger_broken(c: bool)
+    ensures
+        (fault_disposition(step_fault_origin(c)) == Y4Error::LeaseInvariant) <==> !c,
+        (fault_disposition(step_fault_origin(c)) == Y4Error::DeviceFault) <==> c,
 {
 }
 

@@ -96,8 +96,8 @@ Y4/
 ├── docs/
 │   ├── architecture.md           canonical design memo
 │   ├── glossary.md               WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md                Y4 ↔ HIU ABI v1.0-rc3 (freeze candidate; sign-off blocked on C1/C2 — written freeze-sha designation and the `0xF08[1]` read-order sentence — configuration surface per canonical App. E + §3.10 v1.0 bundle at WaveTensor f6bc4df, order contracts, freeze policy)
-│   ├── lease_capability.md       lease capability schema v0.8 (invariants, lifecycle)
+│   ├── hiu_abi.md                Y4 ↔ HIU ABI v1.0-rc4 (freeze candidate at WaveTensor freeze sha `b16fc07`; awaiting WaveTensor's rc4 cross-check and sign-off — Y4's sign-off text ships conditionally with rc4)
+│   ├── lease_capability.md       lease capability schema v0.9 (invariants, lifecycle)
 │   ├── licensing.md              Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
 ├── alloc/                        y4-alloc — DragonFly SLAB + hardened backend (22 tests, +2 with `--features scudo`)
@@ -108,7 +108,7 @@ Y4/
 ├── scudo-sys/                    y4-scudo-sys — LLVM scudo C++ FFI (4 link-smoke tests)
 ├── boot/                         Limine config + seL4 cmake rules (logicutils-driven)
 ├── proofs/
-│   ├── verus/                    Verus specs (184 verified, snapshot) — alloc / capsules / error / ipc / amdv / lease
+│   ├── verus/                    Verus specs (181 verified, snapshot) — alloc / capsules / error / ipc / amdv / lease
 │   ├── coq/                      Rocq theories (Verus-inexpressible, Y4-side)
 │   └── isabelle/                 Isabelle/HOL emit — seL4 inbound (R7)
 ├── tools/
@@ -132,7 +132,7 @@ Subsystem status:
 
 | Subsystem | Status | First milestone |
 |-----------|--------|-----------------|
-| `proofs/` | ✅ harness green, 184 verified (snapshot; `just verus`) | placeholder + scaffold + amdv AV1 |
+| `proofs/` | ✅ harness green, 181 verified (snapshot; `just verus`) | placeholder + scaffold + amdv AV1 |
 | `boot/`   | ✅ qemu-smoke PASS                       | Limine → seL4 → "Boot config" |
 | `ipc/`    | ✅ 18 tests, Verus refinement proofs     | scheme verbs + LWKT msgport hybrid |
 | `alloc/`  | ✅ 22+2 tests, Verus refinement proofs   | DragonFly SLAB + hardened backend |
@@ -179,7 +179,7 @@ cargo test -p y4-alloc            # 22 tests (24 with --features scudo)
 cargo test -p y4-capsules         # 16 tests
 cargo test -p y4-ipc              # 18 tests
 cargo test -p y4-scudo-sys        # 4 C++ link-smoke tests
-just verus                        # → 184 verified, 0 errors (snapshot; this recipe is authoritative)
+just verus                        # → 181 verified, 0 errors (snapshot; this recipe is authoritative)
 just coq                          # Rocq theories
 ```
 

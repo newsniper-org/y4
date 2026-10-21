@@ -5,7 +5,7 @@
 //! and same-value probe (`docs/hiu_abi.md` §2.4 step 3 · §2.5 step 6 · §2.7,
 //! `docs/lease_capability.md` I7).
 //!
-//! WaveTensor canonical `f6bc4df` `e-defined.typ:332` fixes the (A, D)
+//! WaveTensor canonical `b16fc07` `e-defined.typ:332` fixes the (A, D)
 //! pair: every bus-accepted `0xE14` write updates `[8]` A (applied) and
 //! `[9]` D (drain verdict, sampled on the write's accept edge, same-cycle
 //! intake included); any rejection — value check or drain verdict — has

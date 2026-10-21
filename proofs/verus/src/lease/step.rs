@@ -5,7 +5,7 @@
 //! FP_SHAPE (`docs/hiu_abi.md` §1.2.1 (A) 4항 · (C) · §1.3 · §1.4 · §2.5 5 · §2.7,
 //! `docs/lease_capability.md` I4 2b · I7 3).
 //!
-//! 워드 배치(정본 `f6bc4df`):
+//! 워드 배치(정본 `b16fc07` — 동결 sha, 정본 트리 `2dd78f80…`):
 //!
 //! - FP_PROG 「`[31:24]` 슬롯 · `[23:16]` step 색인 · `[15:0]` step 워드」 — 「이 MMIO 워드의
 //!   필드에는 예약 비트가 없다 — step 워드 안의 예약 `[15:14]` 는 그 배치가 진다」
@@ -26,14 +26,17 @@
 //! 「기입 시점 거절이며 무효과다」(같은 줄).  Y4 는 (1) · (3) 을 `0xF0C` 의 P · stepMax 로
 //! (`fp_prog_ok` · `fp_bind_ok`), (2) 를 step 워드의 내용 검사로(`step_word_ok` — E.1.1 「호스트
 //! 해석 규범」 4항: 「배치가 동결돼 있어 기계적으로 판정되고, 남이 만든 이미지를 넘겨 싣는
-//! 드라이버도 이 검사를 진다」 `e-defined.typ:208`) 기입 전에 피한다 — 그러면 「그가 보는
-//! `[15]` 는 (4) 이거나 자기 쪽(드라이버 · 플랫폼)의 의무 위반이다 — 그 (4) 가 어느 결속 · 어느
-//! 걷기의 것인지는 v1.0 이 가르지 않는다」(`:466`).  그래서 Y4 는 `[15]` 를 어느 임대에도
-//! 귀속하지 않는다(`lease::window::WindowVerdict::StepUnattributed`).  v1.0 에서 Y4 는 플랫폼이
-//! 지정한 이미지만 싣고 테넌트(게스트 SDK)는 선택 열쇠로 고르기만 한다(사용자 결정 U1,
-//! 2026-10-18 — 4항 「드라이버는 그렇게 맞춰진 이미지만 결속한다」 `:208`).  적합 드라이버에게
-//! (4) 는 「맞춤이 어긋난 이미지에서만 나는 fail-closed 그물이다」(`:466`) — 그러니 플랫폼 · 도구
-//! 사슬의 결함이다.
+//! 드라이버도 이 검사를 진다」 `e-defined.typ:208`) 기입 전에 피한다.  (4) 는 「같은 항의 결속
+//! 전제(…)와 재적재 순서가 막는다」 — 걷기 순서가 동결됐으므로(「걷기 순서도 동결한 역할이다」
+//! `03-hiu.typ:1692`, C5) 「실행 의미의 맞춤이 어긋난 이미지는 틀린 결과를 낼 수는 있어도 … (4) 를
+//! 내지 않는다」(`:466`).  그래서 「그가 보는 `[15]` 는 자기 쪽(드라이버 · 플랫폼)의 적재 · 결속
+//! 의무 위반이 낸 (4) 이거나 그 밖의 자기 쪽 의무 위반이다」(`:466`).  v1.0 에서 Y4 는 플랫폼이
+//! 지정한 이미지만 싣고 테넌트(게스트 SDK)는 선택 열쇠로 고르기만 한다(사용자 결정 U1, 2026-10-18 —
+//! 4항 「드라이버는 플랫폼(과 도구 사슬)이 그 구현에 맞춘 것으로 지정한 이미지만 결속한다」 `:208`,
+//! C4).  테넌트 원인은 없으므로 `[15]` 는 `[19]` 선례로 귀속한다(사용자 결정 2026-10-22 —
+//! `crate::error::step_fault_origin` · `lease::window::step_fault_verdict`): Y4 step 장부가
+//! 어긋났으면 `LeaseInvariant`, 맞으면 귀속 불가 `DeviceFault`.  실행 의미가 어긋난 이미지는 장치
+//! 그물 없이 조용히 틀린 결과를 내므로 그 방어는 플랫폼 지정(레지스트리)뿐이다.
 //!
 //! 적재 순서도 4항의 의무다(`e-defined.typ:208`): 「`0xF04` 결속(en = 1)은 프로그램이 마지막
 //! 장치 reset 뒤에 다 실리고 종료 step 을 가진 슬롯에만 하고」 · 「결속된 슬롯에는 `0xF00` 를
@@ -48,15 +51,17 @@
 //! 슬롯을 계속 쓴다(RTL 사실 — 규범 아님: `rtl/…/fp/StepSequencer.scala:320-325` · `:389`).
 //! 불변식 `fp_mirror` 아래에서 FP_PROG 대상 슬롯에는 결속도 걷기도 없다(`fp_prog_target_idle`).
 //!
-//! 해제 뒤 `[1]` = 0 의 관측이 `fp_quiesce` 다(대기 상한 `T_WALK` — 플랫폼 레지스트리).
+//! 해제 뒤 `[1]` = 0 의 관측이 `fp_quiesce` 다(대기 상한 `T_WALK` — 플랫폼 레지스트리).  무엇을
+//! 덮는가는 정본이 정한다(C2, `e-defined.typ:463` FP_STATUS 행): 「그 읽기의 수락 사이클 앞에 그 열쇠를
+//! 조회한 걷기가 — 그 기입의 수락 사이클까지의 조회든 그 뒤의 조회든, 옛 결속을 보았든 기입이 반영된
+//! 표를 보았든 — 모두 끝났음을 뜻한다」 · 「그 읽기의 수락 사이클부터(같은 사이클 포함) 시작하는
+//! 조회는 그 기입이 반영된 선택자 표를 본다」.  「반영 전이면 장치는 그 읽기의 수락을 반영 뒤로 미룰
+//! 수 있다」 — 그 정지는 유계 장치 의무이고 `T_WALK` 폴링이 끊는 대기가 아니다(`hiu_abi.md` §2.7 4).
 //! 「`[1]` 은 장치 전역의 순간값이라 다른 열쇠의 투입이 이어지면 내려오지 않을 수 있다 — 그때
 //! 재적재는 기다린다」(`e-defined.typ:208`)이고 「v1.0 에서 일의 원천은 외부 제시라 투입을 멈출 수단이
 //! 없다」(`e-defined.typ:332`) — 그래서 소진은 그 창의 적재 생략(능력 부재)이고, `K_WALK` 창 연속이면
-//! `DeviceFault` 다(`fp_quiesce_action`).  재구현의 `[1]` 은 결속되지 않은 열쇠를 조회하는
-//! 사이클에도 1 이다(RTL 사실 — 규범 아님: `rtl/…/fp/StepSequencer.scala:337`).  `[1]` = 0 이
-//! 해제 기입의 수락 사이클까지 옛 결속을 조회한 걷기를 모두 덮는다는 장치 쪽 문장은
-//! WaveTensor 에 보내는 C2(Y4 sign-off 차단 조건)다 — 재구현은 이미 그렇다(RTL 사실 — 규범 아님:
-//! `StepSequencer.scala:337` · `:353`).
+//! step 기능을 끈다(`StepOff` — 장치 격리 아님, 사용자 결정 2026-10-22; `fp_quiesce_action`).
+//! 재구현의 `[1]` 은 결속되지 않은 열쇠를 조회하는 사이클에도 1 이다(RTL 사실 — 규범 아님: `rtl/…/fp/StepSequencer.scala:337`).
 //!
 //! `0xF0C` 는 `0xFFC` → `0xFF8` → `0xF0C` 순서로 읽고 `0xFFC` major 가 1 일 때만 해석한다(§1.4).
 //! 「RO 읽기는 정의된 비트로 마스크해서 해석한다」(`e-defined.typ:208` 2항)이므로 `[23:18]` 은 가린다
@@ -64,17 +69,16 @@
 //! v1.0 배치가 아니다」(`:463`) — major 1 인데 번호 ≠ 1, P = 0(`02-fabric-alu.typ:489`),
 //! P 또는 stepMax > 256(「9b 라서 슬롯 · 색인 필드(8b)가 가리킬 수 있는 최대 256 까지 담는다」
 //! `e-defined.typ:463`), 플랫폼 레지스트리의 교차 확인값과의 불일치는 장치 모순(`DeviceFault`)이고,
-//! stepMax = 0 은 「step 기능 없음」(적재 생략)이다(사용자 결정 U2).  오늘 재구현은 이 워드를
-//! 해독하지 않는다 — 「배선은 아직이다 (E.1.3)」(`:463`).
+//! stepMax = 0 은 「step 기능 없음」(적재 생략)이다(사용자 결정 U2 — 참조 RTL 은 stepMax ≥ 2 라
+//! 그 갈래에 닿지 않는다, RTL 사실).  배선은 RTL 파도 W6(`efafb14`)가 착지했다 — 판 0 동안 읽기는
+//! 워드 전체 0 이다(`e-defined.typ:463` FP_SHAPE 행).
 //!
 //! FP 관문 `StepGate`: 창의 FP_PROG 를 다 쓴 뒤 `T_FLT` 를 기다려 `0xF80[15]` 를 읽는다.  관문
 //! 앞에서 결속을 모두 거두고 `[1]` = 0 을 보았으므로 이 구간에는 (3) 의 기입이 없고 새 걷기가
-//! 시작할 수 없다 — 1 이면 (1) · (2) 급 위반(Y4 · 플랫폼의 의무 위반 또는 장치 결함)이거나 늦게
-//! 보인 (4) 다(「(4) 의 `[15]` 가 `0xF08` `[1]` 의 하강보다 늦게 보이지 않는다는 것도 규범이
-//! 아니다」 `e-defined.typ:466`).  1차는 미귀속으로 기록 · 해제하고 같은 이미지를 한 번 다시 싣는다.  2차도
-//! 1 이면 결속하지 않고 `DeviceFault` 다(U2).  (3) 은 `fp_bind_ok` 가 미리 막고, 결속 뒤의 확인은
-//! 창 기준선 (나)가 진다(FP_BIND en = 1 이 창의 마지막 기입이다).  step 경로의 어느 처분도
-//! `LeaseInvariant` 에 이르지 않는다(`step_path_never_halts`).
+//! 시작할 수 없다 — 1 이면 적합 경로에서 날 수 없는 `[15]` 다.  다시 싣지 않고 결속하지 않으며
+//! `[19]` 선례로 귀속한다(`step_gate_action`).  (3) 은 `fp_bind_ok` 가 미리 막고, 결속 뒤의 확인은
+//! 창 기준선 (나)가 진다(FP_BIND en = 1 이 창의 마지막 기입이다).  step 경로가 `LeaseInvariant` 에
+//! 이르는 것은 Y4 step 장부가 어긋났을 때뿐이다(`step_path_halts_only_on_ledger`).
 
 use vstd::prelude::*;
 
@@ -400,6 +404,9 @@ pub enum StepAction {
     /// 이 창의 step 적재를 생략한다 — 그 선택 열쇠의 참조는 능력 부재로 남는다(「상주하지 않는
     /// 프로그램의 참조는 능력 부재다」 `02-fabric-alu.typ:493-494`).
     SkipLoad,
+    /// 이 장치의 step 기능을 끈다 — 이후 창의 step 적재를 모두 생략하고(그 선택 열쇠들의 참조는
+    /// 능력 부재) 운영자에 보고한다.  장치 격리가 아니다(사용자 결정 2026-10-22).
+    StepOff,
     /// 이 오류로 멈춘다.
     Fail(Y4Error),
 }
@@ -598,23 +605,26 @@ pub proof fn fp_image_ok_prog_ok(slot: u32, img: Seq<u32>, p: nat, step_max: nat
     }
 }
 
-/// 재구현의 걷기가 runaway((4))에 이르는 슬롯 내용 — 색인 0 부터 차례로 걸어 last 를 만나면
-/// 끝나므로, 색인 0 부터 stepMax 개 가운데 last 가 없을 때다(RTL 사실 — 규범 아님:
-/// `rtl/…/fp/StepSequencer.scala:391` · `:440-453` · `:460`).  걷기 순서가 동결된 필드 역할인지는
-/// WaveTensor 에 보내는 C5(비차단)다.
-pub open spec fn fp_rtl_runaway(content: Seq<u32>, step_max: nat) -> bool {
+/// 걷기가 runaway((4))에 이르는 슬롯 내용 — 걷기 순서는 동결된 역할이다: 「걷기는 결속된 슬롯의
+/// 색인 0 의 step 에서 시작해 색인이 1 씩 느는 순서로 step 을 실행하고, 그 순서에서 처음 만난 last
+/// = 1 의 step 을 실행한 뒤 끝난다 (그것을 만나지 못한 채 stepMax 개를 실행하면 … (4))」
+/// (정본 `b16fc07` `03-hiu.typ:1692` — C5).  그래서 색인 0 부터 stepMax 개 가운데 last 가 없을
+/// 때다(재구현도 같다 — RTL 사실: `rtl/…/fp/StepSequencer.scala:391` · `:440-453` · `:460`).
+pub open spec fn fp_runaway(content: Seq<u32>, step_max: nat) -> bool {
     forall|k: int| 0 <= k < step_max && k < content.len() ==> !step_word_last(#[trigger] content[k])
 }
 
-/// 슬롯의 색인 0 부터가 `fp_image_ok` 이미지면, 그 뒤에 무엇이 남아 있든 재구현의 걷기는
-/// runaway 에 이르지 않는다 — (4) 는 이미지와 구현의 실행 의미가 어긋날 때만 남는다.
+/// 슬롯의 색인 0 부터가 `fp_image_ok` 이미지면, 그 뒤에 무엇이 남아 있든 걷기는 runaway 에
+/// 이르지 않는다 — 정본의 귀결과 같다: 「이 전제와 아래 재적재 순서를 지킨 결속의 걷기는
+/// 「`[15]` 의 원천」 (4) 에 이르지 않는다」(`e-defined.typ:208`).  실행 의미의 맞춤이 어긋난
+/// 이미지는 틀린 결과를 낼 수는 있어도 (4) 를 내지 않는다(`:466`) — 그 방어는 플랫폼 지정(U1)뿐이다.
 pub proof fn fp_image_ok_no_runaway(img: Seq<u32>, content: Seq<u32>, step_max: nat)
     requires
         fp_image_ok(img, step_max),
         img.len() <= content.len(),
         forall|i: int| 0 <= i < img.len() ==> #[trigger] content[i] == img[i],
     ensures
-        !fp_rtl_runaway(content, step_max),
+        !fp_runaway(content, step_max),
 {
     let k = img.len() - 1;
     assert(content[k] == img[k]);
@@ -1339,12 +1349,14 @@ pub proof fn fp_key_bindable_word_ok(l: FpLedger, k: nat, s: nat, p: nat)
 /// `fp_quiesce` 의 처분.  `saw_idle` = 마지막 결속 해제 기입 뒤에 수락된 `0xF08` 읽기가 `T_WALK`
 /// 안에 `[1]` = 0 을 보았다, `misses` = 그 앞에 연이어 소진된 창의 수, `k` = 연속 소진 상한 `K_WALK`
 /// (플랫폼 레지스트리, ≥ 1).  관측이면 진행, 소진이면 이 창의 적재를 생략하고, `K_WALK` 창 연속
-/// 소진이면 `DeviceFault` 다.
+/// 소진이면 step 기능을 끈다(`StepOff` — 사용자 결정 2026-10-22).  적합 장치도 외부 투입이 `[1]`
+/// 을 계속 세우면 여기에 들 수 있으므로(「그때 재적재는 기다린다」 `e-defined.typ:208` · v1.0 은
+/// 투입을 멈출 수단이 없다 `:332`) 장치 격리로 번지지 않게 한다.
 pub open spec fn fp_quiesce_action(saw_idle: bool, misses: nat, k: nat) -> StepAction {
     if saw_idle {
         StepAction::Proceed
     } else if misses + 1 >= k {
-        StepAction::Fail(Y4Error::DeviceFault)
+        StepAction::StepOff
     } else {
         StepAction::SkipLoad
     }
@@ -1359,7 +1371,8 @@ pub open spec fn fp_quiesce_misses(saw_idle: bool, misses: nat) -> nat {
     }
 }
 
-/// 망라: 세 처분은 각각 입력 술어와 동치이고 정지(`LeaseInvariant`)에 이르지 않는다.
+/// 망라: 세 처분은 각각 입력 술어와 동치이고 정지(`LeaseInvariant`)에도 장치 격리(`DeviceFault`)
+/// 에도 이르지 않는다.
 pub proof fn fp_quiesce_action_exhaustive(saw_idle: bool, misses: nat, k: nat)
     requires
         k >= 1,
@@ -1367,96 +1380,97 @@ pub proof fn fp_quiesce_action_exhaustive(saw_idle: bool, misses: nat, k: nat)
         (fp_quiesce_action(saw_idle, misses, k) == StepAction::Proceed) <==> saw_idle,
         (fp_quiesce_action(saw_idle, misses, k) == StepAction::SkipLoad) <==> (!saw_idle && misses
             + 1 < k),
-        (fp_quiesce_action(saw_idle, misses, k) == StepAction::Fail(Y4Error::DeviceFault)) <==> (
-        !saw_idle && misses + 1 >= k),
+        (fp_quiesce_action(saw_idle, misses, k) == StepAction::StepOff) <==> (!saw_idle && misses
+            + 1 >= k),
         fp_quiesce_action(saw_idle, misses, k) != StepAction::Fail(Y4Error::LeaseInvariant),
+        fp_quiesce_action(saw_idle, misses, k) != StepAction::Fail(Y4Error::DeviceFault),
         saw_idle ==> fp_quiesce_misses(saw_idle, misses) == 0,
 {
 }
 
-/// 0 에서 시작해 연이어 소진되면 처음 `K_WALK` − 1 창은 적재를 생략하고 `K_WALK` 번째 창에서 `DeviceFault` 다.
+/// 0 에서 시작해 연이어 소진되면 처음 `K_WALK` − 1 창은 적재를 생략하고 `K_WALK` 번째 창에서 step
+/// 기능을 끈다.
 pub proof fn fp_quiesce_k_consecutive(k: nat)
     requires
         k >= 1,
     ensures
         forall|j: nat|
             j + 1 < k ==> #[trigger] fp_quiesce_action(false, j, k) == StepAction::SkipLoad,
-        fp_quiesce_action(false, (k - 1) as nat, k) == StepAction::Fail(Y4Error::DeviceFault),
+        fp_quiesce_action(false, (k - 1) as nat, k) == StepAction::StepOff,
         forall|j: nat| #[trigger] fp_quiesce_misses(false, j) == j + 1,
 {
 }
 
-/// FP 관문 결과.  `g1` = 창의 FP_PROG 를 다 쓴 뒤 `T_FLT` 를 기다려 읽은 `0xF80[15]`, `g2` =
-/// 1차가 1 일 때 미귀속 기록 · `[15]` 해제 · 같은 이미지 재적재 뒤 다시 `T_FLT` 를 기다려 읽은
-/// `[15]`(1차가 0 이면 읽지 않는다).
+/// FP 관문 결과.  `g` = 창의 FP_PROG 를 다 쓴 뒤 `T_FLT` 를 기다려 읽은 `0xF80[15]`.
+/// Y4 는 (1) · (2) 를 기입 전에 피하고 관문 앞에서 결속을 모두 거둬 `[1]` = 0 을 보았으므로, 1 이면
+/// 적합 경로에서 날 수 없는 `[15]` 다 — 다시 싣지 않고(사용자 결정 2026-10-22 — rc3 의 1회 재적재를
+/// 지웠다) 결속하지 않으며 `[19]` 선례로 귀속한다(`step_gate_action`).
 #[derive(PartialEq, Eq, Structural)]
 pub enum StepGate {
-    /// 1차 0 — 결속한다.
+    /// 0 — 결속한다.
     Clean,
-    /// 1차 1 · 2차 0 — 1차 `[15]` 는 미귀속으로 기록 · 해제했고, 다시 실은 이미지를 결속한다.
-    Reloaded,
-    /// 1차 · 2차 모두 1 — 결속하지 않는다.  `DeviceFault`(U2).
+    /// 1 — 결속하지 않는다.  귀속은 `crate::error::step_fault_origin`.
     Refused,
 }
 
-pub open spec fn step_gate(g1: bool, g2: bool) -> StepGate {
-    if !g1 {
-        StepGate::Clean
-    } else if !g2 {
-        StepGate::Reloaded
-    } else {
+pub open spec fn step_gate(g: bool) -> StepGate {
+    if g {
         StepGate::Refused
+    } else {
+        StepGate::Clean
     }
 }
 
 /// 관문을 지나 결속하는가 — 관문을 통과한 슬롯만 `fp_ledger_gate_pass` 로 결속할 수 있게 된다.
 pub open spec fn step_gate_binds(g: StepGate) -> bool {
-    g != StepGate::Refused
+    g == StepGate::Clean
 }
 
-/// 운영자 · 플랫폼 기록이 남는가(1차 `[15]`) — 테넌트 보고는 아니다.
-pub open spec fn step_gate_records(g: StepGate) -> bool {
-    g != StepGate::Clean
-}
-
-pub open spec fn step_gate_action(g: StepGate) -> StepAction {
+/// 관문의 처분.  `step_ledger_ok` = `lease::window::step_fault_verdict` 와 같은 Y4 자기 점검 —
+/// 장부가 맞으면 귀속 불가(`DeviceFault`), 어긋나면 Y4 의도 결함(`LeaseInvariant`).
+pub open spec fn step_gate_action(g: StepGate, step_ledger_ok: bool) -> StepAction {
     match g {
         StepGate::Clean => StepAction::Proceed,
-        StepGate::Reloaded => StepAction::Proceed,
-        StepGate::Refused => StepAction::Fail(Y4Error::DeviceFault),
+        StepGate::Refused => StepAction::Fail(
+            crate::error::fault_disposition(crate::error::step_fault_origin(step_ledger_ok)),
+        ),
     }
 }
 
-/// 망라: 관문은 두 번 모두 `[15]` 를 볼 때만 결속하지 않고 그때 `DeviceFault` 다.  정지에 이르지
-/// 않는다.
-pub proof fn step_gate_exhaustive(g1: bool, g2: bool)
+/// 망라: 관문은 `[15]` 를 볼 때만 결속하지 않고, 그때 장부가 맞으면 `DeviceFault`, 어긋나면
+/// `LeaseInvariant` 다.
+pub proof fn step_gate_exhaustive(g: bool, step_ledger_ok: bool)
     ensures
-        (step_gate(g1, g2) == StepGate::Clean) <==> !g1,
-        (step_gate(g1, g2) == StepGate::Reloaded) <==> (g1 && !g2),
-        (step_gate(g1, g2) == StepGate::Refused) <==> (g1 && g2),
-        step_gate_binds(step_gate(g1, g2)) <==> !(g1 && g2),
-        step_gate_records(step_gate(g1, g2)) <==> g1,
-        (step_gate_action(step_gate(g1, g2)) == StepAction::Fail(Y4Error::DeviceFault)) <==> (g1
-            && g2),
-        step_gate_action(step_gate(g1, g2)) != StepAction::Fail(Y4Error::LeaseInvariant),
+        (step_gate(g) == StepGate::Clean) <==> !g,
+        (step_gate(g) == StepGate::Refused) <==> g,
+        step_gate_binds(step_gate(g)) <==> !g,
+        (step_gate_action(step_gate(g), step_ledger_ok) == StepAction::Fail(Y4Error::DeviceFault))
+            <==> (g && step_ledger_ok),
+        (step_gate_action(step_gate(g), step_ledger_ok) == StepAction::Fail(
+            Y4Error::LeaseInvariant,
+        )) <==> (g && !step_ledger_ok),
 {
 }
 
-/// step 경로의 처분(`0xF0C` 판정 · 정지 확인 · FP 관문)은 어느 것도 `LeaseInvariant` 에 이르지
-/// 않는다 — 결과는 진행 · 적재 생략(능력 부재) · `DeviceFault` 뿐이다.
-pub proof fn step_path_never_halts(
+/// step 경로의 처분(`0xF0C` 판정 · 정지 확인 · FP 관문)이 `LeaseInvariant` 에 이르는 것은 FP
+/// 관문이 `[15]` 를 보았고 Y4 step 장부가 어긋났을 때뿐이다 — 그 밖의 결과는 진행 · 적재 생략 ·
+/// step 기능 끔 · `DeviceFault` 다.  정지 확인은 장치 격리에도 이르지 않는다.
+pub proof fn step_path_halts_only_on_ledger(
     w: u32,
     reg: Option<(nat, nat)>,
     saw_idle: bool,
     misses: nat,
     k: nat,
-    g1: bool,
-    g2: bool,
+    g: bool,
+    step_ledger_ok: bool,
 )
     ensures
         fp_shape_action(fp_shape_verdict(w, reg)) != StepAction::Fail(Y4Error::LeaseInvariant),
         fp_quiesce_action(saw_idle, misses, k) != StepAction::Fail(Y4Error::LeaseInvariant),
-        step_gate_action(step_gate(g1, g2)) != StepAction::Fail(Y4Error::LeaseInvariant),
+        fp_quiesce_action(saw_idle, misses, k) != StepAction::Fail(Y4Error::DeviceFault),
+        (step_gate_action(step_gate(g), step_ledger_ok) == StepAction::Fail(
+            Y4Error::LeaseInvariant,
+        )) <==> (g && !step_ledger_ok),
 {
 }
 

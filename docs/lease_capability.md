@@ -1,23 +1,40 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors -->
 
-# Y4 Lease Capability — 스키마 v0.8 (draft, not frozen)
+# Y4 Lease Capability — 스키마 v0.9 (draft, not frozen)
 
 본 문서는 `architecture.md` §"Lease 의 OS-level 모델링" 의 lease 를
 **seL4 capability** 로 모델링한 첫 스키마 초안이다. 장치-대면 attribute
-(`partition_id` · `key` · `nonce` · `dva_map`)는 `docs/hiu_abi.md` v1.0-rc3 §3 의 구성
+(`partition_id` · `key` · `nonce` · `dva_map`)는 `docs/hiu_abi.md` v1.0-rc4 §3 의 구성
 표면과 매핑된다 — 즉 lease 는 HIU 상태의 호스트-측 type-safe 표현. 나머지 attribute
 는 호스트 전용이다. 소유 페이지 집합은 Y4 가 cap 밖에서 추적한다.
 
-이 문서의 정본(`G/…:줄`) 인용은 따로 표시가 없으면 WaveTensor `f6bc4df`(정본 spec 커밋 · 정본 트리
-`f878c09d…` — `hiu_abi.md` 와 같은 기준) 기준이다. `f6bc4df` 는 줄 수를 보존했으므로 바뀌지 않은 줄의 좌표는
-`e88f6f4` 와 같다. 판 이력 블록(「> **v0.x → v0.y**」) 안의 인용은 그 블록이 적은 sha 기준이다.
-RTL 인용(`rtl/…`)은 따로 표시가 없으면 `e88f6f4` 기준이고, 착지 표지와 함께 재구현의 현행 사실이며 ABI 출처가 아니다.
+이 문서의 정본(`G/…:줄`) 인용은 따로 표시가 없으면 WaveTensor 동결 sha `b16fc07`(정본 트리 `2dd78f80…` —
+`hiu_abi.md` 와 같은 기준) 기준이다. 정본 줄 수가 보존됐으므로 바뀌지 않은 줄의 좌표는 `e88f6f4` 와 같다. 판 이력
+블록(「> **v0.x → v0.y**」) 안의 인용은 그 블록이 적은 sha 기준이다. RTL 인용(`rtl/…`)은 따로 표시가 없으면 `22c76bb`
+기준이고(`hiu_abi.md` 머리), 착지 표지와 함께 재구현의 현행 사실이며 ABI 출처가 아니다.
 의사코드의 `Y4Defect` 는 `Y4Error::LeaseInvariant`(Y4 쪽 원인 — 하이퍼바이저 정지)이고 `DeviceFault` 는
 `Y4Error::DeviceFault`(장치 격리)다(`hiu_abi.md` §2.6 · `error.rs`). 창 판정 `window_verdict` 의 결과는 지역 enum
 `lease::window::WindowVerdict` 이고 `Y4Error` 변형이 아니다 — 그 가운데 `Y4Defect` 만 `LeaseInvariant` 에 이른다.
 step 경로의 처분(`lease::step::StepAction` — `fp_shape_action` · `fp_quiesce_action` · `step_gate_action`)도 지역
-enum 이고 `LeaseInvariant` 에 이르지 않는다(`step_path_never_halts`).
+enum 이고, `LeaseInvariant` 에 이르는 것은 FP 관문의 `[15]` 와 Y4 step 장부의 어긋남뿐이다
+(`step_path_halts_only_on_ledger` — `[15]` 는 `[19]` 선례, `error.rs` `step_fault_origin`).
+
+> **v0.8 → v0.9 (2026-10-22).** `hiu_abi.md` v1.0-rc4 반영 — WaveTensor 동결 sha `b16fc07`(C1 · C2 해소 · C3–C7) ·
+> RTL 파도 W6 `efafb14` · 동결 뒤 사실 커밋 `395e5b1` · `22c76bb` 대조, 사용자 결정 2026-10-22 「권고안대로」. 이 블록의
+> 정본 인용은 `b16fc07` 기준이다. 바뀐 것:
+> - **`[15]` 는 `[19]` 선례로 귀속한다** — `b16fc07` 이 (4) 를 4항의 결속 전제와 재적재 순서로 막았고(「그가 보는
+>   `[15]` 는 자기 쪽(드라이버 · 플랫폼)의 적재 · 결속 의무 위반이 낸 (4) 이거나 그 밖의 자기 쪽 의무 위반이다」
+>   `e-defined.typ:466`) 테넌트 원인이 없으므로, `StepUnattributed`(기록만)를 지우고 `window_verdict(f, own_refused,
+>   step_ledger_ok)` · `dispose_pre_window(f0, step_ledger_ok)` 가 Y4 step 장부가 어긋났으면 `Y4Defect`, 맞으면
+>   `DeviceContradiction`(귀속 불가 → `DeviceFault`)으로 판정한다. `act` 의 `RecordAndClear` 를 지웠다. 꼬리 읽기
+>   `fp_tail_read` 와 FP 관문도 같은 귀속이고, 관문의 1회 재적재를 지웠다(`StepGate` = `Clean` · `Refused`).
+> - **`K_WALK` 연속 소진은 `StepOff`**(그 장치의 step 기능을 끈다 · 운영자 보고 — 장치 격리 아님).
+> - `fp_quiesce` 가 기대는 장치 쪽 문장은 C2 로 정본에 섰다(`e-defined.typ:463` FP_STATUS 행) — 「반영 전 읽기
+>   정지」는 유계 장치 의무이고 `T_WALK` 폴링이 끊는 대기가 아니다(`hiu_abi.md` §2.7 4).
+> - Verus: `step_path_never_halts` · `fault15_only_records` · `window_halts_only_on_5_6` · `fault7_15_never_halt` 를
+>   `step_path_halts_only_on_ledger` · `fault15_follows_step_fault_origin` · `window_halts_only_on_y4_evidence` ·
+>   `fault7_never_halts` 로 바꿨다.
 
 > **v0.7 → v0.8 (2026-10-18).** WaveTensor 의 rc2 대조 답과 정본 spec 커밋 `f6bc4df`
 > (`2026-10-16-reply-rc2-d1d2-spec-f6bc4df.md` — D1 · D2 를 정본 규범으로 답했다)의 Y4 대조 반영(`hiu_abi.md`
@@ -290,10 +307,11 @@ invocation 안에서 직렬화** 된다 (`hiu_abi.md` §2.3, H1-3 · H1-6):
 // T_WALK · K_WALK = fp_quiesce 의 [1] = 0 대기 상한 · 연속 소진 상한, K_OWN = OWN_SET 거절 뒤 다른 프레임 재시도 상한 — 플랫폼 레지스트리 값 (hw_mechanism_abstraction.md §2)
 // act(v) = lease::window::verdict_action(v): Y4Defect → Y4Error::LeaseInvariant (정지) · DeviceContradiction → DeviceFault (장치 격리)
 //          · OwnSetRefused → ReportAndClear ([7] 만 0xF84 로 해제 · K_OWN 소진(L.pool_short)이면 그 임대에 거친 「풀 확장 실패」 · 진행)
-//          · StepUnattributed → RecordAndClear (운영자 · 플랫폼 기록 · [15] 만 해제 · 진행 — 테넌트 보고 없음) · Clean → 진행
+//          · Clean → 진행. [15] 는 step_fault_verdict(fp_ok) — fp_ok(장부 정합)이면 DeviceContradiction, 아니면 Y4Defect ([19] 선례 — 테넌트 보고 없음)
 //          겹치면 window_reports 의 항을 모두 처리한다
-//        step 경로는 lease::step::StepAction — Proceed · SkipLoad (이 창의 적재 생략 — 그 열쇠의 참조는 능력 부재) · Fail(DeviceFault).
-//          어느 것도 LeaseInvariant 가 아니다 (step_path_never_halts)
+//        step 경로는 lease::step::StepAction — Proceed · SkipLoad (이 창의 적재 생략 — 그 열쇠의 참조는 능력 부재) · StepOff (step 기능 끔 — 장치 격리 아님) · Fail(e).
+//          LeaseInvariant 는 FP 관문의 [15] ∧ ¬fp_ok 뿐이다 (step_path_halts_only_on_ledger)
+// fp_ok = Y4 step 장부의 자기 점검 — fp_mirror · fp_ledger_wf 가 서고 이번 장치 reset 세대의 모든 FP 기입이 사전조건을 지켰다
 // fp = Y4 의 step 장부 lease::step::FpLedger (부팅 hiu_abi §2.5 5e 의 fp_ledger_init 에서 시작) · fp_misses = 정지 확인 연속 소진 수
 // P · stepMax = 부팅 0xF0C 판정이 Usable 일 때의 값 (fp_shape_verdict — hiu_abi §1.4 · §2.5 1; NoStep 이면 step 적재를 쓰지 않는다)
 // fp_unbind_all · reclaim · invalidate_tables · fp_quiesce · fp_tail_read · global_config 는 I7 아래의 정의
@@ -316,20 +334,20 @@ invocation 안에서 직렬화** 된다 (`hiu_abi.md` §2.3, H1-3 · H1-6):
 2b. if p == active_part:            // 철회 에지(flush) 뒤 드레인 재관측 — hiu_abi §2.7 규칙 3
       require read(0x37C)[0] == 1   //   아니면 1.b 로 돌아감 (유계)
       f0 = read(0xF80) & W          //   창 진입 (가) — 첫 창 기입 전 (hiu_abi §2.4 3). 여기부터 3–4 의 (나)까지 W 는 hiu_cfg 보유자가 처분 (hiu_abi §2.2)
-      act(dispose_pre_window(f0))   //   [5]·[6] → Y4Defect · [7] → DeviceFault (창 밖에서 섰다 — 설명할 OWN_SET 이 없다)
-                                    //   · [15] → StepUnattributed (기록 · 해제 — L_old 에도 귀속하지 않는다)
+      act(dispose_pre_window(f0, fp_ok))   //   [5]·[6] → Y4Defect · [7] → DeviceFault (창 밖에서 섰다 — 설명할 OWN_SET 이 없다)
+                                    //   · [15] → [19] 선례 (fp_ok → DeviceFault · ¬fp_ok → Y4Defect — L_old 에도 귀속하지 않는다)
       fp_unbind_all()               //   창의 첫 FP 기입 — L_old 가 결속한 선택 열쇠 전부 en=0 (hiu_abi §2.7 「step 적재 규칙」 5)
       reclaim(pending_reclaim ∪ L_old 소유 페이지)   // 드레인 창 — OWN_CLR 먼저 (기입마다 OWN_STATUS 되읽기)
       invalidate_tables(L_old)      //   L_old 의 LBID 엔트리 전부 V=0 (lbid_invalidate_preserves) · LNID 소유 엔트리 V=0 (lnid_invalidate_preserves) — hiu_abi §2.8 규칙 5
-      q = fp_quiesce(L_new)         //   L_new 의 적재 계획이 있을 때만 — 마지막 en=0 뒤 [1] = 0 (T_WALK) · 소진 → SkipLoad · K_WALK 창 연속 → DeviceFault
-      fp_tail_read()                //   (선택) T_FLT 뒤 [15] — 미귀속 기록 · 해제
+      q = fp_quiesce(L_new)         //   L_new 의 적재 계획이 있을 때만 — 마지막 en=0 뒤 [1] = 0 (T_WALK) · 소진 → SkipLoad · K_WALK 창 연속 → StepOff
+      fp_tail_read()                //   (선택) T_FLT 뒤 [15] — [19] 선례 귀속
       own_refused = global_config(L_new, q)   //   OWN_SET(되읽기 · K_OWN) · LNID/LBID V=1 (lnid_write_ok · lbid_write_ok — hiu_abi §2.8)
                                     //   · FP_PROG → FP 관문 → FP_BIND en=1 (창의 마지막 기입) (p ≠ active_part 이면 다음 전환 창)
 3–4. lock(mask_window):             // hiu_cfg 안에서 0xEA0 창 — ⑶→⑷ 전체(재시도 포함)를 장치 전역 직렬화
    wait_bounded(T_FLT)              //   2 · 2b 의 마지막 구성 기입(flush 또는 창의 마지막 기입) 뒤 유계 대기 — 그 기입 거절 비트도 가시 시점이 정본에 없다
    f = read(0xF80)                  //   ⑶ 진입 기준선 (hiu_abi §2.3 ⑷)
    if p == active_part:             //   2b 창을 열었다 — 이 읽기가 그 창의 기준선 (나) (hiu_abi §2.4 3)
-     act(window_verdict(f & W, own_refused))   //   [5]·[6] → Y4Defect: ⑶ 에 진입하지 않는다 · [7] ∧ own_refused → OwnSetRefused · [15] → StepUnattributed
+     act(window_verdict(f & W, own_refused, fp_ok))   //   [5]·[6] (· [15] ∧ ¬fp_ok) → Y4Defect: ⑶ 에 진입하지 않는다 · [7] ∧ own_refused → OwnSetRefused · [15] ∧ fp_ok → DeviceFault
                                     //   · 설명 안 되는 [7] · 조용한 거절(own_refused ∧ ¬[7]) → DeviceContradiction → DeviceFault
    elif f[6]: raise Y4Defect        //   서 있는 [6](⑵ flush 등 Y4 기입의 거절)은 Y4 결함 — ⑶ 에 진입하지 않는다
    if f[12] ∨ f[13]:                //   sticky — 앞 사건으로 처분([12] 는 hiu_abi §2.6 귀속을 마친 뒤)하고 그 비트만 0xF84 로 해제한 뒤 진입
@@ -415,8 +433,8 @@ invariant:
    // deadline 도달 → 결속을 옮길 길 없음 → 장치 전체 격리 (reset 은 증명된 경로가 있을 때만)
    lock(hiu_cfg)                     // [6] · W 귀속 락 — step 4 의 귀속 · 해제까지 쥔다 (hiu_abi §2.2)
    f0 = read(0xF80) & W              //   창 진입 (가) — 첫 창 기입(아래 결속 해제 · 거부 VPN V=0 포함) 전 (hiu_abi §2.4 3). 앞의 T_FLT 대기는 두지 않는다
-   act(dispose_pre_window(f0))       //   창 전 사건: [5]·[6] → Y4Defect · [7] → DeviceFault (창 밖에서 섰다 — 설명할 OWN_SET 이 없다)
-                                     //   · [15] → StepUnattributed (기록 · 해제 — cur 에도 귀속하지 않는다: 「시점은 판별의 근거가 아니다」 e-defined.typ:466)
+   act(dispose_pre_window(f0, fp_ok))   //   창 전 사건: [5]·[6] → Y4Defect · [7] → DeviceFault (창 밖에서 섰다 — 설명할 OWN_SET 이 없다)
+                                     //   · [15] → [19] 선례 (cur 에도 귀속하지 않는다: 「시점은 판별의 근거가 아니다」 e-defined.typ:466)
                                      //   여기부터 3 의 (나)까지 W 는 hiu_cfg 보유자가 처분한다 (hiu_abi §2.2)
 3. fp_unbind_all()                   // 앞당김 — cur 가 결속한 선택 열쇠 전부 en=0, 창의 첫 FP 기입 (hiu_abi §2.4 2 · §2.7 「step 적재 규칙」 5)
    lock(xlate_staging):              // DRAIN_ALLZERO 관측 뒤, 재개 전에 한 번에 (hiu_abi §2.2)
@@ -426,15 +444,15 @@ invariant:
    write(0xE10, 1)                   // sticky 해제 — 「항목 기입 → 해제」 (I4 step 1.c)
    reclaim(pending_reclaim)          // 드레인 창 — 회수 대기 프레임 · 미룬 OWN_CLR 먼저 (기입마다 OWN_STATUS 되읽기)
    invalidate_tables(cur)            //   cur 의 LBID 엔트리 전부 V=0 · LNID 소유 엔트리 V=0 (I4 2b 와 같음 — hiu_abi §2.8 규칙 5)
-   q = fp_quiesce(next)              //   next 의 적재 계획이 있을 때만 — 마지막 en=0 뒤 [1] = 0 (T_WALK) · 소진 → SkipLoad · K_WALK 창 연속 → DeviceFault
-   fp_tail_read()                    //   (선택) T_FLT 뒤 [15] — 미귀속 기록 · 해제
-   own_refused = global_config(next, q)   //   next 의 OWN_SET(되읽기 · K_OWN) · LNID/LBID V=1 · FP_PROG(fp_load_ok) → FP 관문(재적재 한 번)
+   q = fp_quiesce(next)              //   next 의 적재 계획이 있을 때만 — 마지막 en=0 뒤 [1] = 0 (T_WALK) · 소진 → SkipLoad · K_WALK 창 연속 → StepOff
+   fp_tail_read()                    //   (선택) T_FLT 뒤 [15] — [19] 선례 귀속
+   own_refused = global_config(next, q)   //   next 의 OWN_SET(되읽기 · K_OWN) · LNID/LBID V=1 · FP_PROG(fp_load_ok) → FP 관문
                                      //   → FP_BIND en=1 (창의 마지막 기입) (hiu_abi §2.7)
    wait_bounded(T_FLT)               //   창의 마지막 기입 뒤 유계 대기 — 기입 거절의 W 비트도 가시 시점이 정본에 없다
    f = read(0xF80) & W               //   창 기준선 (나)
-   act(window_verdict(f, own_refused))   //   [5]·[6] → Y4Defect (창 기입 오류)
+   act(window_verdict(f, own_refused, fp_ok))   //   [5]·[6] → Y4Defect (창 기입 오류)
                                      //   · [7] ∧ own_refused → OwnSetRefused ([7] 해제 · next.pool_short 이면 그 임대에 거친 「풀 확장 실패」 — 프레임 · 시점 비공개)
-                                     //   · [15] → StepUnattributed (운영자 · 플랫폼 기록 · 해제 — next 에도 cur 에도 귀속하지 않는다, 테넌트 보고 없음)
+                                     //   · [15] → [19] 선례: fp_ok → DeviceFault (귀속 불가) · ¬fp_ok → Y4Defect — next 에도 cur 에도 귀속하지 않고 테넌트 보고 없음
                                      //   · 설명 안 되는 [7] · 조용한 거절(own_refused ∧ ¬[7]) → DeviceContradiction → DeviceFault
                                      //   주장 범위는 「장치가 거절로 알린 창 기입이 없었다」까지 — 겹치는 LBID 구간은 장치가 판정 없이 수락하므로 lbid_write_ok 만이,
                                      //   step 의 용량 안 오용 셋(미적재 슬롯 결속 · 적재가 끝나기 전의 결속 · 걷기 중 재적재)은 장치가 판정하지 않으므로
@@ -453,7 +471,7 @@ invariant:
      v1.0: 재시도 — drain loop(2 의 루프만) → denied V=0 → 0xE10 → wait_bounded(T_FLT) → require FAULT[6] == 0 → 4
            //   hiu_cfg 는 이미 쥐고 있다. fp_unbind_all · reclaim · invalidate_tables · fp_quiesce · global_config 는 되풀이하지 않는다. 유계, 소진 시 장치 격리
            //   재시도 기준선은 [6] 만 본다 — 재시도는 창 기입을 되풀이하지 않는다. (나) 뒤의 W([5]·[7]·[15])는 일반 처리기가 맡는다 (hiu_abi §2.2 · §2.4 3)
-           //   — 그 사이에 선 [15] 는 외부 원천이 낸 걷기의 (4) 일 수 있고, 일반 처리기도 StepUnattributed 로 기록한다
+           //   — 일반 처리기도 [15] 를 [19] 선례로 귀속한다 (외부 원천이 걷는 열쇠도 Y4 가 결속한 것뿐 — 적합 경로에서 (4) 는 나지 않는다, e-defined.typ:208 · :466)
      링 소비 회로 착지 뒤: raise Y4Defect               //   투입 정지 실패 또는 드레인 오판
    else: DeviceFault                                    //   장치 모순 (A=1 ∧ 결속 ≠ next · A=1 ∧ D=0 · A=0 ∧ 결속 ≠ cur) → 장치 격리
 5. active_part ← next.partition_id; unlock(hiu_cfg); resume(next)
@@ -479,15 +497,16 @@ invalidate_tables(L):                // 나가는 임대의 사상표 — 들어
 fp_quiesce(L) -> StepAction:         // 재적재 순서와 정지 확인 (hiu_abi §2.7 「step 적재 규칙」 4 — 정본 E.1.1 4항 e-defined.typ:208)
   if L.load == ∅: return Proceed     //   다시 쓸 슬롯이 없으면 기다리지 않는다 — 이미지가 그대로인 슬롯은 Unbound 인 채 결속할 수 있다
   saw = wait_until(read(0xF08)[1] == 0, T_WALK)        //   마지막 en=0 기입 뒤에 수락된 0xF08 읽기 — 「해제 앞의 관측은 그 사이에 시작한 그 슬롯의 걷기를 덮지 않는다」 (:208)
-  q = fp_quiesce_action(saw, fp_misses, K_WALK)        //   관측 → Proceed · 소진 → SkipLoad (외부 투입이 이어진다 — :332) · K_WALK 창 연속 소진 → Fail(DeviceFault)
+  q = fp_quiesce_action(saw, fp_misses, K_WALK)        //   관측 → Proceed · 소진 → SkipLoad (외부 투입이 이어진다 — :332) · K_WALK 창 연속 소진 → StepOff (장치 격리 아님)
   fp_misses ← fp_quiesce_misses(saw, fp_misses)        //   관측하면 0 으로
   if saw: fp ← fp_ledger_quiesced(fp)                  //   Unbound → Quiesced · Unloaded → 걷기 없음 (fp_mirror_quiesced · fp_quiesced_all_writable)
-  if q == Fail(e): raise e
-  return q                           //   이 관측이 해제 기입의 수락 사이클까지 옛 결속을 조회한 걷기를 모두 덮는다는 장치 쪽 문장은 C2 (hiu_abi §5.3 — Y4 sign-off 차단)
+  if q == StepOff: step_off(); report_operator()      //   이후 창의 step 적재를 모두 생략 — 그 선택 열쇠들의 참조는 능력 부재
+  return q                           //   이 관측이 무엇을 덮는가는 정본 C2 (e-defined.typ:463 FP_STATUS 행) — 읽기 수락 앞의 조회는 모두 끝났고 그 뒤 조회는 반영된 표를 본다.
+                                     //   0xF08 읽기 하나가 유계로 정지할 수 있다(반영 전 — 장치 의무) — T_WALK 폴링이 끊는 대기가 아니다 (hiu_abi §2.7 4)
 fp_tail_read():                      // (선택) 정지 확인 뒤 · 첫 FP_PROG 앞 — 관문 1차가 앞선 걷기의 (4) 를 보지 않게
   wait_bounded(T_FLT)
   if read(0xF80)[15] == 1:
-    record_unattributed(); mmio.write(0xF84, 1 << 15)  //   StepUnattributed — T_FLT 는 (4) 의 상한이 아니므로 그 뒤에 보여도 처분은 같다
+    raise fault_disposition(step_fault_origin(fp_ok))  //   [19] 선례 — fp_ok 이면 DeviceFault, 아니면 Y4Defect (T_FLT 는 (4) 의 상한이 아니므로 그 뒤에 보여도 처분은 같다)
 global_config(L, q) -> own_refused:
   own_refused = false
   for f in L 의 대기 OWN_SET:        //   할당기가 고른 프레임 — 소유권 표의 형상 지식 없이 (U4 — 소유권 표의 형상은 판의 일이 아니다, 03-hiu.typ:1689)
@@ -507,14 +526,10 @@ global_config(L, q) -> own_refused:
       require fp_load_ok(fp, s, img, P, stepMax)        //   fp_slot_writable(결속 · 걷기 없음) ∧ fp_image_ok — 모든 기입이 fp_prog_ok 라 (1) · (2) 를 내지 않는다 (fp_load_ok_words)
       for i in 0..img.len(): mmio.write(0xF00, fp_image_word(s, img, i))
       fp ← fp_ledger_load(fp, s, img, P, stepMax)       //   Loaded { gated: false } — fp_load_ok 아래에서만 · 아직 결속할 수 없다 (fp_load_then_gate)
-    wait_bounded(T_FLT); g1 = read(0xF80)[15]           //   FP 관문 (방어용) — FP_PROG · FP_BIND 는 WO 이고 0xF08 에도 적재 결과가 없다
-    g2 = false
-    if g1:
-      record_unattributed(); mmio.write(0xF84, 1 << 15) //   1차 [15] — 미귀속 기록 · 해제 (step_gate_records). 들어오는 임대의 거절로 읽지 않는다
-      L.load 를 한 번 다시 쓴다 (위와 같은 기입)
-      wait_bounded(T_FLT); g2 = read(0xF80)[15]
-    if step_gate(g1, g2) == Refused: raise DeviceFault  //   2차도 [15] — 결속하지 않는다 (step_gate_action, U2)
-    fp ← fp_ledger_gate_pass(fp)                        //   Clean · Reloaded — Loaded 슬롯이 결속할 수 있게 된다 (fp_mirror_gate_pass)
+    wait_bounded(T_FLT); g = read(0xF80)[15]            //   FP 관문 — FP_PROG · FP_BIND 는 WO 이고 0xF08 에도 적재 결과가 없다
+    if step_gate(g) == Refused:                         //   적합 경로에서 날 수 없는 [15] — 다시 싣지 않고 결속하지 않는다
+      raise step_gate_action(Refused, fp_ok)            //   [19] 선례 — fp_ok 이면 DeviceFault, 아니면 Y4Defect. 들어오는 임대의 거절로 읽지 않는다
+    fp ← fp_ledger_gate_pass(fp)                        //   Clean — Loaded 슬롯이 결속할 수 있게 된다 (fp_mirror_gate_pass)
   for (k, s) in L.bind:                                 //   창의 마지막 기입 — 그 뒤 T_FLT → (나)
     require fp_key_bindable(fp, k, s)                   //   장부상 결속되지 않은 열쇠 · 이미지가 준비된 슬롯 — 재결속은 쓰지 않는다 (fp_rebind_breaks_wf)
     mmio.write(0xF04, fp_bind_word(true, s, k))         //   fp_bind_ok(예약 0 · 슬롯 < P) — [6] 도 「`[15]` 의 원천」 (3) 도 내지 않는다 (fp_key_bindable_word_ok)
@@ -533,21 +548,20 @@ global_config(L, q) -> own_refused:
 `hiu_abi.md` §2.4 3 이 적는다. (A, D, 결속) 되읽기의 처분 표는 Verus `lease::active_part::switch_outcome`
 이고, 모든 조합이 처분을 하나씩 갖는다는 것은 `lease::active_part::switch_outcome_exhaustive`
 다. 창 진입 (가) · 창 기준선 (나)의 처분은 Verus `lease::window::dispose_pre_window` · `window_verdict`(망라 —
-`pre_window_exhaustive` · `window_verdict_exhaustive`; `[5]` · `[6]` 만 `Y4Defect` = `LeaseInvariant` — `window_halts_only_on_5_6`,
-`[7]` · `[15]` 갈래는 정지에 이르지 않는다 — `fault7_15_never_halt`, `[15]` 는 판정을 바꾸지 않고 기록만 더한다 —
-`fault15_only_records`)이고, 창 기입의 사전조건은 `lnid_write_ok` · `lbid_write_ok`(`lease::lnid` · `lease::lbid`)와
+`pre_window_exhaustive` · `window_verdict_exhaustive`; `Y4Defect` = `LeaseInvariant` 는 `[5]` · `[6]` 이거나 `[15]` ∧ 장부
+어긋남뿐이다 — `window_halts_only_on_y4_evidence`, `[7]` 만 선 읽기는 정지에 이르지 않는다 — `fault7_never_halts`,
+`[15]` 는 `[19]` 선례 — `fault15_follows_step_fault_origin`)이고, 창 기입의 사전조건은 `lnid_write_ok` · `lbid_write_ok`(`lease::lnid` · `lease::lbid`)와
 `fp_unbind_ok` · `fp_load_ok` · `fp_key_bindable`(`lease::step` — 낱말 수준의 `fp_prog_ok` · `fp_bind_ok` 를 함의한다:
 `fp_load_ok_words` · `fp_key_bindable_word_ok`)다. step 장부가 장치를 비춘다는 것은 불변식 `fp_mirror`(장치 모델
 `FpDevice` — 결속은 덮어쓰기 · 결속되지 않은 열쇠의 해제는 무연산 · 걷기는 조회 때 래치한 슬롯을 계속 쓴다)이고 창의
 전이마다 보존된다(`fp_mirror_unbind_ledger_keys` — 창의 `fp_unbind_all`, 부팅 sweep 은 `fp_mirror_unbind_all` · `fp_mirror_quiesced` · `fp_mirror_load` · `fp_mirror_gate_pass` ·
 `fp_mirror_bind`). 결속된 슬롯에 FP_PROG 를 쓰지 않는다는 것은 `fp_bound_not_writable` · `fp_prog_target_idle`, 재적재가
 정지 확인을 기다린다는 것은 `fp_reload_needs_quiesce` · `fp_quiesced_all_writable` 이다. 정지 확인 · 관문의 처분은
-`fp_quiesce_action`(`fp_quiesce_k_consecutive`) · `step_gate`(`step_gate_exhaustive`)이고 step 경로의 어느 처분도
-`LeaseInvariant` 에 이르지 않는다(`step_path_never_halts`). `[7]` · `[15]` 의 원천은 `f6bc4df` 가 문면으로 닫았다
-(「`[7]` 과 `[15]` 의 원천은 동결 전 호스트 측 대조가 문면으로 닫았다」 `e-defined.typ:527` — D1 · D2 해소). 이 창이
-아직 기대는 장치 쪽 문장은 하나다 — 정지 확인이 해제 기입의 수락 사이클까지 옛 결속을 조회한 걷기를 모두 덮는다는
-것은 정본에 없고, 4항이 「남은 걷기가 없음을 확인하는 것은 그 기입 뒤의 관측이다」(`:208`)로 전제할 뿐이다. 그 한
-문장이 C2 다(`hiu_abi.md` §5.3 — Y4 sign-off 차단). v1.0 에서는 일의 원천이 외부 제시라 Y4 가 투입을 멈출 수 없으므로, I7 의 격리 주장은 명령 링
+`fp_quiesce_action`(`fp_quiesce_k_consecutive` — `K_WALK` 연속 소진은 `StepOff`) · `step_gate` · `step_gate_action`
+(`step_gate_exhaustive`)이고, step 경로가 `LeaseInvariant` 에 이르는 것은 관문의 `[15]` ∧ 장부 어긋남뿐이다
+(`step_path_halts_only_on_ledger`). `[7]` · `[15]` 의 원천은 `f6bc4df` 가 문면으로 닫았다(「`[7]` 과 `[15]` 의 원천은
+동결 전 호스트 측 대조가 문면으로 닫았다」 `e-defined.typ:527` — D1 · D2 해소). 정지 확인이 무엇을 덮는가는 C2 로
+정본에 섰다(`e-defined.typ:463` FP_STATUS 행 「`[1]` 의 읽기 순서」 — 4항 `:208` 이 가리킨다). v1.0 에서는 일의 원천이 외부 제시라 Y4 가 투입을 멈출 수 없으므로, I7 의 격리 주장은 명령 링
 소비 회로가 착지한 판에서 한다(`03-hiu.typ:1311-1320`) — v1.0 의 I7 은 mock 검증 대상이다. D 원천
 시점(기입 사이클 접수가 판정 사이클 D 에 든다)의 RTL 측정은 합성 서술에 머문다(측정 한정 — 이월,
 `hiu_abi.md` §5.3). Y4 는 그 측정에도, 재구현의 판정 사이클 정지(HIU 접수 · 정렬 `0xE14` 접근만 — 3.9
@@ -611,9 +625,10 @@ global_config(L, q) -> own_refused:
    플랫폼 레지스트리, 사용자 결정 U4; 소유권 표의 형상 지식은 할당기에 박지 않는다). 그래도 모자라면 그 임대에는 거친
    「풀 확장 실패」만 보고하고 프레임 · 시점은 알리지 않는다 — 프레임 단위 보고는 다른 임대의 점유를 흘린다
    (`hiu_abi.md` §1.3 `[7]` · `y4_abi.md`). step 은 플랫폼이 지정한 이미지만 싣고 테넌트는 선택 열쇠로 고르기만
-   한다(U1 — `hiu_abi.md` §2.7 「step 적재 규칙」 1). 정지 확인이 소진된 창에서는 그 적재를 생략하고, FP 관문이 같은
-   이미지를 다시 실은 뒤에도 `[15]` 를 보면 결속하지 않고 장치를 격리한다(`DeviceFault`, U2) — 결속되지 않은 열쇠의
-   참조는 능력 부재다. `[15]` 는 테넌트에 보고하지 않는다(`StepUnattributed` — `hiu_abi.md` §1.3 `[15]`).
+   한다(U1 — `hiu_abi.md` §2.7 「step 적재 규칙」 1). 정지 확인이 소진된 창에서는 그 적재를 생략하고(`K_WALK` 창
+   연속이면 step 기능을 끈다 — `StepOff`), FP 관문이 `[15]` 를 보면 결속하지 않고 `[19]` 선례로 귀속한다(장부가
+   맞으면 `DeviceFault`, 어긋나면 `LeaseInvariant`) — 결속되지 않은 열쇠의 참조는 능력 부재다. `[15]` 는 테넌트에
+   보고하지 않는다(`hiu_abi.md` §1.3 `[15]`).
 5. `RevocationTokenStore.issue()` — 단조 카운터 + HMAC.
 6. `LeaseCap` 조립 → atomic-rotate (I4) → tenant 에게 cap 핸들 반환.
 
@@ -641,7 +656,7 @@ global_config(L, q) -> own_refused:
 
 ---
 
-## 4. 비-목표 (out of scope for v0.8)
+## 4. 비-목표 (out of scope for v0.9)
 
 - **Wave-aligned preemption 알고리즘 자체** — 전환 비용은 드레인(wave 경계)이다(I7).
   LNID/LBID · step 표는 전역 구성이라 전환 창에서 적재한다(I7 step 3) — 「전환마다 재적재」
@@ -659,7 +674,7 @@ global_config(L, q) -> own_refused:
 
 ---
 
-## 5. v0.8 미해결 항목
+## 5. v0.9 미해결 항목
 
 1. (§1) `IsaLevel` 에 WT64v2 자리잡기 — WT64v1 lock 이후 v2 가 등장하면
    변경. 현재는 enum 의 미래 변종으로 reserved.
@@ -699,16 +714,15 @@ global_config(L, q) -> own_refused:
    `nonowned_access_origin`.
 12. ~~(I4 2b · I7 3) `[7]` 과 `[15]` 의 원천~~ — 2026-10-18 `f6bc4df` 대조로 닫음: 정본이 규범으로 답했다(D1 — E.7 6항
    `e-defined.typ:1387` · 「`[7]` 은 E.7 6항의 OWN_SET 거절 하나」 `:527`; D2 — 「`[15]` 의 원천」 닫힌 넷 `:464`).
-   OWN_SET 거절은 `OwnSetRefused`(다른 프레임 재시도 상한 `K_OWN` · 거친 보고 — U4)이고, `[15]` 는 `StepUnattributed`
-   (미귀속 — `:466`)다. 이 문서의 창에 남은 Y4 sign-off 차단은 C2(정지 확인 `fp_quiesce` 가 기대는 `[1]` 의 장치 쪽
-   읽기 순서 한 문장)와 C1(동결 sha 서면 지명)이다(`hiu_abi.md` §5.3).
+   OWN_SET 거절은 `OwnSetRefused`(다른 프레임 재시도 상한 `K_OWN` · 거친 보고 — U4)이고, `[15]` 는 rc4 에서 `[19]`
+   선례 귀속이 됐다(`b16fc07` `:466`). C1 · C2 도 `b16fc07` 로 해소됐다(`hiu_abi.md` §5.3).
 
 ---
 
 ## 6. 다음 단계
 
-- 본 v0.8 → `hiu_abi.md` v1.0-rc3(인용 기준 `f6bc4df`)와 함께 C1 · C2 해소(Y4 sign-off 차단 — 동결 sha 는 C2 · C3 를
-  실은 정본 커밋 하나를 트리 해시와 함께 서면으로 지명받는다, `hiu_abi.md` §5.3) 뒤 양측 sign-off → `v1.0 frozen` 마킹.
+- 본 v0.9 → `hiu_abi.md` v1.0-rc4(인용 기준 동결 sha `b16fc07`)의 WT 대조와 sign-off → Y4 sign-off 발효(`hiu_abi.md`
+  §5.4 의 조건) → `v1.0 frozen` 마킹.
 - Phase C 진입(hiu_abi v1.0 frozen) 전에 본 spec 을 `proofs/lease/spec.rs` (Verus) 로 옮겨
   invariant I1–I7 의 machine-checked 버전 작성(`hiu_abi.md` §6 목록).
 - `kernel/lease/` Rust 구현은 그 spec 이 통과한 후에만 land

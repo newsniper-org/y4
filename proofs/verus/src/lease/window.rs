@@ -5,7 +5,7 @@
 //! (`docs/hiu_abi.md` §2.4 3 · §2.7 · §1.3, `docs/lease_capability.md` I4 2b · I7).
 //!
 //! 창 기입의 거절은 `[6]` 하나로 오지 않는다.  창 거절 집합 W 는 넷이다
-//! (정본 `f6bc4df` 비트 이름 `e-defined.typ:519-521`):
+//! (정본 `b16fc07` 비트 이름 `e-defined.typ:519-521`):
 //!
 //! - `[5]` 「구성 — 소유 서로소 위반 (D2)」 — LNID V=1 기입의 서로소 위반
 //!   (`01-isa-asm.typ:1303-1304` 「중복 소유를 만드는 사상표 MMIO
@@ -25,27 +25,33 @@
 //!   사상이다, RTL 사실 — 규범 아님: `rtl/…/hiu/OwnershipTable.scala:159` · `:318-329` ·
 //!   `rtl/…/top/Wt64Top.scala:1550`).
 //! - `[15]` 「step 프로그램 불량」 — 원천은 닫힌 넷이다(`e-defined.typ:464`, `lease::step`).  Y4 는
-//!   (1)–(3) 을 기입 전에 피하므로 Y4 가 보는 `[15]` 는 (4) runaway 이거나 Y4 · 플랫폼 쪽의 의무
-//!   위반이고, 「그 (4) 가 어느 결속 · 어느 걷기의 것인지는 v1.0 이 가르지 않는다」 · 「시점은
-//!   판별의 근거가 아니다」(`:466`).  그래서 `[15]` 는 어느 임대에도 귀속하지 않는다 — 운영자 ·
-//!   플랫폼 기록(`StepUnattributed`)이고 테넌트 보고도 정지도 아니다.  v1.0 에서 Y4 는 플랫폼이
-//!   지정한 이미지만 싣는다(사용자 결정 U1) — (4) 는 플랫폼 · 도구 사슬의 결함이다.
+//!   (1)–(3) 을 기입 전에 피하고, (4) 는 「같은 항의 결속 전제(…)와 재적재 순서가 막는다」 —
+//!   「적합 드라이버에게 (2) · (4) 는 그 적재 의무를 어긴 적재 · 결속에서만 나는 fail-closed
+//!   그물이다」(`:466`).  그래서 「그가 보는 `[15]` 는 자기 쪽(드라이버 · 플랫폼)의 적재 · 결속 의무
+//!   위반이 낸 (4) 이거나 그 밖의 자기 쪽 의무 위반이다」(`:466`) — 테넌트는 이미지를 대지 않고
+//!   (사용자 결정 U1) 기입하는 주체는 Y4 뿐이므로 테넌트 원인은 없다.  귀속은 `[19]` 선례를
+//!   따른다(사용자 결정 2026-10-22 — `step_fault_verdict` · `crate::error::step_fault_origin`):
+//!   Y4 step 장부가 어긋났으면 Y4 의도 결함(`LeaseInvariant`), 맞으면 Y4 절차 · 플랫폼(모르게
+//!   일어난 장치 reset) · 장치 비적합을 더 가르지 못해 귀속 불가(`DeviceFault`).  「그 (4) 가 어느
+//!   결속 · 어느 걷기의 것인지는 v1.0 이 가르지 않는다」(`:466`)이므로 어느 임대에도 귀속하지
+//!   않는다.
 //!
 //! 창은 둘로 읽는다 (§2.4 3):
 //!
 //! - (가) `hiu_cfg` 를 쥔 뒤 첫 창 기입 전에 `0xF80` ∧ W 를 읽어 선 비트를 창 전
 //!   사건으로 처분하고 해제한다 — `dispose_pre_window`.
 //! - 창 동안(§2.2) 일반 fault 처리기는 W 를 락 보유자에게 넘기고 처분 · 해제하지
-//!   않는다.  step 경로만 예외다 — 정지 확인 뒤의 꼬리 읽기와 FP 관문(`lease::step::StepGate`)은
-//!   본 `[15]` 를 그 자리에서 미귀속으로 기록하고 해제한다.
+//!   않는다.  FP 관문(`lease::step::StepGate`)이 본 `[15]` 도 같은 귀속(`step_fault_verdict`)으로
+//!   그 자리에서 처분한다.
 //! - (나) 창의 마지막 기입(FP_BIND en = 1 이 있으면 그것) 뒤 `T_FLT`(플랫폼 레지스트리 — 기입
 //!   거절 비트 가시 대기 상한)를 기다렸다가 `0xF80` ∧ W 를 읽고 `window_verdict` 로 처분한 뒤
 //!   해제한다.
 //!
-//! 정지(`LeaseInvariant`)에 이르는 것은 `[5]` · `[6]` 뿐이다
-//! (`window_halts_only_on_5_6` · `pre_window_halts_only_on_5_6`).  `[15]` 는 판정을 바꾸지 않고
-//! 기록만 더한다(`fault15_only_records`).  이 확인이 보여 주는 것은 「장치가 거절로 알린 창 기입이
-//! 없었다」까지다 — 겹치는 LBID 구간은 판정 없이 수락되고(`03-hiu.typ:1094`) 범위 밖 시작은
+//! 정지(`LeaseInvariant`)에 이르는 것은 Y4 쪽 증거뿐이다 — `[5]` · `[6]`, 또는 `[15]` 와 Y4 step
+//! 장부의 어긋남(`window_halts_only_on_y4_evidence` · `pre_window_halts_only_on_y4_evidence`).
+//! `[15]` 는 테넌트 보고를 낳지 않는다(`report_verdict_listed` · `tenant_pool_report_only_pool_short`).
+//! 이 확인이 보여 주는 것은 「장치가 거절로 알린 창 기입이 없었다」까지다 — 겹치는 LBID 구간은
+//! 판정 없이 수락되고(`03-hiu.typ:1094`) 범위 밖 시작은
 //! 처분이 정본에 없으므로(`b-gaps.typ:633-639` — 재구현은 수락, RTL 사실) `lease::lbid` 사전조건만이
 //! 막는다.
 //!
@@ -208,17 +214,16 @@ pub enum WindowVerdict {
     /// W 가 비었고 확인도 모두 맞다.
     Clean,
     /// `[5]` 또는 `[6]` — 창 기입이 Y4 사전조건(`lnid_write_ok` · `lbid_write_ok` ·
-    /// `lease::step::fp_bind_word` 의 예약 0 · 0xC00/0xE10/0xE00 꼴)을 어겼다.  `LeaseInvariant`.
+    /// `lease::step::fp_bind_word` 의 예약 0 · 0xC00/0xE10/0xE00 꼴)을 어겼다 — 또는 `[15]` 인데
+    /// Y4 의 step 장부가 어긋났다(`step_fault_origin` — Y4 의도 결함).  `LeaseInvariant`.
     Y4Defect,
     /// `[7]` 이 같은 창의 OWN_SET 되읽기 거절로 설명된다(E.7 6항).  거절된 프레임은 사상하지
     /// 않았고, 다른 프레임 재시도(상한 `K_OWN`) 뒤에도 모자라면 그 임대에는 거친 「풀 확장 실패」만
     /// 돌려준다 — 프레임 · 시점은 알리지 않는다(U4).  `[7]` 은 해제한다.
     OwnSetRefused,
-    /// `[15]` — 어느 임대에도 귀속하지 않는다.  운영자 · 플랫폼 기록 뒤 해제하고, 테넌트에는
-    /// 알리지 않으며 정지하지 않는다.
-    StepUnattributed,
-    /// 설명되지 않는 `[7]`(같은 창에 거절된 OWN_SET 이 없음) 또는 되읽기는 거절인데 `[7]` 이
-    /// 없음(조용한 거절) — 장치 모순.  `DeviceFault`.
+    /// 설명되지 않는 `[7]`(같은 창에 거절된 OWN_SET 이 없음) · 되읽기는 거절인데 `[7]` 이
+    /// 없음(조용한 거절) — 장치 모순 — 또는 `[15]` 인데 Y4 의 step 장부가 맞다(귀속 불가 —
+    /// `step_fault_origin`).  `DeviceFault`.
     DeviceContradiction,
 }
 
@@ -231,9 +236,6 @@ pub enum WindowAction {
     /// OWN_SET 이 `K_OWN` 재시도 뒤에도 모자랄 때(`pool_short`)만 거친 「풀 확장 실패」로 낸다
     /// (`tenant_pool_report`; `K_OWN` 은 모델 밖).  그 밖에는 운영자 기록이다(U4).
     ReportAndClear,
-    /// 운영자 · 플랫폼 기록만 남기고 해당 W 비트를 해제한 뒤 계속한다(`StepUnattributed`) —
-    /// 테넌트 보고가 아니다.
-    RecordAndClear,
     /// 이 오류로 멈춘다.
     Fail(Y4Error),
 }
@@ -244,29 +246,42 @@ pub open spec fn verdict_action(v: WindowVerdict) -> WindowAction {
         WindowVerdict::Clean => WindowAction::Proceed,
         WindowVerdict::Y4Defect => WindowAction::Fail(Y4Error::LeaseInvariant),
         WindowVerdict::OwnSetRefused => WindowAction::ReportAndClear,
-        WindowVerdict::StepUnattributed => WindowAction::RecordAndClear,
         WindowVerdict::DeviceContradiction => WindowAction::Fail(Y4Error::DeviceFault),
     }
 }
 
+/// `[15]` 의 귀속(사용자 결정 2026-10-22, `[19]` 선례 — `crate::error::step_fault_origin`).
+/// 정본 `b16fc07` 에서 적합 드라이버가 보는 `[15]` 는 「자기 쪽(드라이버 · 플랫폼)의 적재 · 결속
+/// 의무 위반이 낸 (4) 이거나 그 밖의 자기 쪽 의무 위반이다」(`e-defined.typ:466`)이고, 4항의 결속
+/// 전제와 재적재 순서를 지킨 결속의 걷기는 (4) 에 이르지 않는다(`:208`).  테넌트는 이미지를 대지
+/// 않고(U1) 기입하는 주체는 Y4 뿐이므로 테넌트 원인은 없다.  `step_ledger_ok` = Y4 step 장부가
+/// `lease::step::fp_mirror` · `fp_ledger_wf` 를 만족하고 이번 장치 reset 세대의 모든 FP 기입이
+/// 사전조건을 지켰다는 Y4 자기 점검.  어긋났으면 Y4 의도 결함(`LeaseInvariant`), 맞으면 Y4 절차
+/// 결함 · 플랫폼(모르게 일어난 장치 reset) · 장치 비적합을 더 가르지 못해 귀속 불가(`DeviceFault`).
+pub open spec fn step_fault_verdict(step_ledger_ok: bool) -> WindowVerdict {
+    if step_ledger_ok {
+        WindowVerdict::DeviceContradiction
+    } else {
+        WindowVerdict::Y4Defect
+    }
+}
+
 /// (나) 판정.  `f` = `T_FLT` 대기 뒤 `0xF80` 읽기, `own_refused` = 이 창의 OWN_SET 가운데
-/// 되읽기 `Refused` 가 하나라도 있었는가.
+/// 되읽기 `Refused` 가 하나라도 있었는가, `step_ledger_ok` = `step_fault_verdict` 의 자기 점검.
 ///
-/// 우선순위: Y4 결함 > 장치 모순 > OWN_SET 거절 > step 기록.  둘 이상 겹치면 Y4 는
-/// `window_reports` 의 항을 모두 처리한다.
-pub open spec fn window_verdict(f: u32, own_refused: bool) -> WindowVerdict {
+/// 우선순위: Y4 결함 > 장치 모순 > OWN_SET 거절.  둘 이상 겹치면 Y4 는 `window_reports` 의 항을
+/// 모두 처리한다.
+pub open spec fn window_verdict(f: u32, own_refused: bool, step_ledger_ok: bool) -> WindowVerdict {
     let b5 = has_bit(f, FAULT_DUP_OWN);
     let b6 = has_bit(f, FAULT_BAD_CFG_WRITE);
     let b7 = has_bit(f, FAULT_OWN_COLLIDE);
     let b15 = has_bit(f, FAULT_STEP_PROG);
-    if b5 || b6 {
+    if b5 || b6 || (b15 && !step_ledger_ok) {
         WindowVerdict::Y4Defect
-    } else if b7 != own_refused {
+    } else if b7 != own_refused || b15 {
         WindowVerdict::DeviceContradiction
     } else if b7 {
         WindowVerdict::OwnSetRefused
-    } else if b15 {
-        WindowVerdict::StepUnattributed
     } else {
         WindowVerdict::Clean
     }
@@ -277,14 +292,14 @@ pub struct WindowReports {
     /// `[7]` 이 같은 창의 OWN_SET 거절로 설명된다 — `[7]` 해제 · 운영자 기록.  테넌트 보고는
     /// `pool_short` 일 때만이다(`tenant_pool_report` — `K_OWN` 은 모델 밖, U4).
     pub own_set_refused: bool,
-    /// `[15]` — 운영자 · 플랫폼 기록(미귀속).
-    pub step_unattributed: bool,
+    /// `[15]` — 운영자 · 플랫폼 기록(귀속은 `step_fault_verdict`).  테넌트 보고가 아니다.
+    pub step_fault: bool,
 }
 
 pub open spec fn window_reports(f: u32, own_refused: bool) -> WindowReports {
     WindowReports {
         own_set_refused: has_bit(f, FAULT_OWN_COLLIDE) && own_refused,
-        step_unattributed: has_bit(f, FAULT_STEP_PROG),
+        step_fault: has_bit(f, FAULT_STEP_PROG),
     }
 }
 
@@ -298,14 +313,15 @@ pub open spec fn tenant_pool_report(f: u32, own_refused: bool, pool_short: bool)
 
 /// (가) 창 전 처분.  `f0` = `hiu_cfg` 를 쥔 뒤 첫 창 기입 전의 `0xF80` 읽기.
 /// `[5]` · `[6]` 은 시점과 무관하게 Y4 결함, `[7]` 은 설명할 OWN_SET 이 아직 없으니
-/// 장치 모순, `[15]` 는 미귀속 기록(정지 아님 — 결속된 임대에도 귀속하지 않는다).
-pub open spec fn dispose_pre_window(f0: u32) -> WindowVerdict {
-    if has_bit(f0, FAULT_DUP_OWN) || has_bit(f0, FAULT_BAD_CFG_WRITE) {
+/// 장치 모순, `[15]` 는 `step_fault_verdict`(결속된 임대에도 귀속하지 않는다).
+pub open spec fn dispose_pre_window(f0: u32, step_ledger_ok: bool) -> WindowVerdict {
+    if has_bit(f0, FAULT_DUP_OWN) || has_bit(f0, FAULT_BAD_CFG_WRITE) || (has_bit(
+        f0,
+        FAULT_STEP_PROG,
+    ) && !step_ledger_ok) {
         WindowVerdict::Y4Defect
-    } else if has_bit(f0, FAULT_OWN_COLLIDE) {
+    } else if has_bit(f0, FAULT_OWN_COLLIDE) || has_bit(f0, FAULT_STEP_PROG) {
         WindowVerdict::DeviceContradiction
-    } else if has_bit(f0, FAULT_STEP_PROG) {
-        WindowVerdict::StepUnattributed
     } else {
         WindowVerdict::Clean
     }
@@ -313,189 +329,191 @@ pub open spec fn dispose_pre_window(f0: u32) -> WindowVerdict {
 
 // --- 증명 --------------------------------------------------------------------
 
-/// 망라: 다섯 판정은 각각 입력 술어와 동치이므로 서로 배타이고 모든 입력을 덮는다.
-pub proof fn window_verdict_exhaustive(f: u32, own_refused: bool)
+/// 망라: 네 판정은 각각 입력 술어와 동치이므로 서로 배타이고 모든 입력을 덮는다.
+pub proof fn window_verdict_exhaustive(f: u32, own_refused: bool, step_ledger_ok: bool)
     ensures
         ({
             let b5 = has_bit(f, FAULT_DUP_OWN);
             let b6 = has_bit(f, FAULT_BAD_CFG_WRITE);
             let b7 = has_bit(f, FAULT_OWN_COLLIDE);
             let b15 = has_bit(f, FAULT_STEP_PROG);
-            let v = window_verdict(f, own_refused);
-            &&& (v == WindowVerdict::Y4Defect) <==> (b5 || b6)
-            &&& (v == WindowVerdict::DeviceContradiction) <==> (!(b5 || b6) && b7 != own_refused)
-            &&& (v == WindowVerdict::OwnSetRefused) <==> (!(b5 || b6) && b7 && own_refused)
-            &&& (v == WindowVerdict::StepUnattributed) <==> (!(b5 || b6) && !b7 && !own_refused
-                && b15)
-            &&& (v == WindowVerdict::Clean) <==> (!(b5 || b6) && !b7 && !own_refused && !b15)
+            let y4 = b5 || b6 || (b15 && !step_ledger_ok);
+            let v = window_verdict(f, own_refused, step_ledger_ok);
+            &&& (v == WindowVerdict::Y4Defect) <==> y4
+            &&& (v == WindowVerdict::DeviceContradiction) <==> (!y4 && (b7 != own_refused || b15))
+            &&& (v == WindowVerdict::OwnSetRefused) <==> (!y4 && !b15 && b7 && own_refused)
+            &&& (v == WindowVerdict::Clean) <==> (!b5 && !b6 && !b7 && !own_refused && !b15)
         }),
 {
 }
 
-/// 창 전 처분의 망라: 네 판정은 각각 입력 술어와 동치다.
-pub proof fn pre_window_exhaustive(f0: u32)
+/// 창 전 처분의 망라: 세 판정은 각각 입력 술어와 동치다.
+pub proof fn pre_window_exhaustive(f0: u32, step_ledger_ok: bool)
     ensures
         ({
             let b5 = has_bit(f0, FAULT_DUP_OWN);
             let b6 = has_bit(f0, FAULT_BAD_CFG_WRITE);
             let b7 = has_bit(f0, FAULT_OWN_COLLIDE);
             let b15 = has_bit(f0, FAULT_STEP_PROG);
-            let v = dispose_pre_window(f0);
-            &&& (v == WindowVerdict::Y4Defect) <==> (b5 || b6)
-            &&& (v == WindowVerdict::DeviceContradiction) <==> (!(b5 || b6) && b7)
-            &&& (v == WindowVerdict::StepUnattributed) <==> (!(b5 || b6) && !b7 && b15)
-            &&& (v == WindowVerdict::Clean) <==> (!(b5 || b6) && !b7 && !b15)
+            let y4 = b5 || b6 || (b15 && !step_ledger_ok);
+            let v = dispose_pre_window(f0, step_ledger_ok);
+            &&& (v == WindowVerdict::Y4Defect) <==> y4
+            &&& (v == WindowVerdict::DeviceContradiction) <==> (!y4 && (b7 || b15))
+            &&& (v == WindowVerdict::Clean) <==> (!b5 && !b6 && !b7 && !b15)
             &&& v != WindowVerdict::OwnSetRefused
         }),
 {
 }
 
 /// 판정은 `0xF80` ∧ W 에만 걸린다 — W 밖 비트는 일반 처리기(§1.3)의 몫이다.
-pub proof fn window_verdict_depends_only_on_w(f: u32, own_refused: bool)
+pub proof fn window_verdict_depends_only_on_w(f: u32, own_refused: bool, step_ledger_ok: bool)
     ensures
-        window_verdict(f & W_MASK, own_refused) == window_verdict(f, own_refused),
+        window_verdict(f & W_MASK, own_refused, step_ledger_ok) == window_verdict(
+            f,
+            own_refused,
+            step_ledger_ok,
+        ),
         window_reports(f & W_MASK, own_refused) == window_reports(f, own_refused),
-        dispose_pre_window(f & W_MASK) == dispose_pre_window(f),
+        dispose_pre_window(f & W_MASK, step_ledger_ok) == dispose_pre_window(f, step_ledger_ok),
 {
     w_bits_survive_mask(f);
 }
 
 /// `[5]` · `[6]` 은 판정 · 창 전 처분 어느 쪽에서도 Y4 결함(`LeaseInvariant`)이다.
-pub proof fn fault5_or_6_is_y4_defect(f: u32, own_refused: bool)
+pub proof fn fault5_or_6_is_y4_defect(f: u32, own_refused: bool, step_ledger_ok: bool)
     requires
         has_bit(f, FAULT_DUP_OWN) || has_bit(f, FAULT_BAD_CFG_WRITE),
     ensures
-        window_verdict(f, own_refused) == WindowVerdict::Y4Defect,
-        dispose_pre_window(f) == WindowVerdict::Y4Defect,
-        verdict_action(window_verdict(f, own_refused)) == WindowAction::Fail(
+        window_verdict(f, own_refused, step_ledger_ok) == WindowVerdict::Y4Defect,
+        dispose_pre_window(f, step_ledger_ok) == WindowVerdict::Y4Defect,
+        verdict_action(window_verdict(f, own_refused, step_ledger_ok)) == WindowAction::Fail(
             Y4Error::LeaseInvariant,
         ),
 {
 }
 
-/// 정지에 이르는 것은 `[5]` · `[6]` 뿐이다 — `[7]` · `[15]` 는 무엇이 겹쳐도
-/// `LeaseInvariant` 에 이르지 않는다.
-pub proof fn window_halts_only_on_5_6(f: u32, own_refused: bool)
+/// 정지에 이르는 것은 Y4 쪽 증거뿐이다 — `[5]` · `[6]`(Y4 만 쓰는 기입의 거절)이거나 `[15]` 와
+/// 함께 Y4 step 장부의 어긋남.  `[7]` 은 무엇이 겹쳐도, `[15]` 는 장부가 맞으면 `LeaseInvariant`
+/// 에 이르지 않는다.  판정의 입력 가운데 테넌트가 움직일 수 있는 것은 없다(§1.3).
+pub proof fn window_halts_only_on_y4_evidence(f: u32, own_refused: bool, step_ledger_ok: bool)
     ensures
-        (verdict_action(window_verdict(f, own_refused)) == WindowAction::Fail(
+        (verdict_action(window_verdict(f, own_refused, step_ledger_ok)) == WindowAction::Fail(
             Y4Error::LeaseInvariant,
-        )) <==> (has_bit(f, FAULT_DUP_OWN) || has_bit(f, FAULT_BAD_CFG_WRITE)),
+        )) <==> (has_bit(f, FAULT_DUP_OWN) || has_bit(f, FAULT_BAD_CFG_WRITE) || (has_bit(
+            f,
+            FAULT_STEP_PROG,
+        ) && !step_ledger_ok)),
+        step_ledger_ok ==> ((verdict_action(window_verdict(f, own_refused, step_ledger_ok))
+            == WindowAction::Fail(Y4Error::LeaseInvariant)) <==> (has_bit(f, FAULT_DUP_OWN)
+            || has_bit(f, FAULT_BAD_CFG_WRITE))),
 {
 }
 
-/// 창 전 처분에서도 정지는 `[5]` · `[6]` 뿐이다.  `[7]` 은 장치 모순, `[15]` 는 미귀속 기록이다.
-pub proof fn pre_window_halts_only_on_5_6(f0: u32)
+/// 창 전 처분에서도 정지는 Y4 쪽 증거뿐이다.  `[7]` 은 장치 모순, 장부가 맞을 때의 `[15]` 는
+/// 귀속 불가(`DeviceFault`)다.
+pub proof fn pre_window_halts_only_on_y4_evidence(f0: u32, step_ledger_ok: bool)
     ensures
-        (verdict_action(dispose_pre_window(f0)) == WindowAction::Fail(Y4Error::LeaseInvariant))
-            <==> (has_bit(f0, FAULT_DUP_OWN) || has_bit(f0, FAULT_BAD_CFG_WRITE)),
+        (verdict_action(dispose_pre_window(f0, step_ledger_ok)) == WindowAction::Fail(
+            Y4Error::LeaseInvariant,
+        )) <==> (has_bit(f0, FAULT_DUP_OWN) || has_bit(f0, FAULT_BAD_CFG_WRITE) || (has_bit(
+            f0,
+            FAULT_STEP_PROG,
+        ) && !step_ledger_ok)),
         !(has_bit(f0, FAULT_DUP_OWN) || has_bit(f0, FAULT_BAD_CFG_WRITE)) && has_bit(
             f0,
             FAULT_OWN_COLLIDE,
-        ) ==> dispose_pre_window(f0) == WindowVerdict::DeviceContradiction,
-        !(has_bit(f0, FAULT_DUP_OWN) || has_bit(f0, FAULT_BAD_CFG_WRITE) || has_bit(
+        ) && (step_ledger_ok || !has_bit(f0, FAULT_STEP_PROG)) ==> dispose_pre_window(
             f0,
-            FAULT_OWN_COLLIDE,
-        )) && has_bit(f0, FAULT_STEP_PROG) ==> dispose_pre_window(f0)
-            == WindowVerdict::StepUnattributed && verdict_action(dispose_pre_window(f0))
-            == WindowAction::RecordAndClear,
+            step_ledger_ok,
+        ) == WindowVerdict::DeviceContradiction,
 {
 }
 
-/// `[7]` · `[15]` 만 선 읽기(`[5]` · `[6]` 없음)는 정지하지 않는다 — 기록 · 보고하거나
-/// (설명될 때) 장치를 격리한다(설명되지 않을 때).
-pub proof fn fault7_15_never_halt(f: u32, own_refused: bool)
+/// `[15]` 의 귀속은 `crate::error::step_fault_origin` 과 같다: `[5]` · `[6]` 이 없는 읽기에서
+/// `[15]` 는 장부가 맞으면 `DeviceFault`, 어긋나면 `LeaseInvariant` 다 — 판정 · 창 전 처분 모두.
+pub proof fn fault15_follows_step_fault_origin(f: u32, own_refused: bool, step_ledger_ok: bool)
     requires
         !has_bit(f, FAULT_DUP_OWN),
         !has_bit(f, FAULT_BAD_CFG_WRITE),
+        has_bit(f, FAULT_STEP_PROG),
     ensures
-        verdict_action(window_verdict(f, own_refused)) != WindowAction::Fail(
+        window_verdict(f, own_refused, step_ledger_ok) == step_fault_verdict(step_ledger_ok),
+        dispose_pre_window(f, step_ledger_ok) == step_fault_verdict(step_ledger_ok),
+        verdict_action(step_fault_verdict(step_ledger_ok)) == WindowAction::Fail(
+            crate::error::fault_disposition(crate::error::step_fault_origin(step_ledger_ok)),
+        ),
+{
+}
+
+/// `[7]` 만 선 읽기(`[5]` · `[6]` · `[15]` 없음)는 정지하지 않는다 — 보고하거나(설명될 때)
+/// 장치를 격리한다(설명되지 않을 때).
+pub proof fn fault7_never_halts(f: u32, own_refused: bool, step_ledger_ok: bool)
+    requires
+        !has_bit(f, FAULT_DUP_OWN),
+        !has_bit(f, FAULT_BAD_CFG_WRITE),
+        !has_bit(f, FAULT_STEP_PROG),
+    ensures
+        verdict_action(window_verdict(f, own_refused, step_ledger_ok)) != WindowAction::Fail(
             Y4Error::LeaseInvariant,
         ),
-        window_verdict(f, own_refused) != WindowVerdict::Y4Defect,
-        dispose_pre_window(f) != WindowVerdict::Y4Defect,
+        window_verdict(f, own_refused, step_ledger_ok) != WindowVerdict::Y4Defect,
+        dispose_pre_window(f, step_ledger_ok) != WindowVerdict::Y4Defect,
 {
 }
 
 /// 설명되지 않는 `[7]`(같은 창의 OWN_SET 거절이 없음)과 조용한 거절(되읽기는
-/// 거절인데 `[7]` 이 없음)은 장치 모순(`DeviceFault`)이다.
-pub proof fn unexplained_7_or_silent_refusal_is_contradiction(f: u32, own_refused: bool)
+/// 거절인데 `[7]` 이 없음)은 장치 모순(`DeviceFault`)이다(장부가 맞을 때 — 어긋나면 `[15]` 가
+/// 겹친 경우 Y4 결함이 앞선다).
+pub proof fn unexplained_7_or_silent_refusal_is_contradiction(
+    f: u32,
+    own_refused: bool,
+    step_ledger_ok: bool,
+)
     requires
         !has_bit(f, FAULT_DUP_OWN),
         !has_bit(f, FAULT_BAD_CFG_WRITE),
         has_bit(f, FAULT_OWN_COLLIDE) != own_refused,
+        step_ledger_ok || !has_bit(f, FAULT_STEP_PROG),
     ensures
-        window_verdict(f, own_refused) == WindowVerdict::DeviceContradiction,
-        verdict_action(window_verdict(f, own_refused)) == WindowAction::Fail(Y4Error::DeviceFault),
+        window_verdict(f, own_refused, step_ledger_ok) == WindowVerdict::DeviceContradiction,
+        verdict_action(window_verdict(f, own_refused, step_ledger_ok)) == WindowAction::Fail(
+            Y4Error::DeviceFault,
+        ),
 {
 }
 
-/// 같은 창의 OWN_SET 거절로 설명되는 `[7]` 은 `OwnSetRefused` 이고 해제할 항이다 — `[15]` 가
-/// 겹쳐도 같다.  테넌트 보고 여부는 `tenant_pool_report` 가 따로 정한다.
-pub proof fn explained_7_is_own_set_refused(f: u32)
+/// 같은 창의 OWN_SET 거절로 설명되는 `[7]` 은(`[15]` 가 없으면) `OwnSetRefused` 이고 해제할
+/// 항이다.  `[15]` 가 겹치면 판정은 `[15]` 의 귀속이 앞서지만 `[7]` 항은 그대로 처리한다
+/// (`window_reports`).  테넌트 보고 여부는 `tenant_pool_report` 가 따로 정한다.
+pub proof fn explained_7_is_own_set_refused(f: u32, step_ledger_ok: bool)
     requires
         !has_bit(f, FAULT_DUP_OWN),
         !has_bit(f, FAULT_BAD_CFG_WRITE),
         has_bit(f, FAULT_OWN_COLLIDE),
     ensures
-        window_verdict(f, true) == WindowVerdict::OwnSetRefused,
-        verdict_action(window_verdict(f, true)) == WindowAction::ReportAndClear,
+        !has_bit(f, FAULT_STEP_PROG) ==> window_verdict(f, true, step_ledger_ok)
+            == WindowVerdict::OwnSetRefused && verdict_action(window_verdict(f, true, step_ledger_ok))
+            == WindowAction::ReportAndClear,
         window_reports(f, true).own_set_refused,
 {
 }
 
 /// 판정과 처리할 항이 맞물린다: 테넌트 보고의 근거가 될 수 있는 동작(`ReportAndClear`)은 설명된
 /// `[7]` 에서만 나오고(실제 보고는 `pool_short` 일 때만 — `tenant_pool_report_only_pool_short`),
-/// 기록만 하는 동작(`RecordAndClear`)은 `[15]` 에서만 나오며 테넌트 항이 없다.
-pub proof fn report_verdict_listed(f: u32, own_refused: bool)
+/// `[15]` 는 정지 · 격리 판정과 운영자 기록 항만 낳고 테넌트 항을 낳지 않는다.
+pub proof fn report_verdict_listed(f: u32, own_refused: bool, step_ledger_ok: bool)
     ensures
         ({
-            let v = window_verdict(f, own_refused);
+            let v = window_verdict(f, own_refused, step_ledger_ok);
             let r = window_reports(f, own_refused);
-            &&& v == WindowVerdict::OwnSetRefused ==> r.own_set_refused
-            &&& v == WindowVerdict::StepUnattributed ==> (r.step_unattributed && !r.own_set_refused)
+            &&& v == WindowVerdict::OwnSetRefused ==> (r.own_set_refused && !r.step_fault)
             &&& verdict_action(v) == WindowAction::ReportAndClear ==> r.own_set_refused
-            &&& verdict_action(v) == WindowAction::RecordAndClear ==> (r.step_unattributed
-                && !r.own_set_refused)
-            &&& v == WindowVerdict::Clean ==> !(r.own_set_refused || r.step_unattributed)
+            &&& r.step_fault ==> (v == WindowVerdict::Y4Defect || v
+                == WindowVerdict::DeviceContradiction)
+            &&& v == WindowVerdict::Clean ==> !(r.own_set_refused || r.step_fault)
         }),
 {
 }
-
-/// `[15]` 는 기록만 더한다: 같은 읽기에서 `[15]` 를 세우든 지우든 테넌트 항 · 정지 · 격리는
-/// 바뀌지 않고, 그 밖에 아무것도 없던 창만 `StepUnattributed` 가 된다 — `[15]` 는 테넌트 보고를
-/// 낳지 않는다.  창 전 처분도 같다.
-pub proof fn fault15_only_records(f: u32, own_refused: bool)
-    ensures
-        ({
-            let f1 = f | FAULT_STEP_PROG;
-            let f0 = f & !FAULT_STEP_PROG;
-            &&& window_verdict(f0, own_refused) != WindowVerdict::Clean ==> window_verdict(
-                f1,
-                own_refused,
-            ) == window_verdict(f0, own_refused)
-            &&& window_verdict(f0, own_refused) == WindowVerdict::Clean ==> window_verdict(
-                f1,
-                own_refused,
-            ) == WindowVerdict::StepUnattributed
-            &&& window_reports(f1, own_refused).own_set_refused == window_reports(
-                f0,
-                own_refused,
-            ).own_set_refused
-            &&& window_reports(f1, own_refused).step_unattributed
-            &&& !window_reports(f0, own_refused).step_unattributed
-            &&& dispose_pre_window(f0) != WindowVerdict::Clean ==> dispose_pre_window(f1)
-                == dispose_pre_window(f0)
-            &&& dispose_pre_window(f0) == WindowVerdict::Clean ==> dispose_pre_window(f1)
-                == WindowVerdict::StepUnattributed
-        }),
-{
-    assert(((f | 0x8000u32) & 0x20u32 != 0) == ((f & !0x8000u32) & 0x20u32 != 0)) by (bit_vector);
-    assert(((f | 0x8000u32) & 0x40u32 != 0) == ((f & !0x8000u32) & 0x40u32 != 0)) by (bit_vector);
-    assert(((f | 0x8000u32) & 0x80u32 != 0) == ((f & !0x8000u32) & 0x80u32 != 0)) by (bit_vector);
-    assert((f | 0x8000u32) & 0x8000u32 != 0) by (bit_vector);
-    assert((f & !0x8000u32) & 0x8000u32 == 0) by (bit_vector);
-}
-
 
 /// 테넌트 보고는 `pool_short` 일 때만이고 설명된 `[7]` 을 전제한다.  `[15]` 는 그 보고를 바꾸지
 /// 않는다.  재시도가 성공한 창(`!pool_short`)은 `[7]` 이 설명돼도 테넌트에 아무것도 내지 않는다.
@@ -512,7 +530,7 @@ pub proof fn tenant_pool_report_only_pool_short(f: u32, own_refused: bool, pool_
             pool_short,
         ),
 {
-    fault15_only_records(f, own_refused);
+    assert(((f | 0x8000u32) & 0x80u32 != 0) == ((f & !0x8000u32) & 0x80u32 != 0)) by (bit_vector);
 }
 
 } // verus!

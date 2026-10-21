@@ -31,7 +31,7 @@ if a change crosses into WaveTensor's RTL ABI.
 capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로 격리.
 
 5개 Phase B 단계 모두 그린:
-1. `proofs/` Verus + Rocq + Isabelle 하네스 (184 verified, 0 errors — 스냅샷; `just verus` 권위)
+1. `proofs/` Verus + Rocq + Isabelle 하네스 (181 verified, 0 errors — 스냅샷; `just verus` 권위)
 2. `boot/` Limine v12.6.1 + seL4 16.0.0 → QEMU `qemu-smoke` PASS
 3. `ipc/` (18 tests) + `alloc/` (22 tests, +2 with `--features scudo`)
    Rust 크레이트 + Verus refinement proof
@@ -114,9 +114,9 @@ Y4/
 ├── docs/
 │   ├── architecture.md     canonical design memo
 │   ├── glossary.md         WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v1.0-rc3 동결 후보 · C1/C2 대기(Y4 sign-off 차단), 정본 부록 E + §3.10 v1.0 묶음 — WaveTensor 정본 `f6bc4df`(D1–D4 답) 대조 2026-10-18 — 동결 시 `hiu/` unblock)
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; v1.0-rc4 동결 후보 · WT rc4 대조 · sign-off 대기(Y4 문안 조건부 동봉), 정본 부록 E + §3.10 v1.0 묶음 — WaveTensor 동결 sha `b16fc07` 대조 2026-10-22 — 동결 시 `hiu/` unblock)
 │   ├── y4_abi.md           게스트↔하이퍼바이저 ABI (Y4 ABI) v0 draft (게스트-대면)
-│   ├── lease_capability.md lease capability schema v0.8
+│   ├── lease_capability.md lease capability schema v0.9
 │   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md       Phase A → Phase E progression + entry triggers
 ├── alloc/               y4-alloc (DragonFly SLAB + hardened backend)

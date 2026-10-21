@@ -6,7 +6,7 @@
 //! The LBID table (`0x800`–`0xBFF`, 256 × 4 B) is one device-global table
 //! with no partition tag.  WaveTensor canonical 3.7.1 lists the overlapping
 //! slot range as the fifth write-time rejection, but its v1.0 disposition
-//! (`f6bc4df` `03-hiu.typ:1094`) is that a v1.0 device does not judge it and
+//! (`b16fc07` `03-hiu.typ:1094`) is that a v1.0 device does not judge it and
 //! accepts; non-overlap is a host duty (E.1.1 duty 4, `e-defined.typ:208`),
 //! and no v1.0 fault bit carries it.  Today's RTL accepts as well.
 //! Two valid entries naming overlapping ranges land two fragment streams in
