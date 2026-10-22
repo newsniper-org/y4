@@ -282,7 +282,7 @@ formal-first 가 가져다 주는 결과:
 ### HIU 의 기존 보안 메커니즘과 자연스럽게 맞물림
 
 WaveTensor 정본(`docs/wt64v1-architecture-guide/` §3 · 부록 E)이 정한 HIU 기능이
-hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` v1.0-rc4 — 동결 후보, 인용 기준 WaveTensor 동결 sha `b16fc07`; C1 · C2 해소 · FP_SHAPE 배선은 RTL 파도 W6 로 착지 — WT 의 rc4 대조 뒤 양측 sign-off(Y4 문안은 조건부로 rc4 와 함께 — §5.4) → 판 값 커밋 · `docs/glossary.md`):
+hypervisor 책임과 매핑된다 (상세: `docs/hiu_abi.md` **v1.0 frozen** — 2026-10-22 양측 sign-off, WaveTensor 동결 sha `b16fc07` · Y4 동결 내용 `783b119`; 남은 것은 판 값 커밋 · `docs/glossary.md`):
 
 | HIU 기능 (정본) | hypervisor 측에서 활용 |
 |---------|------------------------|

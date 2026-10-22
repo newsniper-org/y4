@@ -17,9 +17,10 @@ in this repo lives at [`docs/architecture.md`](./docs/architecture.md).
 > `proofs/` harness, `boot/` (Limine → seL4 in QEMU), `ipc/` + `alloc/`
 > Rust crates with their Verus specs, `capsules/` with the first
 > concrete PCIe enum capsule, and `kernel/` printing **`Hello, Y4`**
-> on the QEMU serial.  HIU-touching work (`hiu/`, lease runtime)
-> remains blocked until [`docs/hiu_abi.md`](./docs/hiu_abi.md) is
-> `v1.0 frozen` (joint Y4 + WaveTensor sign-off).
+> on the QEMU serial.  [`docs/hiu_abi.md`](./docs/hiu_abi.md) became
+> `v1.0 frozen` on 2026-10-22 (joint Y4 + WaveTensor sign-off), which
+> unblocks HIU-touching work (`hiu/`, lease runtime); real-device
+> binding waits for the WaveTensor version-value commit.
 > See [`docs/phase_plan.md`](./docs/phase_plan.md).
 
 ---
@@ -96,7 +97,7 @@ Y4/
 ├── docs/
 │   ├── architecture.md           canonical design memo
 │   ├── glossary.md               WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md                Y4 ↔ HIU ABI v1.0-rc4 (freeze candidate at WaveTensor freeze sha `b16fc07`; awaiting WaveTensor's rc4 cross-check and sign-off — Y4's sign-off text ships conditionally with rc4)
+│   ├── hiu_abi.md                Y4 ↔ HIU ABI v1.0 frozen (2026-10-22 — joint sign-off; WaveTensor freeze sha `b16fc07`, Y4 frozen content `783b119`)
 │   ├── lease_capability.md       lease capability schema v0.9 (invariants, lifecycle)
 │   ├── licensing.md              Apache-2.0 main + GPL-capsule isolation
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
@@ -138,7 +139,7 @@ Subsystem status:
 | `alloc/`  | ✅ 22+2 tests, Verus refinement proofs   | DragonFly SLAB + hardened backend |
 | `capsules/` | ✅ 16 tests                            | PCIe enum (P1/P2/P3) |
 | `kernel/` | ✅ qemu-smoke PASS                       | "Hello, Y4" on serial |
-| `hiu/`    | ⛔ blocked                               | needs `docs/hiu_abi.md` v1.0 frozen |
+| `hiu/`    | ⏳ unblocked, not started                | `docs/hiu_abi.md` v1.0 frozen (2026-10-22) |
 
 ## Build / test / verify
 

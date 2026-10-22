@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors -->
 
-# Y4 ↔ HIU ABI (v1.0-rc4 — 동결 후보 · WaveTensor 동결 sha `b16fc07` · WT rc4 대조 뒤 양측 sign-off)
+# Y4 ↔ HIU ABI (v1.0 frozen — WaveTensor 동결 sha `b16fc07` · Y4 `783b119` · 양측 sign-off 2026-10-22)
 
 이 문서는 Y4 가 WaveTensor 가속기의 HIU(호스트 인터페이스)에 의존하는
 **유일한 ABI 표면**, 즉 HIU 구성 표면(MMIO)의 **Y4 측 문서**다.
@@ -27,6 +27,21 @@
   블록에 「해소」로 적는다.
 - 이 문서가 동결(`v1.0 frozen`)되어야 Y4 의 mock-HIU(`hiu/mock/`)와 lease
   capability 런타임(Phase C)이 시작될 수 있다.
+
+> **v1.0-rc4 → v1.0 frozen (2026-10-22).** 양측이 sign-off 했다. WaveTensor sign-off(`2026-10-22-signoff-v1.0-b16fc07-783b119.md`
+> — 채널 사본 sha256 `b672d54a…`)는 Y4 문안(§5.4)과 같은 꼴로 정본 §3.10 v1.0 묶음을 동결 sha
+> `b16fc07e001ee385d34d101d7d660fe6861aa516`(정본 트리 `2dd78f80b9d44354416716d75bd235b088ac8a01`)의 규범 내용으로, 이
+> 문서를 Y4 커밋 `783b119c840dd998f203b72401b4ea053bbd13a2`(v1.0-rc4)의 내용으로 동결하는 데 동의했다 — rc4 대조 major 0 ·
+> 문면 수정 요구 0, history 보존(판 값 커밋까지 fast-forward 만 · 통지한 sha 모두 도달 가능) 재확인. Y4 는 §5.4 발효 조건
+> 넷을 확인했다(1 · 2 — WT sign-off 문면 · 전체 sha 와 트리 해시를 Y4 가 다시 계산해 일치 · `b16fc07` 은 WT `main` 의
+> 조상; 3 — `b16fc07` 뒤 정본 변경은 `395e5b1` 의 B.5 사실 넷뿐이고 지금 정본 트리는 `9cb268a0…`; 4 — 사용자 확인
+> 2026-10-22 「진행해.」). **Y4 sign-off 발효.** WT 가 붙인 단서 둘을 받았다 — 「B.5 는 기존 행 안의 문단 추가만」을
+> 「기존 행 안의 사실 문장 추가」로 읽는다(Y4 가 `395e5b1` 을 받은 기준과 같다) · C9 의 답이 v1.0 격리 결함을 드러내면
+> 일반 경로(사용자 확인 → spec 커밋 → Y4 대조 → 다시 서명)로 간다(§5.4 조건 3 의 재서명 경로와 같다). **이 커밋은 표지만
+> 더한다 — 규범 내용은 `783b119` 그대로다.** WT 의 rc4 알림 a1–a6(인용 · 사실 정정, 동작 불변)은 다음 사실 정정 커밋이
+> 다룬다. 남은 것: WT 의 판 값 커밋 전 측정 파도 · push 와 원격 sha 통지 → 판 값 `0x0001_0000` 커밋(조건 §5.4 4) → Y4 의
+> RTL diff · 장치 값 대조 → 실장치 결속. `hiu/` mock-HIU 와 lease 런타임(Phase C)의 차단은 풀렸다(판 값은 합의로 고정 —
+> 장치 값은 판 값 커밋 대기).
 
 > **v1.0-rc3 → v1.0-rc4 (2026-10-22).** WaveTensor 가 rc3(`ff72bb0`)를 대조하고 C1–C14 에 답하며 동결 후보 spec
 > 커밋 `b16fc07` 과 RTL 파도 W6(`efafb14`)를 알렸고(`2026-10-20-reply-rc3-freeze-b16fc07.md` — rc3 는 major 0 · minor 2,
@@ -402,20 +417,16 @@
   *규범*이 바뀌면 1–2 단계(사용자 확정 · 정본 spec 커밋)로 돌아가 다시 서명한다. 실장치 결속은 `0xFFC` =
   `0x0001_0000` 이고 `0xF0C` 의 번호 1 · 형상을 플랫폼 레지스트리와 대조한 뒤에만 한다(§1.4 — v1.0 의 첫 실장치
   결속 조건이다. 같은 major 의 뒤 minor 장치는 Y4 가 그 minor 를 대조한 뒤에 §1.4 의 major == 1 · minor ≥ x 규칙으로
-  결속한다). 지금은 WT 의 rc4 대조 단계이고, Y4 sign-off 문안은 §5.4 에 조건부로 싣는다.
+  결속한다). 양측 sign-off 는 2026-10-22 에 끝났다(§5.4 — `v1.0 frozen`).
 - v0.x · v1.0-rc 는 동결 전이다. 누구든 바꿀 수 있지만 커밋 메시지에 `hiu-abi: <요지>` 접두가 필수다.
 - 정본 자신은 pre-stable 이고 `T_stable` 이 미정이다(`G/chapters/00-preface.typ:36-54`).
   이 문서는 정본 변경을 따라간다.
 
-> **현재 상태:** v1.0-rc4 — 동결 후보 (인용 기준 WaveTensor 동결 sha `b16fc07` · 정본 트리 `2dd78f80…`). 정본
-> spec 커밋 `6a25359` · 정정 `8af46df` · 명확화 `b81df18` · RTL 파도 W0–W4(`e88f6f4`) · D1–D3 의 답 `f6bc4df` 에 이어
-> C2 · C3–C7 을 실은 동결 후보 `b16fc07` 과 RTL 파도 W6(`efafb14`) · 동결 뒤 사실 커밋 `395e5b1` · `22c76bb` 를 대조했다
-> (2026-10-21). **C1 · C2 는 해소됐다** — 동결 sha 와 트리 해시의 서면 지명 · history 보존 서면 확인(WT 2026-10-20)과
-> `0xF08[1]` 읽기 순서(`e-defined.typ:463`). Y4 sign-off 를 막는 것은 남지 않았다 — Y4 sign-off 문안은 §5.4 에 발효
-> 조건과 함께 싣는다(WT rc4 대조 major 0 · WT sign-off 의 sha 지명 · 그 사이 정본 변경이 사실 체제 안 · Y4 사용자
-> 확인). 남은 것: WT 의 rc4 대조와 sign-off → Y4 sign-off 발효 · `v1.0 frozen` 표지 커밋 → 판 값 커밋 전 측정 파도 ·
-> push 통지 → 판 값 커밋(조건 §5.4). `0xFFC` 장치 값 = 0(판 0) · `0xF0C` 는 W6 배선 · 판 0 이라 워드 전체 0(§1.4).
-
+> **현재 상태:** **v1.0 frozen** (2026-10-22 — 양측 sign-off; 정본 동결 sha `b16fc07` · 정본 트리 `2dd78f80…`, 이
+> 문서의 동결 내용 = Y4 커밋 `783b119`). 동결 뒤 정본 변경은 사실 체제 안에서만(§5.4 조건 3 — 지금 정본 트리
+> `9cb268a0…`, `395e5b1` 의 B.5 사실). 남은 것: WT 의 판 값 커밋 전 측정 파도 · push 와 원격 sha 통지 → 판 값
+> `0x0001_0000` 커밋(조건 §5.4 4) → Y4 의 RTL diff · 장치 값 대조 → 실장치 결속. `0xFFC` 장치 값 = 0(판 0) · `0xF0C` 는
+> W6 배선 · 판 0 이라 워드 전체 0(§1.4). Phase C(`hiu/` mock-HIU · lease 런타임)는 착수할 수 있다.
 ---
 
 ## 1. 구성 표면 (호스트가 보는 4 KiB 페이지)
@@ -1787,7 +1798,8 @@ rc3(`ff72bb0`) §5.3 과 Y4 답 `2026-10-18-reply-f6bc4df-rc3.md` §4 에 남는
 
 정본은 「sign-off 는 정본 spec 커밋과 호스트 측 ABI 문서의 v1.0 동결 둘이다」(`03-hiu.typ:1653-1654`)라 적는다. Y4 는
 아래 문안을 rc4 통지와 함께 보내고, **발효 조건이 모두 서면 별도 확인 없이 발효한다** — 그때 이 문서에 `v1.0 frozen`
-표지만 더하는 커밋을 한다(내용 변경 없음).
+표지만 더하는 커밋을 한다(내용 변경 없음). **발효 — 2026-10-22**(WT sign-off
+`2026-10-22-signoff-v1.0-b16fc07-783b119.md` · 사용자 확인 「진행해.」 — 맨 위 「v1.0-rc4 → v1.0 frozen」 블록).
 
 > **Y4 sign-off (v1.0).** Y4 는 WaveTensor 정본 `docs/wt64v1-architecture-guide/` 의 §3.10 v1.0 묶음을 동결 sha
 > `b16fc07` (정본 트리 `2dd78f80b9d44354416716d75bd235b088ac8a01`)의 규범 내용으로, Y4 측 ABI 문서를 `docs/hiu_abi.md`
@@ -1976,6 +1988,8 @@ rc3(`ff72bb0`) §5.3 과 Y4 답 `2026-10-18-reply-f6bc4df-rc3.md` §4 에 남는
   - WaveTensor rc3(`ff72bb0`) 대조 답 — major 0 · minor 2 · C1 서면 답(동결 sha `b16fc07`) · C2 정본 반영 · W6 `efafb14` 착지 통지 (2026-10-20): `.local-replies-from/WaveTensor/2026-10-20-reply-rc3-freeze-b16fc07.md`
   - WaveTensor 동결 뒤 사실 변경 통지 — `395e5b1` · `22c76bb` (2026-10-20): `.local-replies-from/WaveTensor/2026-10-20-notice-post-freeze-facts-395e5b1-22c76bb.md`
   - Y4 답 — `b16fc07` 대조 · rc4 통지 · 조건부 Y4 sign-off (2026-10-22): `.local-replies-to/WaveTensor/2026-10-22-reply-b16fc07-rc4-signoff.md`
+  - WaveTensor rc4(`783b119`) 대조 답 · **WaveTensor sign-off (v1.0)** (2026-10-22): `.local-replies-from/WaveTensor/2026-10-22-signoff-v1.0-b16fc07-783b119.md`
+  - Y4 통지 — Y4 sign-off 발효 · `v1.0 frozen` 표지 · 동결 뒤 사실 정정 (2026-10-22): `.local-replies-to/WaveTensor/2026-10-22-notice-y4-signoff-frozen.md`
 - Y4: `docs/glossary.md` §2–§10 · §12(legacy 대응표), `docs/lease_capability.md`,
   `docs/architecture.md` §「가속기 입장에서의 의의」, `docs/design_decisions.md` (P3 · P10).
 

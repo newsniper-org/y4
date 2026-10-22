@@ -3,11 +3,12 @@
 
 //! Lease capability specifications (`docs/lease_capability.md` I1–I7).
 //!
-//! The LeaseCap invariants themselves are deferred until `docs/hiu_abi.md`
-//! is `v1.0 frozen`.  What lands here early are Y4-side preconditions and
+//! The LeaseCap invariants themselves were deferred until `docs/hiu_abi.md`
+//! became `v1.0 frozen` (2026-10-22); they are Phase C work.  What landed here
+//! early are Y4-side preconditions and
 //! attribution / classification specs whose need is already fixed by the
 //! canonical text (WaveTensor `b16fc07` — the freeze sha, the citation basis of
-//! `docs/hiu_abi.md` v1.0-rc4) regardless of the final surface:
+//! `docs/hiu_abi.md` v1.0, frozen 2026-10-22) regardless of the final surface:
 //!
 //! - `lbid` — LBID proxied-write check (`docs/hiu_abi.md` §2.8).
 //! - `lnid` — LNID proxied-write check `lnid_write_ok` (`docs/hiu_abi.md`

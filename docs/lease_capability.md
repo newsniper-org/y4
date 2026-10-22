@@ -5,7 +5,7 @@
 
 본 문서는 `architecture.md` §"Lease 의 OS-level 모델링" 의 lease 를
 **seL4 capability** 로 모델링한 첫 스키마 초안이다. 장치-대면 attribute
-(`partition_id` · `key` · `nonce` · `dva_map`)는 `docs/hiu_abi.md` v1.0-rc4 §3 의 구성
+(`partition_id` · `key` · `nonce` · `dva_map`)는 `docs/hiu_abi.md` v1.0 (frozen 2026-10-22) §3 의 구성
 표면과 매핑된다 — 즉 lease 는 HIU 상태의 호스트-측 type-safe 표현. 나머지 attribute
 는 호스트 전용이다. 소유 페이지 집합은 Y4 가 cap 밖에서 추적한다.
 
@@ -721,8 +721,8 @@ global_config(L, q) -> own_refused:
 
 ## 6. 다음 단계
 
-- 본 v0.9 → `hiu_abi.md` v1.0-rc4(인용 기준 동결 sha `b16fc07`)의 WT 대조와 sign-off → Y4 sign-off 발효(`hiu_abi.md`
-  §5.4 의 조건) → `v1.0 frozen` 마킹.
+- ~~본 v0.9 → `hiu_abi.md` v1.0-rc4 의 WT 대조와 sign-off → Y4 sign-off 발효 → `v1.0 frozen` 마킹~~ — 2026-10-22 끝났다
+  (`hiu_abi.md` v1.0 frozen — 양측 sign-off). 실장치 결속은 WaveTensor 판 값 커밋과 Y4 의 장치 값 대조 뒤다.
 - Phase C 진입(hiu_abi v1.0 frozen) 전에 본 spec 을 `proofs/lease/spec.rs` (Verus) 로 옮겨
   invariant I1–I7 의 machine-checked 버전 작성(`hiu_abi.md` §6 목록).
 - `kernel/lease/` Rust 구현은 그 spec 이 통과한 후에만 land

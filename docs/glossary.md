@@ -769,7 +769,7 @@ mapping 만 책임진다.
 
 | # | 표면 | 방향 | 정의 위치 | 상태 |
 |---|---|---|---|---|
-| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | **v1.0-rc4 — 동결 후보** (WaveTensor 동결 sha `b16fc07` — C1 · C2 해소), WT 의 rc4 대조 뒤 양측 sign-off(Y4 sign-off 문안은 조건부로 rc4 와 함께 — `hiu_abi.md` §5.4).  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) — 비0 판 값 `0x0001_0000` 은 sign-off 뒤, FP_SHAPE 배선과 함께이거나 그 뒤의 별도 커밋 |
+| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | **v1.0 frozen** (2026-10-22 양측 sign-off — WaveTensor 동결 sha `b16fc07` · Y4 동결 내용 `783b119`).  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) — 비0 판 값 `0x0001_0000` 은 sign-off 뒤, FP_SHAPE 배선과 함께이거나 그 뒤의 별도 커밋 |
 | B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **`docs/y4_abi.md` §2** (v0 draft) | 정의됨 (2026-09-14).  core VMM 은 워크스페이스 안, `y4-hypercall` repo 는 §5.3 재정의 후 사용자 CLI 전용(디스크 미존재) |
 | C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
 | D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0.9 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
@@ -818,7 +818,7 @@ spec 의 소재지는 **해소됐다**: ⒜ `Y4/docs/` 안 신설 — `docs/y4_a
 
 Y4 의 다른 문서(`hiu_abi.md`, `lease_capability.md`, `architecture.md` 등)에 남은
 옛 용어를 읽을 때 쓴다. `hiu_abi.md` · `lease_capability.md` · `architecture.md` 본문은 2026-10-02 에
-정본 기준(H1–H4 · HP-1..7 반영)으로 정정됐고, 지금은 `hiu_abi.md` v1.0-rc4 · `lease_capability.md` v0.9 이다(§11). 이 표는 이력·다른 문서용이다.
+정본 기준(H1–H4 · HP-1..7 반영)으로 정정됐고, 지금은 `hiu_abi.md` v1.0 frozen · `lease_capability.md` v0.9 이다(§11). 이 표는 이력·다른 문서용이다.
 
 | 옛 용어 (legacy 기준) | 정본 대응물 | 비고 |
 |---|---|---|
