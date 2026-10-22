@@ -47,6 +47,15 @@ for f in limine-bios.sys limine-bios-cd.bin limine-uefi-cd.bin BOOTX64.EFI; do
         cp "${repo_root}/build/limine/host/${f}" "${iso_root}/boot/limine/"
 done
 
+# Limine's license and third-party notices travel with its binaries.
+# Since 12.9.2, 3RDPARTY.md "must accompany those binaries" (it holds the
+# notices of PicoEFI, freestanding-lgrt, flanterm, ... that the binary
+# carries); COPYING is Limine's own BSD-2-Clause text.
+for f in COPYING 3RDPARTY.md; do
+    [[ -f "${limine_dir}/${f}" ]] || { echo "missing: third_party/limine/${f}"; exit 1; }
+    cp "${limine_dir}/${f}" "${iso_root}/boot/limine/"
+done
+
 mkdir -p "$(dirname "$iso_out")"
 xorriso -as mkisofs \
     -b boot/limine/limine-bios-cd.bin \

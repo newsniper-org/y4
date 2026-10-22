@@ -57,8 +57,8 @@ ipc/alloc 은 서로 독립이라 병렬 가능. capsules 는 ipc 위에 얹힘.
 
 **seL4 버전 핀:** 당시 **15.x stable** → 현재 submodule **16.0.0**
 (2026-08-30 bump, commit `d30c897`, `third_party/sel4` 6e7c3b7).
-**Limine 버전 핀:** 당시 **12.x stable** → 현재 **v12.6.1**
-(같은 commit `d30c897`, `third_party/limine` 4e9e0d9).
+**Limine 버전 핀:** 당시 **12.x stable** → v12.6.1 → 현재 **v12.9.4** (2026-10-23 갱신 — 12.x 안의 버그 수정 · 라이선스 정리; 12.9.2 부터 `3RDPARTY.md` 가 바이너리와 함께 가야 해서 boot ISO 가 `COPYING` · `3RDPARTY.md` 를 싣는다)
+(v12.6.1 은 같은 commit `d30c897`, `third_party/limine` 4e9e0d9; v12.9.4 는 `third_party/limine` 8ad14430).
 **CMake invocation wrapping:** **logicutils-only**. xtask / cargo-make /
 CMakePresets / cmake -P / rust-script 모두 제외.
 **Why:** D1 결정("Cargo workspace + justfile + logicutils") 과의 정합성
