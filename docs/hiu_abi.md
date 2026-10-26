@@ -443,7 +443,8 @@
   순서(사용자 결정 U3, 2026-10-18 — WT 안; rc4 에서 실제 경과로 고침): 사용자 확정 → 정본 spec 커밋(Y4 가 diff
   대조) → Y4 의 판(rc) → WT 대조 → 동결 sha 지명(정본 커밋 하나 + 정본 트리 해시, 서면 — C1: **`b16fc07`** · 트리
   `2dd78f80b9d44354416716d75bd235b088ac8a01`, WT 2026-10-20) · WT history 보존 서면 확인 → 이 문서 `v1.0 frozen` + 양측
-  sign-off → (판 값 커밋 전 측정 파도 — §5.4; W7 `ea62f89` 착지 2026-10-26) → 판 값 `0x0001_0000` 커밋 → Y4 가 장치 값을 대조한다(`0xFFC` =
+  sign-off → (판 값 커밋 전 측정 파도 — §5.4; W7 `ea62f89` 착지 2026-10-26) → push · 원격 sha 통지(원격 `main` =
+  `1500438`, 2026-10-26) → 판 값 `0x0001_0000` 커밋 → Y4 가 장치 값을 대조한다(`0xFFC` =
   `0x0001_0000` · `0xF0C` 번호 1 · 형상). FP_SHAPE 배선 RTL 파도(W6 `efafb14`, 2026-10-19)는 WT 사용자 지시로 sign-off
   를 기다리지 않고 동결 sha 앞에 착지했다 — 판이 0 이고 Y4 는 `0xF0C` 에 쓰지 않으며, 정본이 이 경우를 예정했으므로
   (「sign-off 전에 착지한 배선은 워드 전체 0 을 낸다 (쓰기 거절 + `[6]` 은 그때도 낸다)」 `e-defined.typ:463`) Y4 는
@@ -467,7 +468,9 @@
 > **현재 상태:** **v1.0 frozen** (2026-10-22 — 양측 sign-off; 정본 동결 sha `b16fc07` · 정본 트리 `2dd78f80…`, 이
 > 문서의 동결 내용 = Y4 커밋 `783b119`). 동결 뒤 정본 변경은 사실 체제 안에서만(§5.4 조건 3 — 지금 정본 트리
 > `443cbfeb…`: `395e5b1` 의 B.5 사실 · `ea62f89` 의 3.9 측정 사실). 판 값 커밋 전 측정 파도는 W7(`ea62f89`, 2026-10-26)로
-> 착지했다(동결 뒤 사실 정정 2). 남은 것: WT 의 push 와 원격 sha 통지 → 판 값
+> 착지했다(동결 뒤 사실 정정 2). WT 는 push 했다(2026-10-26 — 공개 원격 `newsniper-org/WaveTensor` 의 `main` =
+> `1500438a7e686e07d317da6905421933a2b0fcaf`, 정본 트리 `443cbfeb…`; 통지한 sha 는 모두 원격 `main` 에서 도달 가능 — Y4 가
+> `git ls-remote` · `merge-base --is-ancestor` 로 확인). 남은 것: 판 값
 > `0x0001_0000` 커밋(조건 §5.4 4) → Y4 의 RTL diff · 장치 값 대조 → 실장치 결속. `0xFFC` 장치 값 = 0(판 0) · `0xF0C` 는
 > W6 배선 · 판 0 이라 워드 전체 0(§1.4). Phase C(`hiu/` mock-HIU · lease 런타임)는 착수할 수 있다.
 ---
@@ -1763,7 +1766,7 @@ rc3(`ff72bb0`) §5.3 과 Y4 답 `2026-10-18-reply-f6bc4df-rc3.md` §4 에 남는
 - **C1 — 동결 sha 서면 지명 (해소 · Y4 sign-off 차단 해제).** 「동결 sha: `b16fc07`」 · 「정본 트리
   `docs/wt64v1-architecture-guide` = `2dd78f80b9d44354416716d75bd235b088ac8a01`」 · 「WaveTensor 는 `b16fc07` 까지의
   history 를 다시 쓰지 않는다 — rebase · amend · force push 를 하지 않는다. 「또는 그 뒤 정본 커밋」은 지운다」(WT 답
-  §2). 범위 표도 받았다 — `rtl/` 은 W6 로 바뀌었다(§0). push 는 아직이다(WT 가 따로 알린다 — §5.4 조건).
+  §2). 범위 표도 받았다 — `rtl/` 은 W6 로 바뀌었다(§0). push 는 2026-10-26 에 했다(원격 `main` = `1500438` · `b16fc07` 주석 태그는 WT 사용자 확인 대기 — 동결 기준은 전체 sha 와 정본 트리 해시, §0 현재 상태).
 - **C2 — `[1]` 의 읽기 순서 (해소 · Y4 sign-off 차단 해제).** `e-defined.typ:463` FP_STATUS 행 「`[1]` 의 읽기 순서 —
   장치 포트에서」(4항 `:208` 은 가리킨다). Y4 가 청한 문장을 함의하는 강화판이고, 새로 「반영 전 읽기 정지」(유계)를
   허락한다 — Y4 처분은 §2.7 「step 적재 규칙」 4. 측정: W7(`ea62f89`)이 최상위 조립에서 잰다 — 첫 절 무계 · 둘째 절
@@ -2045,6 +2048,7 @@ rc3(`ff72bb0`) §5.3 과 Y4 답 `2026-10-18-reply-f6bc4df-rc3.md` §4 에 남는
   - Y4 통지 — Y4 sign-off 발효 · `v1.0 frozen` 표지 · 동결 뒤 사실 정정 (2026-10-22): `.local-replies-to/WaveTensor/2026-10-22-notice-y4-signoff-frozen.md`
   - WaveTensor 동결 뒤 사실 변경 통지 — 판 값 커밋 전 측정 파도 W7 `ea62f89` (2026-10-26): `.local-replies-from/WaveTensor/2026-10-26-notice-post-freeze-facts-W7-ea62f89.md`
   - Y4 통지 — `ea62f89` 대조 · 동결 뒤 사실 정정 2 (2026-10-26): `.local-replies-to/WaveTensor/2026-10-26-notice-ea62f89-crosscheck-fact-correction-2.md`
+  - WaveTensor push · 원격 sha 통지 — 원격 `main` = `1500438` (2026-10-26): `.local-replies-from/WaveTensor/2026-10-26-notice-push-1500438.md`
 - Y4: `docs/glossary.md` §2–§10 · §12(legacy 대응표), `docs/lease_capability.md`,
   `docs/architecture.md` §「가속기 입장에서의 의의」, `docs/design_decisions.md` (P3 · P10).
 
