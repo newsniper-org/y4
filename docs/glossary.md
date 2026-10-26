@@ -639,8 +639,8 @@ E.1.2 의 배정(`[31:0]`)을 그대로 고정했다 (`e-defined.typ:786-790`, `
       거절이라 `[6]` 에 접지 않고, CAP_STATUS(능력 부재)로도 보고하지 않는다. 캡처(프레임)는 없다 — 어느
       이양이 거절됐는지는 E.1.1 5항의 되읽기가 가른다(`:529` 해설). 재구현은 64칸 직접 사상의 충돌 이양
       기입을 「쓰기 무효 + loud sticky fault」로 낸다(RTL 사실: `rtl/spinal/src/main/scala/wt64/hiu/OwnershipTable.scala:92-96` ·
-      `:318-336` — W6 부터 유닛 하네스가 세움 건전성도 잰다(`s_col_src` · `s_col_slot`); FAULT_STATUS `[7]` 까지는
-      조립 절반과의 합성 서술이다, `03-hiu.typ:1537`). 그래서 Y4 는 OWN_SET 마다 `OWN_STATUS` 되읽기로 커밋을 확인하고 확인된 프레임만
+      `:318-336` — W6 부터 유닛 하네스가 세움 건전성도 잰다(`s_col_src` · `s_col_slot`); FAULT_STATUS `[7]` 까지의
+      합성은 W7 부터 조립 태스크 `ownasm.sby` 가 잰다 — 참조 형상 · 단발 t0 reset 한정, `03-hiu.typ:1537` @ `ea62f89`). 그래서 Y4 는 OWN_SET 마다 `OWN_STATUS` 되읽기로 커밋을 확인하고 확인된 프레임만
       장부에 올린다. 되읽기가 거절을 보여 설명된 `[7]` 은 `OwnSetRefused`(`[7]` 해제 · 테넌트에는 `K_OWN` 재시도 소진 때만 거친 「풀 확장 실패」),
       설명되지 않는 `[7]` 과 `[7]` 없는 거절은 장치 모순(`DeviceFault`)이다.
     - `[15]` 「step 프로그램 불량」(`e-defined.typ:520`) — 원천은 *닫힌 넷*이다(`:464`, §2 「step 프로그램
