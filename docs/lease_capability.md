@@ -705,8 +705,9 @@ global_config(L, q) -> own_refused:
    회수 가능 — B.5 「파티션별 변환 펜스」 행 `b-gaps.typ:2168`).
 10. (§3.2 · `hiu_abi.md` §2.8 · §1.2.1 (C)) LBID 슬롯 수 · LNID 등록 용량 · 배달 지점 수 — `0xFF8` 에 없어 플랫폼
    레지스트리 값을 쓴다(장치 알림 워드는 v1.x 후보 — `hiu_abi.md` §5.3 C10). step 프로그램 깊이 P · stepMax 는 `0xF0C`
-   FP_SHAPE 가 알린다(`e-defined.typ:463` — D4 (나) 해소; 오늘 RTL 은 배선하지 않았다, `:738`). 플랫폼 레지스트리의
-   (P, stepMax)는 판 0 · mock 동안의 출처이자 교차 확인으로 내렸고, 장치 값과 다르면 장치 모순이다(`DeviceFault` —
+   FP_SHAPE 가 알린다(`e-defined.typ:463` — D4 (나) 해소; RTL W6 `efafb14` 배선 · 판 값 커밋 W8 `40de875` 부터 v1.0
+   `0x0100_400A`). 플랫폼 레지스트리의 (P, stepMax)는 판 0 · mock 동안의 출처이자 교차 확인으로 내렸고(판 v1.0 장치에서는
+   교차 확인만), 장치 값과 다르면 장치 모순이다(`DeviceFault` —
    사용자 결정 U2, `fp_shape_verdict` · `fp_shape_registry_mismatch`). 엔트리 「길이」의 뜻(B.5 미결)이 닫히면
    `lbid_entry_ok` 를 다시 본다.
 11. ~~(`hiu_abi.md` §1.3) 비소유 접근 전용 fault 비트~~ — 2026-10-09 WaveTensor 가 받아 `[19]` 「비소유 프레임
@@ -722,7 +723,8 @@ global_config(L, q) -> own_refused:
 ## 6. 다음 단계
 
 - ~~본 v0.9 → `hiu_abi.md` v1.0-rc4 의 WT 대조와 sign-off → Y4 sign-off 발효 → `v1.0 frozen` 마킹~~ — 2026-10-22 끝났다
-  (`hiu_abi.md` v1.0 frozen — 양측 sign-off). 실장치 결속은 WaveTensor 판 값 커밋과 Y4 의 장치 값 대조 뒤다.
+  (`hiu_abi.md` v1.0 frozen — 양측 sign-off). 판 값 커밋(W8 `40de875`)과 Y4 의 장치 값 대조는 2026-10-27 에 끝났다 — 실장치 결속은 플랫폼 레지스트리 항목 ·
+  판 워드 Verus 명세 · `hiu/` 뒤다.
 - Phase C 진입(hiu_abi v1.0 frozen) 전에 본 spec 을 `proofs/lease/spec.rs` (Verus) 로 옮겨
   invariant I1–I7 의 machine-checked 버전 작성(`hiu_abi.md` §6 목록).
 - `kernel/lease/` Rust 구현은 그 spec 이 통과한 후에만 land

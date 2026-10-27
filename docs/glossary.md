@@ -7,6 +7,9 @@
 근거는 **WaveTensor 정본 `docs/wt64v1-architecture-guide/`**(이하 `G/`)이고,
 Y4 의 capability 스키마·HIU ABI 문서·Verus/Coq 명세가 이 사전을 참조한다.
 
+> **재출처 (2026-10-27).** WaveTensor 판 값 커밋 W8 `40de875`(정본 트리 `1e2803a5…`) 뒤의 사실로 FP_SHAPE · `0xFFC` 서술을
+> 고쳤다(§2 FP_SHAPE · §10 · 표면 표 · 대응표). 규범 인용은 동결 sha `b16fc07` 그대로다(`hiu_abi.md` 동결 뒤 사실 정정 3).
+
 > **재출처 (2026-10-01).** 이 사전의 이전 판(§1–§10)은 WaveTensor 저장소 루트의
 > legacy 참조 구현(`HIU.v` · `Pod.v` · `Cluster.v`)과 비정본 메모
 > (`.claude-memos/wt64v1_spec.md`)에서 추출했다. WaveTensor 는 2026-08-20 부터
@@ -182,9 +185,9 @@ ABI 근거가 될 수 없다.** 호스트가 보는 구성 표면(§2, 부록 E.
 
 - **배선 — RTL 파도 W6 (`efafb14`, 2026-10-19).** 「판 0 동안 읽기는 워드 전체 0 이고 쓰기는 거절 + `[6]` 이며,
   선택자 표 소거 중에도 쓰기는 정지 없이 즉시 거절되고 읽기는 응답한다」(`e-defined.typ:463` FP_SHAPE 행 · 3.9
-  `03-hiu.typ:1556`). 재구현 형상($P$ = 10 · stepMax = 32 — RTL 사실)에서 판 값 뒤의 읽기는 `0x0100_400A` 다 —
-  착지하지 않은 생성 변형에서 한 번 쟀고 판 값 커밋 때 다시 잰다(E.1.3 `e-defined.typ:738`). 판 값 커밋은 이 배선과
-  함께이거나 그 뒤다(§10).
+  W6 착지 당시). 재구현 형상($P$ = 10 · stepMax = 32 — RTL 사실)에서 판 값 뒤의 읽기는 `0x0100_400A` 다 — 판 값 커밋
+  W8(`40de875`, 2026-10-26)부터 장치 값이고, 판 v1.0 생성물과 판 0 변형 둘에서 잰다(E.1.3 `e-defined.typ:738` @ `40de875` ·
+  3.9 `03-hiu.typ:1556` @ `40de875`). 판 값 커밋은 이 배선과 함께이거나 그 뒤다(§10).
 - **step 워드 배치 — v1.0 동결** (`03-hiu.typ:1692`). `[0]` last(1 = 이 step 뒤 걷기를 끝낸다) · `[1]` unit
   (0 = 공유 가산기 · 1 = 공유 곱셈기) · `[5:2]` srcA · `[9:6]` srcB · `[13:10]` dst · `[15:14]` 예약 = 0(엄격 — 비0
   적재는 거절 + `[15]`). 이 배치의 이름이 FP_SHAPE 부호화 번호 1 이다. **선택 열쇠** 16b 는 `[15:8]` 연산 종류 ‖
@@ -737,7 +740,8 @@ Y4 가 직접 의존하는 WaveTensor 표면은 **구성 표면(§2) 하나**다
    sign-off 뒤 별도 커밋에서만 장치에 들어가므로 그때까지 값은 0 이다. 그리고 「그 커밋은 `0xF0C` FP_SHAPE
    의 배선과 함께이거나 그 뒤다」 — 판 값을 내는 장치는 FP_SHAPE 의 부호화 번호와 실제 $P$ · stepMax 도
    알려야 하기 때문이다 (`03-hiu.typ:1630-1638` · `:1650-1655`, `e-defined.typ:504-505`, `docs/hiu_abi.md`
-   §0 · §1.4). 순서는 sign-off → FP_SHAPE 배선 RTL 파도 → 판 값 커밋이다(2026-10-18 사용자 결정 U3).
+   §0 · §1.4). 순서는 sign-off → FP_SHAPE 배선 RTL 파도 → 판 값 커밋이다(2026-10-18 사용자 결정 U3). 판 값 커밋은
+   W8 `40de875`(2026-10-26)로 착지했다 — 장치 `0xFFC` = `0x0001_0000` · `0xF0C` = `0x0100_400A`(Y4 대조 2026-10-27).
 3. **§3.10 합의 입력** — 함께 올렸던 다섯(물려받은 구역·판 워드의 처분, E.1.3 소비 회로 없는
    RW 워드의 쓰기 거절, 소거 구간 중 읽기, 바이트 폭 레지스터의 워드 정렬 재배치)은 3.10 v1.0
    묶음(2026-10-09)이 닫았다. 묶음 전체의 *동결*은 양측 sign-off 가 남았다 (`03-hiu.typ:1640-1647`).
@@ -769,7 +773,7 @@ mapping 만 책임진다.
 
 | # | 표면 | 방향 | 정의 위치 | 상태 |
 |---|---|---|---|---|
-| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | **v1.0 frozen** (2026-10-22 양측 sign-off — WaveTensor 동결 sha `b16fc07` · Y4 동결 내용 `783b119`).  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) — 비0 판 값 `0x0001_0000` 은 sign-off 뒤, FP_SHAPE 배선과 함께이거나 그 뒤의 별도 커밋 |
+| A | Y4 ↔ HIU 구성 표면 (MMIO 레지스터 맵 + 시간 계약) | Y4(호스트) **→** 가속기 | `docs/hiu_abi.md` (상대편: WaveTensor 정본 E.1 · §3.10) | **v1.0 frozen** (2026-10-22 양측 sign-off — WaveTensor 동결 sha `b16fc07` · Y4 동결 내용 `783b119`).  `0xFFC` 합의 전 값 = 0 (판 0 = 「약속 없음」, §10) — 비0 판 값 `0x0001_0000` 은 sign-off 뒤, FP_SHAPE 배선과 함께이거나 그 뒤의 별도 커밋(W8 `40de875` 착지 · Y4 대조 2026-10-27) |
 | B | 게스트 ↔ 하이퍼바이저 hypercall | 게스트 **→** Y4-VMM | **`docs/y4_abi.md` §2** (v0 draft) | 정의됨 (2026-09-14).  core VMM 은 워크스페이스 안, `y4-hypercall` repo 는 §5.3 재정의 후 사용자 CLI 전용(디스크 미존재) |
 | C | seL4 fork raw-SVM syscall (D1a) | root task **→** 커널 | 전용 절 없음 — `docs/vmm_arch.md` §1 (`CONFIG_Y4_AMDV` raw-SVM cap) + §4 매핑 표에 `ObjectType_SVM*` / `Create` / `Configure` / `RebaseTsc` / `Migrate` / `ChangeParent` 로 흩어져 있다 | `phase_plan.md` Phase C 차단 의존 5 = (열림) |
 | D | lease capability 스키마 | Y4 내부 (in-process API) | `docs/lease_capability.md` §3.1 | v0.9 draft.  `LeaseManager.acquire()` 는 **Rust 시그니처**이지 ABI 가 아니다 — §3.2 는 게스트의 cap 취득 경로가 IPC/hypercall/MMIO trap 중 무엇인지 명시하지 않는다 |
@@ -832,7 +836,7 @@ Y4 의 다른 문서(`hiu_abi.md`, `lease_capability.md`, `architecture.md` 등)
 | `rng_raw` / `rng_word` / `trng_unhealthy` | E.1 신규 맵에 호스트용 난수 워드 없음. 건강성은 `FAULT_STATUS[17]` (W1C 해제) + CD_TAG1 poison (§7) | 물려받은 구간의 뜻은 §3.10 합의 대상 (`e-defined.typ:44`). `[17]` 은 자리만 ABI 이고 상수 0 이다(측정 트랙) |
 | `DUMMY_CYCLES = 8`, 「≈32 cycle」 | 상수 시간성 = 경로 간 동일성 (§1) | 절대 사이클 수는 계약 아님 |
 | `HIU_STATUS.dma_ack` polling | 완료 링 폴링 / opt-in IRQ (§8) | IRQ_MASK reset = 1 |
-| `HIU_ABI_VERSION` v0 = `0x0000_0000` (옛 표의 판) | `0xFFC` 판 0 = 「약속 없음」 (§10) | v1.0 = `0x0001_0000` — 양측 sign-off 뒤 별도 커밋 (§10) |
+| `HIU_ABI_VERSION` v0 = `0x0000_0000` (옛 표의 판) | `0xFFC` 판 0 = 「약속 없음」 (§10) | v1.0 = `0x0001_0000` — 양측 sign-off 뒤 별도 커밋 (§10; W8 `40de875` 착지) |
 | PE = 단일 ALU/MUL/DIV, 6 cycle | 이종 PE (§9) | 사이클 수 근거 없음 |
 | `WADV` 로 증가하는 `wave_number` | 호스트가 짓는 불투명 32-bit 식별자, 게이트 없음 (§9) | |
 | `OPREF.src_kind = 2` (TRNG bank) | 「난수 뱅크 (Pod 범위 64비트 조건화 난수)」 (§7) | 값 배정은 그대로 |

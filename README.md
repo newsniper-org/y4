@@ -19,8 +19,10 @@ in this repo lives at [`docs/architecture.md`](./docs/architecture.md).
 > concrete PCIe enum capsule, and `kernel/` printing **`Hello, Y4`**
 > on the QEMU serial.  [`docs/hiu_abi.md`](./docs/hiu_abi.md) became
 > `v1.0 frozen` on 2026-10-22 (joint Y4 + WaveTensor sign-off), which
-> unblocks HIU-touching work (`hiu/`, lease runtime); real-device
-> binding waits for the WaveTensor version-value commit.
+> unblocks HIU-touching work (`hiu/`, lease runtime). The WaveTensor
+> version-value commit (`40de875`) has landed and Y4 has checked the
+> device values; real-device binding waits for the platform registry
+> and `hiu/`.
 > See [`docs/phase_plan.md`](./docs/phase_plan.md).
 
 ---

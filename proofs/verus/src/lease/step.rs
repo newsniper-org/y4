@@ -71,7 +71,8 @@
 //! `e-defined.typ:463`), 플랫폼 레지스트리의 교차 확인값과의 불일치는 장치 모순(`DeviceFault`)이고,
 //! stepMax = 0 은 「step 기능 없음」(적재 생략)이다(사용자 결정 U2 — 참조 RTL 은 stepMax ≥ 2 라
 //! 그 갈래에 닿지 않는다, RTL 사실).  배선은 RTL 파도 W6(`efafb14`)가 착지했다 — 판 0 동안 읽기는
-//! 워드 전체 0 이다(`e-defined.typ:463` FP_SHAPE 행).
+//! 워드 전체 0 이다(`e-defined.typ:463` FP_SHAPE 행).  판 값 커밋 W8(`40de875`)부터 v1.0 읽기는
+//! `0x0100_400A` 다(`FP_SHAPE_RTL_REFERENCE` — Y4 독립 측정 일치, `hiu_abi.md` 동결 뒤 사실 정정 3).
 //!
 //! FP 관문 `StepGate`: 창의 FP_PROG 를 다 쓴 뒤 `T_FLT` 를 기다려 `0xF80[15]` 를 읽는다.  관문
 //! 앞에서 결속을 모두 거두고 `[1]` = 0 을 보았으므로 이 구간에는 (3) 의 기입이 없고 새 걷기가

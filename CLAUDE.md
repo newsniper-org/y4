@@ -44,9 +44,11 @@ capability 스키마의 입력. 모든 하드웨어 의존 코드는 mock 뒤로
 `HIU_ABI_VERSION` 레지스터(`0xFFC`)의 비0 판 값은 양측 합의(정본 §3.10)로 고정돼 있다. 판 분할은
 `(major << 16) | minor`, v1.0 = `0x0001_0000` 이다(Y4 제안 · WaveTensor 동의
 2026-10-05, 정본 spec 커밋 `6a25359` 에 착지). 비0 판 값은 양측 sign-off 뒤에만 장치에 들어가고,
-그 커밋은 `0xF0C` FP_SHAPE 배선과 함께이거나 그 뒤다(`docs/hiu_abi.md` §0). 합의 전 장치 값은 0 이고,
-판 0 은 레이아웃을 약속하지 않는다 (`docs/glossary.md` §10). 그래서 `hiu/` mock-HIU 와 lease 런타임
-(Phase C)은 착수할 수 있고, *실장치* 결속만 WaveTensor 판 값 커밋과 Y4 의 장치 값 대조를 기다린다.
+그 커밋은 `0xF0C` FP_SHAPE 배선과 함께이거나 그 뒤다(`docs/hiu_abi.md` §0). 판 값 커밋 W8 `40de875`
+(2026-10-26)로 장치는 `0xFFC` = `0x0001_0000` · `0xF0C` = `0x0100_400A` 를 내고, Y4 가 2026-10-27 에 RTL diff 와
+장치 값을 대조했다(판 0 은 여전히 레이아웃을 약속하지 않는다 — `docs/glossary.md` §10). 그래서 `hiu/` mock-HIU 와
+lease 런타임(Phase C)은 착수할 수 있고, *실장치* 결속은 Y4 쪽의 플랫폼 레지스트리 항목 · 판 워드 Verus 명세 ·
+`hiu/` 를 기다린다.
 
 전체 Phase A → Phase E 진행은 `docs/phase_plan.md` 참조.
 
@@ -115,7 +117,7 @@ Y4/
 ├── docs/
 │   ├── architecture.md     canonical design memo
 │   ├── glossary.md         WaveTensor terms (HIU/lease/masking/...) from the canonical guide
-│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; **v1.0 frozen** 2026-10-22 — 양측 sign-off, 정본 부록 E + §3.10 v1.0 묶음 · WaveTensor 동결 sha `b16fc07` · Y4 동결 내용 `783b119` — `hiu/` unblock, 실장치는 판 값 커밋 대기)
+│   ├── hiu_abi.md          Y4 ↔ HIU ABI (가속기-대면; **v1.0 frozen** 2026-10-22 — 양측 sign-off, 정본 부록 E + §3.10 v1.0 묶음 · WaveTensor 동결 sha `b16fc07` · Y4 동결 내용 `783b119` — `hiu/` unblock, 판 값 커밋 `40de875` 대조 완료)
 │   ├── y4_abi.md           게스트↔하이퍼바이저 ABI (Y4 ABI) v0 draft (게스트-대면)
 │   ├── lease_capability.md lease capability schema v0.9
 │   ├── licensing.md        Apache-2.0 main + GPL-capsule isolation
@@ -236,8 +238,10 @@ WaveTensor `.local-requests-from/Y4/`); replies through
   (Verus + Coq + CI gate) → `boot/` (Limine → seL4 QEMU) → `ipc/` and
   `alloc/` in parallel → `capsules/` (non-HIU). HIU-touching work
   (`hiu/`, lease runtime) deferred until `docs/hiu_abi.md` was `v1.0
-  frozen` — done 2026-10-22; real-device binding still waits for the
-  WaveTensor version-value commit.
+  frozen` — done 2026-10-22; the WaveTensor version-value commit
+  (`40de875`) landed and Y4 checked the device values on 2026-10-27, so
+  real-device binding now waits only on Y4's platform registry entry,
+  the version-word Verus spec and `hiu/`.
 - **Git hooks:** `tools/git-hooks/` is committed. Fresh clones must run
   `just install-hooks` once to wire `core.hooksPath`. The pre-commit
   hook mirrors Claude Code memory into `.claude-memories/` (also
