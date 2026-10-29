@@ -15,7 +15,7 @@ metadata:
   - Since 2026-08-20 it is a **clean-room RTL reimplementation**: SpinalHDL main + SystemVerilog verification layer under `rtl/`.
   - The process is pre-formal TLA+ → RTL → post-formal sby.
   - The sole canonical spec is `docs/wt64v1-architecture-guide/`.
-  - Remote (since 2026-10-26): public GitHub `newsniper-org/WaveTensor` — the old `Honey-Be/WaveTensor-private` URL redirects there (WT local origin still names the old URL). Remote `main` = `81d670a` at the 2026-10-27 push (version-value commit `40de875`); freeze tag `wt64v1-s3.10-v1.0-frozen` → `b16fc07`; Y4 checks reachability with `git ls-remote https://github.com/newsniper-org/WaveTensor` (read-only).
+  - Remote (since 2026-10-26): public GitHub `newsniper-org/WaveTensor` — the old `Honey-Be/WaveTensor-private` URL redirects there (WT local origin still names the old URL). Remote `main` = `d1e026e` at the 2026-10-29 push (version-value commit `40de875` landed 2026-10-27; fact commits W9–W11 since); freeze tag `wt64v1-s3.10-v1.0-frozen` → `b16fc07`; Y4 checks reachability with `git ls-remote https://github.com/newsniper-org/WaveTensor` (read-only).
   - Repo-root `*.v` files (`HIU.v`, `Pod.v`, `Cluster.v`, …) are the **legacy** reference implementation and must not be used as an ABI source.
 
 **ABI crossings (only places Y4 work touches WaveTensor):**
