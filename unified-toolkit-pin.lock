@@ -32,6 +32,11 @@
 #                       B′ closed — full Verus → adsmt-cert → Isabelle/
 #                       Rocq pipeline end-to-end").  Y4 submodule pin
 #                       갱신 (이전 `55cb8316e` → `22e10f196`)
+#                       → `c9b9a45ee` (2026-06-11) → `559ac52db`
+#                       (2026-10-31 — backend-pluggable rebased onto
+#                       upstream tag release/0.2026.10.18.7d82994;
+#                       rustc 1.99.1, Z3 4.16.0; old pin kept on
+#                       origin/backend-pluggable-pre-rebase-0.2026.10.18)
 #
 # Soundness milestone:
 #   - rc.28 (sound): opaque-assert-masks-`false` P0 fix + AOT-path extension

@@ -205,7 +205,7 @@ originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
       - adsmt-contrib = `cbf7a46` (rc.31-era wasm packages, rc.33 base
         rebuild 필요)
       - verus-fork submodule pin = `22e10f196` (이전 `55cb8316e`)
-        → 이후 `c9b9a45ee` (Y4 `41bcdbe`, 2026-06-11).  `unified-toolkit-pin.lock`
+        → 이후 `c9b9a45ee` (Y4 `41bcdbe`, 2026-06-11) → `559ac52db` (2026-10-31 — 업스트림 tag release/0.2026.10.18.7d82994 위로 rebase, rustc 1.99.1 · 시스템 Z3 4.16.0(source/z3 → /usr/bin/z3 심링크) · 업스트림 #2486 유한 Set/Map 에 맞춰 Y4 증명 3 곳 수정, 181 verified).  `unified-toolkit-pin.lock`
         은 여전히 `22e10f196` 을 적고 있다 (lock 미갱신, 2026-10-01 확인)
     - **Y4 측 변경**:
       - `unified-toolkit-pin.lock` rc.33 baseline + Verus fork pin

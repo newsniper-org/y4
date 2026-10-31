@@ -854,7 +854,9 @@ pub open spec fn fp_dev_unbind(d: FpDevice, k: nat) -> FpDevice {
 
 /// 장치: 선택 열쇠 전 범위(< 2^16)에 en = 0 — 부팅 5b 의 sweep.
 pub open spec fn fp_dev_unbind_all(d: FpDevice) -> FpDevice {
-    FpDevice { sel: d.sel.remove_keys(Set::new(|k: nat| k < 0x1_0000)), walking: d.walking }
+    // 장치가 지우는 것은 결속된 열쇠뿐이므로 「< 2^16 전부」는 결속 정의역의 그 부분과 같다
+    // (vstd `Set::new` 가 업스트림 #2486 부터 `Option<Set>` 을 내므로 유한한 정의역에서 거른다).
+    FpDevice { sel: d.sel.remove_keys(d.sel.dom().filter(|k: nat| k < 0x1_0000)), walking: d.walking }
 }
 
 /// 장치: 열쇠 집합 `ks` 에만 en = 0 — 창의 `fp_unbind_all`(장부의 열쇠 `fp.keys` 전부)이 내는 기입 열.

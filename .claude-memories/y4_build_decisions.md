@@ -69,3 +69,5 @@ CMakePresets / cmake -P / rust-script 모두 제외.
 형태(실물: `boot/justfile:40`)로만 — `--dry-run` 출력을 조건 평가로 오독하지 말 것 ([[just_first_recipe_trap]]). justfile recipe 는 그 한 줄과 logicutils 산출물 후처리만.
 형상 matrix 가 늘면 룰 파일 행을 늘리지, justfile recipe 를 늘리지 말 것.
 표현력 한계가 실측되면(예: 5+ 형상 × 2 build mode) 그때 재평가.
+
+**verus-fork pin (2026-10-31):** submodule `verus-fork` = `backend-pluggable` `559ac52db` — rebased onto upstream tag `release/0.2026.10.18.7d82994` (old pin `c9b9a45ee` kept on `origin/backend-pluggable-pre-rebase-0.2026.10.18`). Toolchain rustc 1.99.1 (fork `rust-toolchain.toml`); Z3 = system 4.16.0 via `verus-fork/source/z3 → /usr/bin/z3` symlink (gitignored; the fork's `get-z3.sh` also pins 4.16.0). Rebuild from clean caches: `cd verus-fork/source && bash -c 'source ../tools/activate && vargo build --release'`. Upstream #2486 made `Set`/`Map` finite (`Set::new` → `Option<Set>`, `Map::new(Set, fv)`; infinite = `ISet`/`IMap`) — Y4 proofs adapted in 3 places.

@@ -104,9 +104,9 @@ impl IpcState {
     /// Set of currently alive endpoint caps — present in the binding
     /// table or referenced by a live handle.
     pub open spec fn live_endpoints(self) -> Set<EndpointCap> {
-        Set::<EndpointCap>::new(|ep: EndpointCap|
-            self.mp.binding.dom().contains(ep)
-        )
+        // vstd `Set::new` returns `Option<Set>` since upstream #2486; the
+        // predicate was exactly binding-domain membership, so use the domain.
+        self.mp.binding.dom()
     }
 }
 

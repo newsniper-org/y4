@@ -48,10 +48,11 @@ pub open spec fn quarantine_step(
     // Aged map: every key advances by 1.  Then add the new entry at age 0.
     // Then keep only entries whose age is still ≤ q_max (= q_max - 1 + 1
     // for old entries, 0 for the new one).
+    // vstd `Map::new` takes a finite domain `Set` since upstream #2486
+    // (finite `Set`/`Map`): the same domain as the old predicate —
+    // the surviving aged keys plus `new_entry`.
     Map::<Allocation, nat>::new(
-        |a: Allocation|
-            (q_in.dom().contains(a) && q_in[a] + 1 <= q_max)
-            || a == new_entry,
+        q_in.dom().filter(|a: Allocation| q_in[a] + 1 <= q_max).insert(new_entry),
         |a: Allocation|
             if a == new_entry { 0nat } else { (q_in[a] + 1) as nat },
     )

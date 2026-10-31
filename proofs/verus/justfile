@@ -74,9 +74,9 @@ _check-verus:
         echo "  Build (한번만):"; \
         echo "    git submodule update --init verus-fork"; \
         echo "    cd verus-fork/source"; \
-        echo "    ./tools/get-z3.sh"; \
-        echo "    rustup toolchain install 1.95.0"; \
-        echo "    rustup component add rustc-dev llvm-tools --toolchain 1.95.0"; \
+        echo "    ./tools/get-z3.sh    # Z3 4.16.0 — or: ln -s \"\$(command -v z3)\" z3  (system Z3 4.16.0)"; \
+        echo "    rustup toolchain install 1.99.1"; \
+        echo "    rustup component add rustc-dev llvm-tools --toolchain 1.99.1"; \
         echo "    source ../tools/activate.fish     # or .sh / .bat / .ps1"; \
         echo "    vargo build --release"; \
         echo ""; \
