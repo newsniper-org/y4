@@ -240,16 +240,25 @@ _toolchain-fingerprint:
 # Internal helper: hash-stamped invocation of a single gate.
 # $1 = recipe name (also used as sentinel filename).
 # $2 = whitespace-separated dep file list (may be empty).
+#
+# Each gate keeps its OWN signature store ({{stamp_store}}/gate-<name>/).
+# `stamp` maps file path → signature, so a store shared by gates with the
+# same inputs let the first gate's `stamp record` mark every later gate
+# "up-to-date" without it ever running — fmt-check made lint and test
+# hollow (found 2026-10-31; lint/test stamps were hours older than the
+# inputs they claimed to cover).
 _gate name deps:
     @sentinel={{stamp_store}}/{{name}}.ok; \
+    store={{stamp_store}}/gate-{{name}}; \
     deps="{{deps}}"; \
     if [ -f "$sentinel" ] && [ -n "$deps" ] \
-       && freshcheck --method=hash --store={{stamp_store}} "$sentinel" $deps >/dev/null 2>&1; then \
+       && freshcheck --method=hash --store="$store" "$sentinel" $deps >/dev/null 2>&1; then \
         echo "[{{name}}] up-to-date (skipped)"; \
     else \
         just {{name}} \
+        && mkdir -p "$store" \
         && touch "$sentinel" \
-        && { [ -z "$deps" ] || stamp record --method=hash --store={{stamp_store}} "$sentinel" $deps >/dev/null; }; \
+        && { [ -z "$deps" ] || stamp record --method=hash --store="$store" "$sentinel" $deps >/dev/null; }; \
     fi
 
 # --- scudo upstream mirror ----------------------------------------------

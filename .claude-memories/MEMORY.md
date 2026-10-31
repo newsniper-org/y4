@@ -13,3 +13,4 @@
 - [Y4 adsmt + adsmt-contrib = testing channel pin (rolling)](feedback_adsmt_testing_channel_pin.md) — 양 repo testing channel 추종; 현 commit 기록처는 unified-toolkit-pin.lock.
 - [드라이버/SDK 개발환경 · Rust 툴체인 · Y4 ABI 선행조건 방침](y4_toolchain_and_abi_policy.md) — 사용자 방침 축자(2026-08-30); `stable >= 1.97` 은 하한이지 핀 아님 ↔ Y4 MSRV 1.94 + `channel = "stable"`(이 호스트 1.98.1, 2026-10-01) — **verus-fork 작업 후 재판정으로 유보**; 「Y4 ABI」= docs/y4_abi.md (v0, 2026-09-14) — SDK/driver 착수는 v1.0 frozen 후.
 - [just first-recipe trap — Verus 게이트가 84일간 공허했다](just_first_recipe_trap.md) — `just` 는 이름이 `default` 인 레시피가 아니라 **파일의 첫 레시피**를 돈다; `_check-verus` 가 위에 있어 `just ci` 가 증명 54개를 하나도 안 돌리고 통과했다 (`bc0b698` 2026-06-07 ~ 2026-08-30). `--dry-run` 출력을 조건 평가로 읽지 마라.
+- [Shared stamp store trap — ci gates were hollow](shared_stamp_store_trap.md) — one logicutils store for all `_gate`s let fmt-check's `stamp record` mark lint/test fresh without running; per-gate store since 2026-10-31.
