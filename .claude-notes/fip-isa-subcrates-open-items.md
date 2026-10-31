@@ -7,6 +7,33 @@
 > 해소됐고, 브랜치는 main 으로 port 됐다(브랜치는 유지). `fip/` 는 CLAUDE.md §5 ·
 > README 레이아웃에 등재했다(§3-3 일부). 나머지 항목은 미결 그대로다.
 
+> **갱신 (2026-10-31) — 재점검 · 사용자 결정 · 조치.** 2026-10-31 재점검(4 관점 감사 + 반박 검증, Y4 `1930def`)
+> 결과 `fip/core` · `fip/macros` 는 이 노트 이후 바뀌지 않았고 §1 결함은 모두 미결이었다. 사용자 결정:
+> **(1)** Y4-FIP 등급(F1 할당 0 · F2 해제 0 · F3 정적 스택 상한 · F4 고유성 · F5 고차 인자 / Y4-FBIP / Y4-FIP(n))
+> 채택 — `docs/design_decisions.md` §2.1 · `y4-fip-core` crate 문서. **(5)** bare-metal · MSRV 게이트, `ci`
+> 해시 대상 정정, 자동 CI(로컬 pre-push 훅) 모두 둔다. **(6)** AArch64 · RV64GC 는 워크스페이스에 두고, 그
+> 테스트는 QEMU(qemu-user)로 저우선순위(nice 19 · idle I/O) 실행.
+> - **해소** — `67c1d09`: §1-1(`per_cache_line` 하한 1) · §1-3(`#[fip]` 함수 정의 판정) · §1-4(속성 인자 거부)
+>   · §1-5 · §1-6(「Y4-FIP (선언)」 절을 사용자 문서 *뒤에*, 미강제 명시) · §1-7(place 아닌 식 컴파일 오류 —
+>   `fip_map!` 도) · §1-8(`fip_map!` 클로저 1회 평가) · §2-1(lints 상속 · `publish = false` · pedantic 정리 ·
+>   macros `forbid(unsafe_code)` · x86_64 `deny` + 국소 `allow`) · §2-5(감사 근거 인용 정정) · §3-1(로드맵) ·
+>   §3-2(꼬리 · panic 문서) · §3-5(P3 문면 정정) · 테스트 공백(panic · drop 1회 · 상태 전달 · compile_fail ·
+>   arch 테스트). `9bec668`: §2-2(bare-metal 3 arch + root task · MSRV · `fip-qemu` · pre-push 훅 `just
+>   ci-push`) · `ci` 해시 공백(toolchain · lock · justfile · 지문 포함, `verus-fork/` 제외) · 자동 CI 부재.
+>   문서 커밋: §3-3(design_decisions §2.1 정의 · 구현 상태 · 정정, README, CLAUDE.md, `Cargo.toml` 주석) ·
+>   §3-4(NOTICE). §4-1 은 결정됨(위 (6)).
+> - **번복** — §6 의 「core-only = 컴파일러 강제 zero-alloc 은 과장」 반박은 **번복**한다: core-only 크레이트가
+>   다른 크레이트 함수로 전이적으로 할당하는 것과, Y4 할당기 자신이 core-only API 라 크레이트 경계로 F1 을
+>   막을 수 없다는 것을 실측했다. 정정은 design_decisions §2.1 · perceus scan §5.1 정정 노트.
+> - **아직 결정 대기** — §4-2 `Fip` 마커 형태(`unsafe trait` + F2 의무 / 제거) · §4-3 `T: Default` 와
+>   capability 토큰 · §4-4 `ArchTuning` · §4-5 `CACHE_LINE` override · (신규) 꼬리 owned 원소 계약
+>   (`compact` 계열의 버린 원소가 살아 있는 채 남음 — capability 토큰이면 부활 위험; `!needs_drop` bound 또는
+>   문서 계약).
+> - **로드맵 그대로(§5)** — F1 강제는 `#[fip]` 서명/capability 검사로(할당기 handle · untyped cap · 전역 할당자
+>   경로가 서명에 없음), Verus ⒜(`compact`/`dedup` 기능 명세 — 첫 소비자보다 먼저) · ⒝. aarch64 `PRFM` ·
+>   riscv64 `prefetch.r` no-op. 아래 본문의 「54 verified」는 당시 값(지금 181), precision 행의 「HIU ABI 동결」
+>   차단은 2026-10-22 에 풀렸다. 아래 「권장 순서」 5 단계(merge)는 끝났다 — 브랜치는 main 의 조상이다.
+
 - **대상:** `fip/isa-subcrates` @ `468a851`. 별도 detached worktree 에서 점검했다(읽기 전용).
 - **범위:** `main...fip` 차이 = 워크스페이스 멤버 `fip/{core,macros,x86_64,aarch64,riscv64}` + `Cargo.lock` 의 경로 패키지 5개.
 - **방법:**

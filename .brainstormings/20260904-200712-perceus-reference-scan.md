@@ -11,7 +11,7 @@ refs:
   - Perceus (Reinking·Xie·de Moura·Leijen, PLDI 2021) — "Garbage Free Reference Counting with Reuse"
   - Reference Counting with Frame-Limited Reuse (Lorenzen·Leijen, ICFP 2022) — reuse 정밀화·예측가능
   - FP²: Fully in-Place Functional Programming (Lorenzen·Leijen·Swierstra, ICFP 2023) — provable zero-alloc + constant stack
-  - Counting Immutable Beans (de Moura·Ullrich, Lean 4, IFL 2019) — borrowing-based RC elision + reuse (관련 계보, verified-language)
+  - Counting Immutable Beans (Ullrich·de Moura, Lean 4, IFL 2019) — borrowing-based RC elision + reuse (관련 계보, verified-language)
   - .brainstormings/20260618-212218-alloc-frontend-improvements.md (§0.5 atomic 배제, front-end)
   - .brainstormings/20260618-221518-pluggable-alloc-frontend-contract.md (AllocFrontend/Freelist trait, measurement gate)
   - .brainstormings/20260618-223701-capability-bound-allocation.md (sealed zero-on-free)
@@ -59,7 +59,7 @@ refs:
     증명; splay/finger tree·merge/quick sort·generic map 을 heap·stack 0 로.
     ★ **provable zero-alloc + bounded stack = 하이퍼바이저 hot/RT 경로의 이상**
     → §5 로 승격(tier 1).
-- **관련 계보 — Lean 4 "Counting Immutable Beans"** (de Moura·Ullrich, IFL'19):
+- **관련 계보 — Lean 4 "Counting Immutable Beans"** (Ullrich·de Moura, IFL'19):
   Perceus 의 sibling; **borrowing-based 분석으로 RC update elision** + reuse;
   **정리증명기 Lean 4 에서 production**.  ★ Y4/Rust 접점: **Rust 의 정적 borrow
   checker 가, Lean 이 (동적으로) 추론하는 borrowing 을 컴파일-시점에 이미 수행**
@@ -157,6 +157,13 @@ Perceus 는 garbage-free — 객체를 **last-use 즉시** 해제(scope-end 아�
     `Rc::get_mut`/`make_mut` 로 unique-fast-path.  ★ **`Arc` 는 hot 경로 금지**
     (atomic, §0.5/P1).
   - 하나만 고른다면 Perceus 목표상 **B**.
+
+> **정정 (2026-10-31 — FIP 점검 · 사용자 결정, `docs/design_decisions.md` §2.1).** 위 표와 결론의
+> 「core-only(no `alloc`) → 컴파일러가 zero-alloc 강제」 · 「provable zero-alloc」은 **보장이 아니다** —
+> core-only 크레이트도 다른 크레이트의 함수로 전이적으로 할당하고, Y4 할당기(`y4-alloc`)가 core-only
+> API 라 크레이트 경계로는 할당 0 을 막을 수 없다(실측).  core-only 는 할당 0 의 부분 필요조건이다.
+> 채택된 정의는 Y4-FIP(F1 할당 0 · F2 해제 0 · F3 정적 스택 상한 · F4 고유성 · F5 고차 인자) ·
+> Y4-FBIP · Y4-FIP(n) 이고, 강제는 `#[fip]` 의 서명/capability 검사와 Verus 로 간다(로드맵).
 
 ## §6 (배제) 명시적 non-adoption
 

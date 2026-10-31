@@ -129,6 +129,17 @@ Acknowledgements / Methodology Inspiration:
                            that the Verus + AMD-V combination is
                            tractable.
 
+  * Perceus / FP²          "Perceus: Garbage Free Reference Counting with
+    (PLDI '21 /            Reuse", Reinking, Xie, de Moura, Leijen (PLDI '21);
+    ICFP '22 / ICFP '23)   "Reference Counting with Frame-Limited Reuse",
+                           Lorenzen, Leijen (ICFP '22); "FP²: Fully in-Place
+                           Functional Programming", Lorenzen, Leijen,
+                           Swierstra (ICFP '23); the Koka language
+                           (`fip fun`). Inspiration: the fully-in-place
+                           discipline that Y4-FIP restates as a function
+                           contract (F1–F5). See docs/design_decisions.md
+                           §2.1 and fip/core.
+
   * Linux cpufreq /        Algorithm reference only (no code import).
     cpuidle / thermal /    GPL-2-licensed; Apache-2 main tree cannot
     powercap drivers       import. Y4 power-mgr capsules study these

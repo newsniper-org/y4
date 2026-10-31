@@ -135,6 +135,26 @@ bearer) · USIM-AKA 권한 = 전부 capability.  **단일-보유 capability 가 
   목표가 Perceus 가치 포착이면 **FIP-macro 우선**(Rc = Perceus 가 줄이려는 RC
   baseline), std `Rc` 는 드문 동적-공유(비-hot, 단일-CPU) fallback, **`Arc` 는
   hot 경로 금지**.
+- **Y4-FIP 정의 (2026-10-31 사용자 결정 — 구현 `fip/`, `y4-fip-core` crate 문서).**
+  함수 `f` 가 다음 다섯을 모두 만족하면 Y4-FIP 다.  **F1 할당 0**(전이적 호출
+  그래프 — 넘겨받은 클로저 포함 — 가 Rust 전역 할당자 · `y4-alloc` API · seL4 untyped
+  retype 를 부르지 않는다) · **F2 해제 0**(소비하는 owned 값의 drop 이 해제하지 않는다)
+  · **F3 정적 스택 상한**(재귀 없음 — 호출 그래프 DAG) · **F4 고유성**(`&mut` 또는 owned)
+  · **F5 고차 인자도 Y4-FIP**.  완화 등급 **Y4-FBIP**(F2 · F3 해제) · **Y4-FIP(n)**(할당
+  n 회 허용).  FP² 의 fip(선형성 + 생성자 reuse 로 *증명*)를 함수 단위 계약으로 옮긴
+  것이고 v1 은 **선언된 계약**이다(`#[fip]` 는 모양만 검사, F1–F5 미강제).
+  - **정정 (2026-10-31 점검):** 위 scan 요약과 scan §5.1 의 「core-only(no `alloc`) 로
+    컴파일러가 zero-alloc 강제」는 **보장이 아니다** — core-only 크레이트도 다른
+    크레이트의 함수로 전이적으로 할당하고(실측), Y4 할당기(`y4-alloc`)가 core-only
+    API 이므로 크레이트 경계로는 F1 을 원리적으로 막을 수 없다.  core-only 는 F1 의
+    부분 필요조건이다.  ipc · alloc · capsules 는 이미 core-only 라 fip 가 더하는
+    강제도 없다.  `y4-fip-core` 의 조합자는 「본문은 할당 · 해제 0 ·
+    alloc-transparent」로 명세한다.
+  - **구현 상태:** `fip/{core,macros,x86_64,aarch64,riscv64}` — 조합자
+    (`compact` · `compact_with` · `dedup` · `fip_update!` · `fip_map!`) + `#[fip]`(선언) +
+    arch 튜닝(x86_64 `prefetcht0`; aarch64 · riscv64 힌트는 no-op).  소비자 0.  scan §5.1 의
+    계획과 다른 점: 강제 장치 0, §3 reuse 미통합, inline-macro 대신 함수 + `macro_rules`.
+    미결 · 결정 대기는 `.claude-notes/fip-isa-subcrates-open-items.md`.
 
 ### 2.2 IPC
 - [ipc-layer-design](../.brainstormings/20260812-173424-ipc-layer-design.md)
@@ -215,6 +235,9 @@ bearer) · USIM-AKA 권한 = 전부 capability.  **단일-보유 capability 가 
 - **Verus 착수 = verus-fork 안정화 이후**(Verus 업스트림 breaking-change 대응
   지연): boot §8 log-parser·PCR-replay, boot §8 root-task invariant(보류),
   key-mgmt/WWAN 복제-방지 불변식 등.
+- **Y4-FIP 강제(§2.1)**: F1 의 서명/capability 검사(`#[fip]` — 할당기 handle ·
+  untyped capability · 전역 할당자 경로가 서명에 없음) · Verus ⒜ `compact`/`dedup`
+  기능 명세(첫 소비자보다 먼저, formal-first) · ⒝ 할당 0 · 스택 상한 인코딩.
 - **⏳ hiu_abi.md v1.0 frozen 의존**: capability-bound partition quota,
   side-channel accelerator-internal, attestation/key-mgmt device attestation
   (SPDM), scheduler wave-aligned.

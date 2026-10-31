@@ -105,7 +105,7 @@ Y4/
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
 ├── alloc/                        y4-alloc — DragonFly SLAB + hardened backend (22 tests, +2 with `--features scudo`)
 ├── capsules/                     y4-capsules — Tock-style isolation + PCIe enum (16 tests)
-├── fip/                          y4-fip-{core,macros,x86_64,aarch64,riscv64} — FIP no-alloc in-place building blocks + `#[fip]` (core 10 + 5 doc tests, macros 1 doc test)
+├── fip/                          y4-fip-{core,macros,x86_64,aarch64,riscv64} — Y4-FIP definition (F1–F5) + in-place combinators (alloc-transparent) + `#[fip]` (declared, not yet enforced); no consumers yet
 ├── ipc/                          y4-ipc — Redox scheme + LWKT msgport hybrid (18 tests)
 ├── kernel/                       y4-roottask — bare-metal x86_64-unknown-none ("Hello, Y4")
 ├── scudo-sys/                    y4-scudo-sys — LLVM scudo C++ FFI (4 link-smoke tests)

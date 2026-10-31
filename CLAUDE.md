@@ -125,9 +125,10 @@ Y4/
 ├── alloc/               y4-alloc (DragonFly SLAB + hardened backend)
 ├── capsules/            y4-capsules (Tock isolation + PCIe enum)
 ├── fip/{core,macros,x86_64,aarch64,riscv64}/
-│                        y4-fip-* — FIP(Fully in-Place, Perceus/FP² 차용) no-alloc
-│                        in-place 빌딩블록 + `#[fip]` + per-ISA 튜닝 (소비자 없음;
-│                        미결: `.claude-notes/fip-isa-subcrates-open-items.md`)
+│                        y4-fip-* — Y4-FIP(Fully in-Place, Perceus/FP² 차용) 정의
+│                        (F1–F5 · FBIP · FIP(n), 2026-10-31) + in-place 조합자
+│                        (alloc-transparent) + `#[fip]`(선언, 미강제) + per-ISA 튜닝
+│                        (소비자 없음; 미결: `.claude-notes/fip-isa-subcrates-open-items.md`)
 ├── ipc/                 y4-ipc (Redox scheme + LWKT msgport hybrid)
 ├── kernel/              y4-roottask (bare-metal x86_64-unknown-none)
 ├── scudo-sys/           y4-scudo-sys (LLVM scudo C++ FFI)

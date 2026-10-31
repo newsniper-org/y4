@@ -1,4 +1,4 @@
-- [Y4 project basics](y4_basics.md) — what Y4 is, single Apache-2.0, Phase B complete; hiu_abi.md v1.0 frozen (2026-10-22) unblocks hiu/ + lease runtime (not started); version-value commit 40de875 checked; phase model A→E.
+- [Y4 project basics](y4_basics.md) — what Y4 is, single Apache-2.0, Phase B complete; hiu_abi.md v1.0 frozen (2026-10-22) unblocks hiu/ + lease runtime (not started); version-value commit 40de875 checked; Y4-FIP definition + pre-push CI (2026-10-31); phase model A→E.
 - [Y4 design canonical doc](y4_canonical_doc.md) — `docs/architecture.md` is the source of truth; WaveTensor's memo is historical context only.
 - [Y4 reuse manifest + bootloader exclusions](y4_reuse_manifest.md) — seL4/Tock/DragonFly/Redox, allocator = DragonFly SLAB + scudo; Limine 1st, systemd-boot/rEFInd excluded.
 - [Y4 formal-first verification rule](y4_formal_first.md) — proofs land before privileged code; Verus 1st-tier, Rocq manual + Isabelle auto-emit, Lean 4 excluded (R1=a').
