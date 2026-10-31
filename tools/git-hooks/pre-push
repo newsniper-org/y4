@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
+#
+# Y4 pre-push hook — the automatic CI (user decision 2026-10-31).
+#
+# Runs `just ci-push` before every push and blocks the push if it fails:
+#   fmt-check · lint · test · bare-metal (x86_64 / AArch64 / RV64GC +
+#   root task) · msrv · proofs (Verus + Rocq), then the AArch64 / RV64GC
+#   fip tests under qemu-user at idle priority.
+# Every gate is hash-stamped (`.cache/stamps`), so unchanged inputs are
+# skipped and a push with no source change costs seconds.
+#
+# Installed via `just install-hooks` (sets core.hooksPath to
+# tools/git-hooks).  Bypass with `git push --no-verify` only when the
+# hook itself is broken — never to push past a red gate.
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+echo "[pre-push] just ci-push ..."
+if ! just ci-push; then
+    echo "[pre-push] ✗ gate failed — push blocked (fix it, or --no-verify if the hook itself is broken)" >&2
+    exit 1
+fi
+echo "[pre-push] ✓ all gates green"

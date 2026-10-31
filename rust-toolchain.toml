@@ -10,3 +10,13 @@
 channel = "stable"
 components = ["rustfmt", "clippy", "rust-src"]
 profile = "minimal"
+# Bare-metal targets for the `bare-metal` gate (x86_64 first; AArch64 and
+# RV64GC kept in the workspace by user decision 2026-10-31) and the static
+# musl targets the `fip-qemu` recipe runs under qemu-user.
+targets = [
+    "x86_64-unknown-none",
+    "aarch64-unknown-none",
+    "riscv64gc-unknown-none-elf",
+    "aarch64-unknown-linux-musl",
+    "riscv64gc-unknown-linux-musl",
+]

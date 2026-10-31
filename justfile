@@ -28,6 +28,10 @@ set dotenv-load := false
 # Set Y4_STAMP_STORE in your shell to relocate the stamp database.
 stamp_store := env_var_or_default("Y4_STAMP_STORE", justfile_directory() + "/.cache/stamps")
 
+# MSRV toolchain = workspace `rust-version`, padded to a full release
+# ("1.94" → "1.94.0") so it names an installable toolchain.
+msrv_toolchain := `v=$(sed -n 's/^rust-version *= *"\(.*\)"/\1/p' Cargo.toml | head -1); case "$v" in *.*.*) echo "$v";; *) echo "$v.0";; esac`
+
 # Number of parallel slots for lu-par. Override with -j on the CLI:
 #     just par-build j=16
 j := env_var_or_default("Y4_J", num_cpus())
@@ -96,6 +100,49 @@ test:
         cargo test --workspace --locked; \
     fi
 
+# --- Cross / bare-metal / MSRV gates ------------------------------------
+
+# Bare-metal build gate: every no_std workspace crate for each seL4 arch
+# Y4 keeps in the workspace (x86_64 first; AArch64 and RV64GC kept by user
+# decision 2026-10-31), plus the root task.  Targets are listed in
+# rust-toolchain.toml so rustup installs them.
+bare-metal:
+    cargo build --locked --release --target x86_64-unknown-none -p y4-fip-core -p y4-fip-x86_64 -p y4-ipc -p y4-alloc -p y4-capsules
+    cargo build --locked --release --target aarch64-unknown-none -p y4-fip-core -p y4-fip-aarch64 -p y4-ipc -p y4-alloc -p y4-capsules
+    cargo build --locked --release --target riscv64gc-unknown-none-elf -p y4-fip-core -p y4-fip-riscv64 -p y4-ipc -p y4-alloc -p y4-capsules
+    cd kernel && cargo build --locked --release
+
+# MSRV gate: the workspace must build with the declared rust-version.
+msrv:
+    @rustup toolchain list | grep -q '^{{msrv_toolchain}}-' \
+        || { echo "[msrv] toolchain {{msrv_toolchain}} missing — rustup toolchain install {{msrv_toolchain}} --profile minimal"; exit 1; }
+    cargo +{{msrv_toolchain}} check --workspace --all-targets --locked
+
+# AArch64 / RV64GC unit + doc tests of the fip crates under qemu-user.
+# Runs at idle priority (nice 19 + idle I/O class) so it never competes
+# with interactive work (user decision 2026-10-31).  Static musl binaries
+# linked by rust-lld — no cross gcc needed.
+fip-qemu:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for q in qemu-aarch64 qemu-riscv64; do
+        command -v "$q" >/dev/null || { echo "[fip-qemu] $q missing (qemu-user)"; exit 1; }
+    done
+    idle="nice -n 19 ionice -c 3"
+    static="-C target-feature=+crt-static -C link-self-contained=yes"
+    echo "[fip-qemu] aarch64-unknown-linux-musl (qemu-aarch64, idle)"
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=rust-lld \
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="$static" \
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUNNER="$idle qemu-aarch64" \
+    RUSTDOCFLAGS="$static -C linker=rust-lld" \
+        $idle cargo test --locked --target aarch64-unknown-linux-musl -p y4-fip-core -p y4-fip-aarch64
+    echo "[fip-qemu] riscv64gc-unknown-linux-musl (qemu-riscv64, idle)"
+    CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_MUSL_LINKER=rust-lld \
+    CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_MUSL_RUSTFLAGS="$static" \
+    CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_MUSL_RUNNER="$idle qemu-riscv64" \
+    RUSTDOCFLAGS="$static -C linker=rust-lld" \
+        $idle cargo test --locked --target riscv64gc-unknown-linux-musl -p y4-fip-core -p y4-fip-riscv64
+
 # --- Verification (formal-first gate) ------------------------------------
 
 # --- Phase B step 5: kernel/ root task ----------------------------------
@@ -151,22 +198,44 @@ proofs: verus coq
 
 # --- Hash-stamped composite gate -----------------------------------------
 #
-# Combines fmt-check + lint + test + proofs and skips any of them whose
-# inputs have not changed since the last green run.  Each step records
-# its signature on success; the next invocation short-circuits with
-# `freshcheck`.
+# Combines fmt-check + lint + test + bare-metal + msrv + proofs and skips
+# any of them whose inputs have not changed since the last green run.
+# Each step records its signature on success; the next invocation
+# short-circuits with `freshcheck`.
+#
+# Inputs of the Rust gates = every Cargo.toml / *.rs outside build
+# outputs, third_party/, proofs/verus/ and verus-fork/ (not workspace
+# members), plus rust-toolchain.toml, Cargo.lock, kernel/Cargo.lock, this
+# justfile and a toolchain fingerprint (`rustc -Vv` · `cargo -V` · the
+# MSRV toolchain) — so a `stable` bump re-runs the gates even when no
+# source changed.
 
 ci:
     @mkdir -p {{stamp_store}}
-    @# Each gate has a sentinel file in the stamp store; freshcheck
-    @# compares the sentinel + recorded dep hashes to current state.
-    @# If anything changed, the gate runs and re-records.
-    @# We use `find` (not `git ls-files`) so untracked-but-staged-locally
-    @# files are still picked up.
-    @just _gate fmt-check "$(find . -type f \( -name 'Cargo.toml' -o -name '*.rs' \) -not -path './target/*' -not -path './.cache/*' -not -path './third_party/*' -not -path './proofs/verus/*' 2>/dev/null | sort)"
-    @just _gate lint      "$(find . -type f \( -name 'Cargo.toml' -o -name '*.rs' \) -not -path './target/*' -not -path './.cache/*' -not -path './third_party/*' -not -path './proofs/verus/*' 2>/dev/null | sort)"
-    @just _gate test      "$(find . -type f \( -name 'Cargo.toml' -o -name '*.rs' \) -not -path './target/*' -not -path './.cache/*' -not -path './third_party/*' -not -path './proofs/verus/*' 2>/dev/null | sort)"
-    @just _gate proofs    "$(find proofs -type f \( -name '*.rs' -o -name '*.v' -o -name 'Cargo.toml' -o -name '_CoqProject' -o -name 'justfile' \) 2>/dev/null | sort)"
+    @just _toolchain-fingerprint
+    @just _gate fmt-check  "$(just _rust-deps)"
+    @just _gate lint       "$(just _rust-deps)"
+    @just _gate test       "$(just _rust-deps)"
+    @just _gate bare-metal "$(just _rust-deps)"
+    @just _gate msrv       "$(just _rust-deps)"
+    @just _gate proofs     "$(find proofs -type f \( -name '*.rs' -o -name '*.v' -o -name 'Cargo.toml' -o -name '_CoqProject' -o -name 'justfile' \) 2>/dev/null | sort) {{stamp_store}}/toolchain.txt"
+
+# What the pre-push hook runs: `ci` plus the AArch64 / RV64GC fip tests
+# under qemu-user at idle priority (hash-gated like the rest).
+ci-push: ci
+    @just _gate fip-qemu "$(just _rust-deps)"
+
+# Dependency list of the Rust gates (see `ci`).
+_rust-deps:
+    @{ find . -type f \( -name 'Cargo.toml' -o -name '*.rs' \) -not -path '*/target/*' -not -path './.cache/*' -not -path './third_party/*' -not -path './proofs/verus/*' -not -path './verus-fork/*' 2>/dev/null; printf '%s\n' ./rust-toolchain.toml ./Cargo.lock ./kernel/Cargo.lock ./justfile {{stamp_store}}/toolchain.txt; } | sort
+
+# Record the active toolchains so a toolchain change invalidates the gates.
+_toolchain-fingerprint:
+    @mkdir -p {{stamp_store}}
+    @{ rustc -Vv; cargo -V; echo "msrv: {{msrv_toolchain}}"; rustc +{{msrv_toolchain}} -V 2>/dev/null || echo "msrv toolchain missing"; } > {{stamp_store}}/toolchain.txt.new
+    @cmp -s {{stamp_store}}/toolchain.txt.new {{stamp_store}}/toolchain.txt 2>/dev/null \
+        && rm {{stamp_store}}/toolchain.txt.new \
+        || mv {{stamp_store}}/toolchain.txt.new {{stamp_store}}/toolchain.txt
 
 # Internal helper: hash-stamped invocation of a single gate.
 # $1 = recipe name (also used as sentinel filename).

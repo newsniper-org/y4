@@ -247,6 +247,13 @@ WaveTensor `.local-requests-from/Y4/`); replies through
   hook mirrors Claude Code memory into `.claude-memories/` (also
   triggered by the Claude Code Stop hook in `.claude/settings.json`)
   and stages the diff so the in-repo backup ships with each commit.
+  The pre-push hook is the automatic CI (2026-10-31): it runs
+  `just ci-push` — fmt-check · lint · test · bare-metal (x86_64 /
+  AArch64 / RV64GC no_std crates + root task) · msrv · proofs, then the
+  AArch64 / RV64GC fip tests under qemu-user at idle priority — and
+  blocks the push on red.  Gates are hash-stamped (inputs include
+  rust-toolchain.toml, Cargo.lock, the justfile and a toolchain
+  fingerprint), so unchanged inputs are skipped.
 - **Commits:** DCO sign-off mandatory (`git commit -s`). PRs without
   sign-off do not merge.
 - **Style:** `cargo fmt` + `cargo clippy -- -D warnings` clean. C
