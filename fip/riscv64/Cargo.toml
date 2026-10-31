@@ -3,13 +3,16 @@
 
 [package]
 name = "y4-fip-riscv64"
-description = "Y4 FIP macros — RISC-V RV64 specialization (seL4 KernelSel4Arch=riscv64)."
+description = "Y4-FIP — RISC-V RV64 tuning (cache line; prefetch is a no-op stub); re-exports y4-fip-core (seL4 KernelSel4Arch=riscv64)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-repository.workspace = true
+publish = false
 
 [dependencies]
 y4-fip-core = { path = "../core" }
+
+[lints]
+workspace = true

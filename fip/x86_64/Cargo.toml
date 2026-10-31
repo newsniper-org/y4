@@ -3,13 +3,16 @@
 
 [package]
 name = "y4-fip-x86_64"
-description = "Y4 FIP macros — x86_64 specialization (seL4 KernelSel4Arch=x86_64)."
+description = "Y4-FIP — x86_64 tuning (cache line, prefetcht0); re-exports y4-fip-core (seL4 KernelSel4Arch=x86_64)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-repository.workspace = true
+publish = false
 
 [dependencies]
 y4-fip-core = { path = "../core" }
+
+[lints]
+workspace = true

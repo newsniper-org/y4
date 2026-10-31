@@ -3,15 +3,18 @@
 
 [package]
 name = "y4-fip-macros"
-description = "Y4 FIP proc-macros — `#[fip]` attribute (Koka `fip fun` 대응; no-alloc in-place 계약).  build-time only, no external deps."
+description = "Y4-FIP proc-macro — `#[fip]` declares a function Y4-FIP (Koka `fip fun` analogue); v1 checks the item shape only, F1–F5 are not enforced yet."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-repository.workspace = true
+publish = false
 
 [lib]
 proc-macro = true
 
 [dependencies]
+
+[lints]
+workspace = true

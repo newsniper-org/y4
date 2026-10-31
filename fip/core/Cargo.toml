@@ -3,12 +3,15 @@
 
 [package]
 name = "y4-fip-core"
-description = "Y4 FIP (Fully in-Place) — arch-neutral macro/trait contract (core-only, compiler-enforced zero-alloc)."
+description = "Y4-FIP — definition (F1–F5 · FBIP · FIP(n)) and arch-neutral in-place combinators; core-only, alloc-transparent (the combinators themselves never (de)allocate)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
-repository.workspace = true
+publish = false
 
 [dependencies]
+
+[lints]
+workspace = true
