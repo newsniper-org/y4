@@ -1,0 +1,34 @@
+portable-fip 채택 — 커밋 노트 (2026-11-01)
+
+결정 (사용자, 2026-11-01)
+- portable-fip(https://github.com/newsniper-org/portable-fip, 같은 저자, Apache-2.0)을 외부 의존으로 쓴다.
+  장기적으로 Y4 안으로 완전히 들이고, 독립 저장소는 standalone 용 추출판으로 재활용한다.
+- 비교 노트 §8 의 A(조합자) · B(fip-arch) · C(fip-macros) · D(fip::export + cfg(fip_prelint)) 전부 채택.
+- y4-fip-* 는 얇은 facade(y4-fip-core · y4-fip-arch)로 유지한다 — 소비자는 facade 만 물므로 흡수 때 소비자 코드가 바뀌지 않는다.
+- portable-fip 의 Verus 증명은 Y4 proofs 게이트에서 다시 돌리되, Y4 가 호출하는 Verus 백엔드는 당분간 시스템 Z3 4.16.0 으로 고정.
+
+핀
+- portable-fip rev 1a147cd8158617683397549b46a2cc96f896d149 (원격 main 과 같음) — fip-core · fip-strict · fip-macros · fip-arch 네 의존이
+  같은 rev. 올릴 때는 넷을 함께 올리고 `just verus-portable-fip` 로 재검증한다.
+
+검증 (이 커밋의 트리에서)
+- just ci-push: fmt-check · lint · test · bare-metal(x86_64 / aarch64 / riscv64gc none + root task) · msrv(1.99.1) · proofs · fip-qemu 모두 녹색.
+- Y4 자체 Verus: 181 verified, 0 errors (VERUS_Z3_PATH=/usr/bin/z3, Z3 4.16.0).
+- portable-fip 재검증 (verus-fork 559ac52, Z3 4.16.0, --no-cheating): fip-strict 7 verified · fip-core 36 verified;
+  변이 대조(compact 에서 swap 제거)는 Verus 가 거부 — 게이트가 실패할 수 있음을 확인.
+- facade doctest: #[fip] 가 facade 를 거쳐도 Box::new(할당)과 재귀를 거부(매크로를 뺀 대조 코드는 컴파일됨).
+- _check-z3: VERUS_Z3_PATH 를 다른 바이너리로 주면 게이트가 거부.
+
+해소된 미결 (fip-isa-subcrates-open-items.md)
+- §4-3 T: Default vs capability 토큰 → 호출자의 hole 자리값.
+- §4-4 ArchTuning / §4-5 CACHE_LINE override → fip-arch 의 cfg 선택 · --cfg fip_cache_line.
+- §5 Verus ⒜ 조합자 기능 명세 → portable-fip 증명 + Y4 게이트 재검증.
+- aarch64 PRFM 구현, #[fip] 의 실제 검사(할당 원천 · 재귀 · strict 인증서).
+
+남은 것
+- F1 할당 원천 차이: portable-fip 은 Rust 전역 할당자만 안다 — y4-alloc API · seL4 untyped retype 은 표식 불가
+  (portable-fip 과제 G: 사용자 선언 할당/해제 원천).
+- fip-prelint 게이트: 첫 #[fip] 소비자가 생길 때 둔다(지금 두면 분석 루트 0 인 공허 게이트).
+- 결정 대기: Fip 마커 형태(§4-2), 꼬리 owned 원소 계약.
+- strict 모드 소비자는 생성 코드가 ::fip_strict 를 참조하므로 fip-strict 에도 직접 의존해야 한다.
+- riscv64 prefetch.r 은 no-op, F4 고유성과 스택 바이트 상한은 어느 쪽도 검사하지 않음.
