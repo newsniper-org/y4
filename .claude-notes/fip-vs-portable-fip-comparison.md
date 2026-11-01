@@ -7,6 +7,14 @@
 > 추출판). §8 의 **A · B · C · D 전부** 채택, `y4-fip-*` 는 얇은 facade(`y4-fip-core` · `y4-fip-arch`), portable-fip
 > 증명은 Y4 proofs 게이트에서 재검증(Verus 백엔드 = 시스템 Z3 4.16.0 고정). G 는 portable-fip 쪽 과제로 남는다.
 > §9 의 「Y4 verus-fork 로 portable-fip 증명 재실행」은 측정됐다 — `1a147cd` 에서 fip-strict 7 · fip-core 36 verified.
+>
+> **핀 갱신 (2026-11-01, `1a147cd` → `06c99ac`, 원격 main):** 더하기만 한 변경이다(기존 API 그대로). 상태 전달
+> 조합자 `map_in_place_st` · `compact_map_st`(+ strict 판)가 들어왔다 — 상태를 `FnMut` 캡처가 아니라 값으로 넘겨
+> Verus 가 상태 사슬을 증명한다. 그래서 §6-2 · §8-E(상태 있는 클로저)는 `FnMut` 판 없이 이 모양으로 닫힌다(§9 의
+> 「Verus 의 `FnMut` 클로저 명세 지원」은 portable-fip `06c99ac` 커밋 메시지가 답했다 — Verus 0.2026.10.18 은
+> 지역 변수를 가변 캡처하는 클로저를 거부하고, `FnMut` 호출 뒤 클로저를 불변으로 증명하므로 `FnMut` 증명은 상태에
+> 대해 아무것도 말하지 못한다; Y4 는 이 주장을 따로 측정하지 않았다). 조합자마다 `# Panics` 절과 `tests/panic_state.rs` 가 생겼다(꼬리 owned 원소 계약은
+> 여전히 결정 대기). Y4 재검증: fip-strict 7 · fip-core **51** verified, 변이 대조 거부 — `just ci-push` 전부 그린.
 
 코드 교환 범위를 정하기 위한 비교다. 결정은 사용자가 내린다. 이 문서는 사실과 측정만 정리하고,
 권고는 §8 에 따로 둔다.

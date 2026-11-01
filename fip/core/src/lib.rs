@@ -47,6 +47,11 @@
 //!
 //! - 조합자: [`compact`] · [`compact_map`] · [`dedup_by`] · [`map_in_place`] ·
 //!   [`swap`] · [`update`] · [`replace`] 와 [`strict`] 판(인증된 `FipFn` 만 받음).
+//!   상태 전달판 [`map_in_place_st`] · [`compact_map_st`] 는 상태를 `FnMut` 캡처가
+//!   아니라 값(`Fn(S, T) -> (S, ..)`)으로 넘긴다 — Verus 가 `FnMut` 호출이 캡처 상태에
+//!   한 일을 모델링하지 않아서, 값으로 넘겨야 중간 상태가 모두 사후조건에 이름을 갖는다.
+//!   callable 이 panic 하면 슬라이스에는 유효한 값만 남는다(이동된 값 · 이중 drop 없음
+//!   — 각 함수의 `# Panics` 절).
 //!   모든 공개 함수가 portable-fip 에서 Verus(`--no-cheating`)로 증명됐고, Y4 의
 //!   proofs 게이트가 **핀한 rev 의 그 증명을 Y4 의 verus-fork(Z3 4.16.0)로 다시
 //!   돌린다**(`just verus-portable-fip`).
@@ -159,5 +164,26 @@ mod tests {
         let mut xs = [1u32, 2, 3, 4];
         let (n, hole) = crate::compact_map(&mut xs, 0, |x| (x + 100, x % 2 == 0));
         assert_eq!((&xs[..n], hole), (&[102, 104][..], 0));
+    }
+
+    #[test]
+    fn map_in_place_st_threads_state_in_order() {
+        // 이전 `fip_map!` 의 상태 전달 기대값([11, 12, 13])을 상태 전달판으로.
+        let mut xs = [0u32; 3];
+        let (s, hole) = crate::map_in_place_st(&mut xs, 0, 10u32, |c, _| (c + 1, c + 1));
+        assert_eq!((xs, s, hole), ([11, 12, 13], 13, 0));
+    }
+
+    #[test]
+    fn compact_map_st_counts_kept() {
+        let mut xs = [1u32, 2, 3, 4];
+        let (n, odd, hole) = crate::compact_map_st(&mut xs, 0, 0u32, |c, v| {
+            if v % 2 == 1 {
+                (c + 1, v * 10 + c, true)
+            } else {
+                (c, v, false)
+            }
+        });
+        assert_eq!((&xs[..n], odd, hole), (&[10, 31][..], 2, 0));
     }
 }

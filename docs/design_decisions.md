@@ -163,6 +163,9 @@ bearer) · USIM-AKA 권한 = 전부 capability.  **단일-보유 capability 가 
     다시 돌린다(`just verus-portable-fip` — 변이 대조 포함).  **알려진 차이:** portable-fip 은 Rust
     전역 할당자만 할당 원천으로 안다 — `y4-alloc` · seL4 retype 은 표식 불가(portable-fip 과제
     G).  `fip-prelint` 게이트는 첫 `#[fip]` 소비자가 생길 때 둔다(루트 0 이면 공허 게이트).
+    핀 갱신(2026-11-01, `06c99ac`): 상태 전달 조합자 `map_in_place_st` · `compact_map_st`(상태를
+    `FnMut` 캡처 대신 값으로 넘김 — Verus 가 상태 사슬을 증명) · 조합자별 `# Panics` 계약 추가,
+    재검증 fip-core 51 verified.
     소비자 0.  미결 · 결정 대기는 `.claude-notes/fip-isa-subcrates-open-items.md` ·
     `.claude-notes/fip-vs-portable-fip-comparison.md`.
 

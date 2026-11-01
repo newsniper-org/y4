@@ -46,10 +46,10 @@ repository = "https://github.com/y4-hypervisor/y4"
 # same author) — one rev for every crate; `just verus-portable-fip` re-verifies
 # the Verus proofs of exactly this rev.  Bump all four together.
 [workspace.dependencies]
-fip-core = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
-fip-strict = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
-fip-macros = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
-fip-arch = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
+fip-core = { git = "https://github.com/newsniper-org/portable-fip", rev = "06c99acfba39c5d16048ac346626e375ca077a2f" }
+fip-strict = { git = "https://github.com/newsniper-org/portable-fip", rev = "06c99acfba39c5d16048ac346626e375ca077a2f" }
+fip-macros = { git = "https://github.com/newsniper-org/portable-fip", rev = "06c99acfba39c5d16048ac346626e375ca077a2f" }
+fip-arch = { git = "https://github.com/newsniper-org/portable-fip", rev = "06c99acfba39c5d16048ac346626e375ca077a2f" }
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"

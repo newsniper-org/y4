@@ -43,7 +43,7 @@ LLVM scudo, via the on-demand vendoring described in
                            (Apache-2.0; same author as Y4)
                            Rust crates fip-core / fip-strict / fip-macros /
                            fip-arch as cargo git dependencies, pinned by rev
-                           in the workspace Cargo.toml (currently 1a147cd);
+                           in the workspace Cargo.toml (currently 06c99ac);
                            re-exported by fip/core and fip/arch. Its Verus
                            proofs are re-verified by Y4's proofs gate.
                            Long-term: moved into Y4; the standalone repo

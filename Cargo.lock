@@ -27,12 +27,12 @@ checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
 [[package]]
 name = "fip-arch"
 version = "0.1.0"
-source = "git+https://github.com/newsniper-org/portable-fip?rev=1a147cd8158617683397549b46a2cc96f896d149#1a147cd8158617683397549b46a2cc96f896d149"
+source = "git+https://github.com/newsniper-org/portable-fip?rev=06c99acfba39c5d16048ac346626e375ca077a2f#06c99acfba39c5d16048ac346626e375ca077a2f"
 
 [[package]]
 name = "fip-core"
 version = "0.1.0"
-source = "git+https://github.com/newsniper-org/portable-fip?rev=1a147cd8158617683397549b46a2cc96f896d149#1a147cd8158617683397549b46a2cc96f896d149"
+source = "git+https://github.com/newsniper-org/portable-fip?rev=06c99acfba39c5d16048ac346626e375ca077a2f#06c99acfba39c5d16048ac346626e375ca077a2f"
 dependencies = [
  "fip-macros",
  "fip-strict",
@@ -41,12 +41,12 @@ dependencies = [
 [[package]]
 name = "fip-lint-rules"
 version = "0.1.0"
-source = "git+https://github.com/newsniper-org/portable-fip?rev=1a147cd8158617683397549b46a2cc96f896d149#1a147cd8158617683397549b46a2cc96f896d149"
+source = "git+https://github.com/newsniper-org/portable-fip?rev=06c99acfba39c5d16048ac346626e375ca077a2f#06c99acfba39c5d16048ac346626e375ca077a2f"
 
 [[package]]
 name = "fip-macros"
 version = "0.1.0"
-source = "git+https://github.com/newsniper-org/portable-fip?rev=1a147cd8158617683397549b46a2cc96f896d149#1a147cd8158617683397549b46a2cc96f896d149"
+source = "git+https://github.com/newsniper-org/portable-fip?rev=06c99acfba39c5d16048ac346626e375ca077a2f#06c99acfba39c5d16048ac346626e375ca077a2f"
 dependencies = [
  "fip-lint-rules",
 ]
@@ -54,7 +54,7 @@ dependencies = [
 [[package]]
 name = "fip-strict"
 version = "0.1.0"
-source = "git+https://github.com/newsniper-org/portable-fip?rev=1a147cd8158617683397549b46a2cc96f896d149#1a147cd8158617683397549b46a2cc96f896d149"
+source = "git+https://github.com/newsniper-org/portable-fip?rev=06c99acfba39c5d16048ac346626e375ca077a2f#06c99acfba39c5d16048ac346626e375ca077a2f"
 
 [[package]]
 name = "hash32"
