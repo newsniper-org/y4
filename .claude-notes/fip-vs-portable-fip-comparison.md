@@ -11,7 +11,7 @@
 코드 교환 범위를 정하기 위한 비교다. 결정은 사용자가 내린다. 이 문서는 사실과 측정만 정리하고,
 권고는 §8 에 따로 둔다.
 
-- **기준 커밋:** Y4 `6e6e8b1`(MSRV 1.99.1), portable-fip `1a147cd`(push 안 됨; 원격 마지막 push 는 `36328d8`).
+- **기준 커밋:** Y4 `6e6e8b1`(MSRV 1.99.1), portable-fip `1a147cd`(원격 main 과 같음).
 - **portable-fip 위치:** `/run/media/ybi/6ee5fba6-c9b3-4c4c-954f-89d39f34b4c7/portable-fip`,
   원격 `https://github.com/newsniper-org/portable-fip.git`.
 - **읽은 Y4 원본:** `fip/{core,macros,x86_64,aarch64,riscv64}` 소스와 `Cargo.toml`, `justfile` 의 fip 게이트,
