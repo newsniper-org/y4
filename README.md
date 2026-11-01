@@ -93,7 +93,7 @@ Y4/
 ├── README.md                     this file
 ├── CLAUDE.md                     project context auto-loaded by Claude Code
 ├── CONTRIBUTING.md               DCO, SPDX header policy, signing
-├── Cargo.toml                    cargo workspace root (alloc, capsules, fip/*, ipc, scudo-sys)
+├── Cargo.toml                    cargo workspace root (alloc, capsules, fip/{core,arch}, ipc, scudo-sys)
 ├── rust-toolchain.toml           pins channel = stable (MSRV 1.99.1)
 ├── justfile                      top-level recipes (ci, scudo-fetch, mirror-memory, ...)
 ├── docs/
@@ -105,7 +105,7 @@ Y4/
 │   └── phase_plan.md             Phase A → Phase E progression + entry triggers
 ├── alloc/                        y4-alloc — DragonFly SLAB + hardened backend (22 tests, +2 with `--features scudo`)
 ├── capsules/                     y4-capsules — Tock-style isolation + PCIe enum (16 tests)
-├── fip/                          y4-fip-{core,macros,x86_64,aarch64,riscv64} — Y4-FIP definition (F1–F5) + in-place combinators (alloc-transparent) + `#[fip]` (declared, not yet enforced); no consumers yet
+├── fip/                          y4-fip-{core,arch} — Y4-FIP definition (F1–F5) + facade over portable-fip (Verus-proved in-place combinators, strict certificates, checking `#[fip]`/`#[fbip]`, cfg-selected arch tuning); no consumers yet
 ├── ipc/                          y4-ipc — Redox scheme + LWKT msgport hybrid (18 tests)
 ├── kernel/                       y4-roottask — bare-metal x86_64-unknown-none ("Hello, Y4")
 ├── scudo-sys/                    y4-scudo-sys — LLVM scudo C++ FFI (4 link-smoke tests)

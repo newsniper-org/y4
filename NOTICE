@@ -39,6 +39,15 @@ LLVM scudo, via the on-demand vendoring described in
                            materialised by `just scudo-fetch`
                            (vendored on demand — sidesteps the 175k-file
                            git index a full llvm-project submodule incurs)
+  * portable-fip            https://github.com/newsniper-org/portable-fip
+                           (Apache-2.0; same author as Y4)
+                           Rust crates fip-core / fip-strict / fip-macros /
+                           fip-arch as cargo git dependencies, pinned by rev
+                           in the workspace Cargo.toml (currently 1a147cd);
+                           re-exported by fip/core and fip/arch. Its Verus
+                           proofs are re-verified by Y4's proofs gate.
+                           Long-term: moved into Y4; the standalone repo
+                           becomes the extracted version.
   * Tock OS (capsule model — design + selected crates)
                            https://tockos.org/
                            (MIT OR Apache-2.0)

@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2026 윤병익 (BYUNG-IK YEUN) and Y4 contributors
 
 [package]
-name = "y4-fip-riscv64"
-description = "Y4-FIP — RISC-V RV64 tuning (cache line; prefetch is a no-op stub); re-exports y4-fip-core (seL4 KernelSel4Arch=riscv64)."
+name = "y4-fip-arch"
+description = "Y4-FIP arch tuning facade over portable-fip's fip-arch (cfg(target_arch) selection: x86_64 · AArch64 · RV64; cache line, prefetch hint)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,7 +12,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
-y4-fip-core = { path = "../core" }
+fip-arch.workspace = true
 
 [lints]
 workspace = true

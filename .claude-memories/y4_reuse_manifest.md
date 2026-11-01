@@ -29,3 +29,5 @@ type: project
 - When choosing reuse for a new layer, prefer permissive (BSD/MIT/Apache) sources first.
 - For driver development, the tier order is: DragonFlyBSD BSD driver (1st) → NetBSD via rump kernel (2nd) → Linux GPL driver isolated as a separate capsule binary (3rd, last resort).
 - When discussing bootloader options, do not propose systemd-boot or rEFInd for Y4. Limine is the default answer unless the form factor (ARM SoC) forces 3rd-tier U-Boot or the certification track (Phase E) forces 4th-tier coreboot.
+
+**FIP (2026-11-01):** portable-fip (user's own project, Apache-2.0) is a cargo git dependency pinned by rev — fip-core / fip-strict / fip-macros / fip-arch, re-exported by `fip/{core,arch}`. Long-term it is pulled fully into Y4 and the standalone repo becomes the extracted version for standalone use. Listed in CLAUDE.md §4 and NOTICE.

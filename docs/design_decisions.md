@@ -150,11 +150,21 @@ bearer) · USIM-AKA 권한 = 전부 capability.  **단일-보유 capability 가 
     부분 필요조건이다.  ipc · alloc · capsules 는 이미 core-only 라 fip 가 더하는
     강제도 없다.  `y4-fip-core` 의 조합자는 「본문은 할당 · 해제 0 ·
     alloc-transparent」로 명세한다.
-  - **구현 상태:** `fip/{core,macros,x86_64,aarch64,riscv64}` — 조합자
-    (`compact` · `compact_with` · `dedup` · `fip_update!` · `fip_map!`) + `#[fip]`(선언) +
-    arch 튜닝(x86_64 `prefetcht0`; aarch64 · riscv64 힌트는 no-op).  소비자 0.  scan §5.1 의
-    계획과 다른 점: 강제 장치 0, §3 reuse 미통합, inline-macro 대신 함수 + `macro_rules`.
-    미결 · 결정 대기는 `.claude-notes/fip-isa-subcrates-open-items.md`.
+  - **구현 상태 (2026-11-01 사용자 결정 — portable-fip 채택):** `fip/core`(`y4-fip-core`) ·
+    `fip/arch`(`y4-fip-arch`)는 [portable-fip](https://github.com/newsniper-org/portable-fip)
+    (같은 저자, Apache-2.0)의 얇은 facade 다 — cargo git 의존을 rev 로 핀(workspace
+    `Cargo.toml`), 소비자는 facade 만 문다.  장기적으로 portable-fip 은 Y4 안으로 들어오고 독립
+    저장소는 추출판이 된다.  가져온 것(비교 노트 §8 A·B·C·D): Verus(`--no-cheating`) 증명된
+    조합자(`compact` · `compact_map` · `dedup_by` · `map_in_place` · `update` · `replace` ·
+    `swap` + strict 판) — 자리값은 `Default` 가 아니라 호출자의 `hole`; 실제로 검사하는
+    `#[fip]` · `#[fip(N)]` · `#[fbip]`(본문 토큰의 할당 원천 · 재귀) + strict 인증서(F5); cfg 로
+    고르는 arch 튜닝(AArch64 `PRFM` 포함, `--cfg fip_cache_line`); `fip::export` 표식 +
+    `cfg(fip_prelint)` 선언.  Y4 proofs 게이트가 핀한 rev 의 증명을 Y4 verus-fork(Z3 4.16.0 고정)로
+    다시 돌린다(`just verus-portable-fip` — 변이 대조 포함).  **알려진 차이:** portable-fip 은 Rust
+    전역 할당자만 할당 원천으로 안다 — `y4-alloc` · seL4 retype 은 표식 불가(portable-fip 과제
+    G).  `fip-prelint` 게이트는 첫 `#[fip]` 소비자가 생길 때 둔다(루트 0 이면 공허 게이트).
+    소비자 0.  미결 · 결정 대기는 `.claude-notes/fip-isa-subcrates-open-items.md` ·
+    `.claude-notes/fip-vs-portable-fip-comparison.md`.
 
 ### 2.2 IPC
 - [ipc-layer-design](../.brainstormings/20260812-173424-ipc-layer-design.md)
@@ -235,9 +245,10 @@ bearer) · USIM-AKA 권한 = 전부 capability.  **단일-보유 capability 가 
 - **Verus 착수 = verus-fork 안정화 이후**(Verus 업스트림 breaking-change 대응
   지연): boot §8 log-parser·PCR-replay, boot §8 root-task invariant(보류),
   key-mgmt/WWAN 복제-방지 불변식 등.
-- **Y4-FIP 강제(§2.1)**: F1 의 서명/capability 검사(`#[fip]` — 할당기 handle ·
-  untyped capability · 전역 할당자 경로가 서명에 없음) · Verus ⒜ `compact`/`dedup`
-  기능 명세(첫 소비자보다 먼저, formal-first) · ⒝ 할당 0 · 스택 상한 인코딩.
+- **Y4-FIP 강제(§2.1)**: Verus ⒜(조합자 기능 명세)는 portable-fip 채택으로 해소(Y4 게이트가
+  재검증).  남은 것: F1 의 Y4 할당 원천(`y4-alloc` API · seL4 untyped retype) 표식 —
+  portable-fip 의 사용자 선언 할당 원천(과제 G) 또는 `#[fip]` 서명/capability 검사 ·
+  `fip-prelint` 게이트(첫 소비자와 함께) · ⒝ 스택 바이트 상한.
 - **⏳ hiu_abi.md v1.0 frozen 의존**: capability-bound partition quota,
   side-channel accelerator-internal, attestation/key-mgmt device attestation
   (SPDM), scheduler wave-aligned.

@@ -41,6 +41,16 @@ _lu_smt := env_var_or_default("VERUS_ADSMT_PATH", "/usr/bin/lu-smt")
 # OxiZ binary (사용자 환경 또는 PATH).
 _oxiz := env_var_or_default("VERUS_OXIZ_PATH", "oxiz")
 
+# Verus backend = system Z3, pinned at 4.16.0 (user decision 2026-11-01:
+# every Verus call Y4 makes uses this solver for now).  `VERUS_Z3_PATH` is
+# exported to each verus invocation below; `_check-z3` refuses any other
+# version.
+_z3          := env_var_or_default("VERUS_Z3_PATH", `command -v z3 || echo /usr/bin/z3`)
+_z3_version  := "4.16.0"
+
+# Singular, for `by (integer_ring)` (portable-fip's proofs use it).
+_singular := env_var_or_default("VERUS_SINGULAR_PATH", "/usr/bin/Singular")
+
 # Verus source crate root.
 _src := env_var_or_default("VERUS_SRC", "src/lib.rs")
 
@@ -83,11 +93,47 @@ _check-verus:
         exit 1; \
     fi
 
+# Refuse any Z3 but the pinned version (the backend Y4 uses for now).
+_check-z3:
+    @v=$("{{_z3}}" --version 2>/dev/null | awk '{print $3}'); \
+    if [ "$v" != "{{_z3_version}}" ]; then \
+        echo "  ✗ Z3 {{_z3_version}} required at {{_z3}} (found: ${v:-none})"; exit 1; \
+    fi
+
 # --- 1. verify with a chosen backend -----------------------------------
 
-# Verify with the default z3 backend.
-verify: _check-verus
-    {{_verus}} --crate-type=lib {{_flags}} {{_src}}
+# Verify with the Z3 backend (system Z3 4.16.0) — the gate.
+verify: _check-verus _check-z3
+    VERUS_Z3_PATH={{_z3}} {{_verus}} --crate-type=lib {{_flags}} {{_src}}
+
+# Re-verify portable-fip's Verus proofs at the rev Y4 pins (Cargo.lock), with
+# this verus-fork on Z3 4.16.0: fip-strict (exported for fip-core) and
+# fip-core, both `--no-cheating`.  A mutant `compact` that drops its swap must
+# then FAIL — a gate that cannot fail proves nothing.
+verify-portable-fip: _check-verus _check-z3
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root=$(cd ../.. && cargo metadata --format-version 1 --locked 2>/dev/null \
+        | python3 -c 'import json,sys,os; m=json.load(sys.stdin); p=[x for x in m["packages"] if x["name"]=="fip-core"]; print(os.path.dirname(os.path.dirname(os.path.dirname(p[0]["manifest_path"])))) if p else sys.exit("fip-core not in cargo metadata")')
+    rev=$(cd ../.. && grep -A2 '^name = "fip-core"' Cargo.lock | sed -n 's/.*#\([0-9a-f]\{40\}\)".*/\1/p')
+    echo "[portable-fip] ${rev:0:7} at $root"
+    out={{justfile_directory()}}/target/portable-fip; rm -rf "$out"; mkdir -p "$out"
+    export VERUS_Z3_PATH={{_z3}} VERUS_SINGULAR_PATH={{_singular}}
+    strict="--import fip_strict=$out/fip_strict.vir --extern fip_strict=$out/libfip_strict.rlib"
+    {{_verus}} --crate-type=lib --crate-name fip_strict --no-cheating "$root/crates/fip-strict/src/lib.rs" \
+        --export "$out/fip_strict.vir" --compile --out-dir "$out" 2>&1 | grep -E 'verification results' | sed 's/^/[fip-strict] /'
+    {{_verus}} --crate-type=lib --no-cheating "$root/crates/fip-core/src/lib.rs" $strict \
+        > "$out/core.log" 2>&1 || { cat "$out/core.log"; exit 1; }
+    grep -E 'verification results:: [0-9]+ verified, 0 errors' "$out/core.log" | sed 's/^/[fip-core] /'
+    cp -r "$root/crates/fip-core" "$out/mutant"
+    sed -i '/^pub fn compact</,/^}/ s/^                swap_lt(xs, w, r);$//' "$out/mutant/src/slice.rs"
+    if cmp -s "$root/crates/fip-core/src/slice.rs" "$out/mutant/src/slice.rs"; then echo "✗ mutant did not apply"; exit 1; fi
+    if {{_verus}} --crate-type=lib --no-cheating "$out/mutant/src/lib.rs" $strict > "$out/mutant.log" 2>&1; then
+        echo "✗ mutant (compact without swap) verified — the gate cannot fail"; exit 1
+    fi
+    grep -Eq 'verification results:: .* [1-9][0-9]* errors' "$out/mutant.log" \
+        || { echo "✗ mutant failed for another reason"; cat "$out/mutant.log"; exit 1; }
+    echo "[portable-fip] negative control rejected — ok"
 
 # Verify with the adsmt backend (lu-smt).
 # - Sound (rc.28+): all paths (baseline / --aot-load / --jit-trace-load)

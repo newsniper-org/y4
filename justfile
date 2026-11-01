@@ -107,9 +107,9 @@ test:
 # decision 2026-10-31), plus the root task.  Targets are listed in
 # rust-toolchain.toml so rustup installs them.
 bare-metal:
-    cargo build --locked --release --target x86_64-unknown-none -p y4-fip-core -p y4-fip-x86_64 -p y4-ipc -p y4-alloc -p y4-capsules
-    cargo build --locked --release --target aarch64-unknown-none -p y4-fip-core -p y4-fip-aarch64 -p y4-ipc -p y4-alloc -p y4-capsules
-    cargo build --locked --release --target riscv64gc-unknown-none-elf -p y4-fip-core -p y4-fip-riscv64 -p y4-ipc -p y4-alloc -p y4-capsules
+    cargo build --locked --release --target x86_64-unknown-none -p y4-fip-core -p y4-fip-arch -p y4-ipc -p y4-alloc -p y4-capsules
+    cargo build --locked --release --target aarch64-unknown-none -p y4-fip-core -p y4-fip-arch -p y4-ipc -p y4-alloc -p y4-capsules
+    cargo build --locked --release --target riscv64gc-unknown-none-elf -p y4-fip-core -p y4-fip-arch -p y4-ipc -p y4-alloc -p y4-capsules
     cd kernel && cargo build --locked --release
 
 # MSRV gate: the workspace must build with the declared rust-version.
@@ -135,13 +135,13 @@ fip-qemu:
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="$static" \
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUNNER="$idle qemu-aarch64" \
     RUSTDOCFLAGS="$static -C linker=rust-lld" \
-        $idle cargo test --locked --target aarch64-unknown-linux-musl -p y4-fip-core -p y4-fip-aarch64
+        $idle cargo test --locked --target aarch64-unknown-linux-musl -p y4-fip-core -p y4-fip-arch
     echo "[fip-qemu] riscv64gc-unknown-linux-musl (qemu-riscv64, idle)"
     CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_MUSL_LINKER=rust-lld \
     CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_MUSL_RUSTFLAGS="$static" \
     CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_MUSL_RUNNER="$idle qemu-riscv64" \
     RUSTDOCFLAGS="$static -C linker=rust-lld" \
-        $idle cargo test --locked --target riscv64gc-unknown-linux-musl -p y4-fip-core -p y4-fip-riscv64
+        $idle cargo test --locked --target riscv64gc-unknown-linux-musl -p y4-fip-core -p y4-fip-arch
 
 # --- Verification (formal-first gate) ------------------------------------
 
@@ -193,8 +193,15 @@ verus:
 coq:
     cd proofs/coq && just
 
+# Re-verify the Verus proofs of the pinned portable-fip rev (the rev in
+# Cargo.lock — source from cargo's git checkout) with Y4's verus-fork on the
+# Z3 backend (system Z3 4.16.0), plus one negative control so the gate can
+# fail (user decision 2026-11-01).
+verus-portable-fip:
+    cd proofs/verus && just verify-portable-fip
+
 # Run the full proof gate — this is what CI gates merges on.
-proofs: verus coq
+proofs: verus verus-portable-fip coq
 
 # --- Hash-stamped composite gate -----------------------------------------
 #
@@ -218,7 +225,7 @@ ci:
     @just _gate test       "$(just _rust-deps)"
     @just _gate bare-metal "$(just _rust-deps)"
     @just _gate msrv       "$(just _rust-deps)"
-    @just _gate proofs     "$(find proofs -type f \( -name '*.rs' -o -name '*.v' -o -name 'Cargo.toml' -o -name '_CoqProject' -o -name 'justfile' \) 2>/dev/null | sort) {{stamp_store}}/toolchain.txt"
+    @just _gate proofs     "$(find proofs -type f \( -name '*.rs' -o -name '*.v' -o -name 'Cargo.toml' -o -name '_CoqProject' -o -name 'justfile' \) 2>/dev/null | sort) ./Cargo.lock ./justfile {{stamp_store}}/toolchain.txt"
 
 # What the pre-push hook runs: `ci` plus the AArch64 / RV64GC fip tests
 # under qemu-user at idle priority (hash-gated like the rest).

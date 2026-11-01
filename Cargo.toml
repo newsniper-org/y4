@@ -6,19 +6,18 @@ resolver = "3"
 members = [
     "alloc",
     "capsules",
+    "fip/arch",
     "fip/core",
-    "fip/macros",
-    "fip/x86_64",
-    "fip/aarch64",
-    "fip/riscv64",
     "ipc",
     "scudo-sys",
 ]
 
 # `kernel/` (root task) stays outside the workspace — its own
 # .cargo/config.toml pins x86_64-unknown-none; `just bare-metal` builds it.
-# `fip/` holds the Y4-FIP crates; fip/aarch64 and fip/riscv64 stay members
-# by user decision 2026-10-31 (bare-metal + QEMU gates, not x86_64-only).
+# `fip/` holds the Y4-FIP facades `y4-fip-core` / `y4-fip-arch` over
+# portable-fip (user decision 2026-11-01; long-term portable-fip moves into
+# Y4 and the standalone repo becomes its extracted version).  AArch64 and
+# RV64GC stay covered (bare-metal + QEMU gates, user decision 2026-10-31).
 # HIU-touching crates (hiu/, hiu/mock/, hiu/lease) are unblocked since
 # docs/hiu_abi.md became v1.0 frozen (2026-10-22) but not started.
 
@@ -43,9 +42,22 @@ authors = ["윤병익 (BYUNG-IK YEUN) and Y4 contributors"]
 license = "Apache-2.0"
 repository = "https://github.com/y4-hypervisor/y4"
 
+# portable-fip (https://github.com/newsniper-org/portable-fip, Apache-2.0,
+# same author) — one rev for every crate; `just verus-portable-fip` re-verifies
+# the Verus proofs of exactly this rev.  Bump all four together.
+[workspace.dependencies]
+fip-core = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
+fip-strict = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
+fip-macros = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
+fip-arch = { git = "https://github.com/newsniper-org/portable-fip", rev = "1a147cd8158617683397549b46a2cc96f896d149" }
+
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
 missing_docs = "warn"
+# `fip_prelint` is set only by portable-fip's `fip-prelint` rustc driver
+# (`#![cfg_attr(fip_prelint, fip::export)]` on the fip facades); plain builds
+# never see it.
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fip_prelint)"] }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

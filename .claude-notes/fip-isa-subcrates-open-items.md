@@ -7,6 +7,20 @@
 > 해소됐고, 브랜치는 main 으로 port 됐다(브랜치는 유지). `fip/` 는 CLAUDE.md §5 ·
 > README 레이아웃에 등재했다(§3-3 일부). 나머지 항목은 미결 그대로다.
 
+> **갱신 (2026-11-01) — portable-fip 채택.** 사용자 결정: portable-fip(`newsniper-org/portable-fip`, 같은 저자)을
+> 외부 의존으로 쓰고(장기적으로 Y4 안으로 흡수, 독립 저장소는 추출판), 비교 노트
+> `fip-vs-portable-fip-comparison.md` §8 의 **A · B · C · D 전부** 채택, `y4-fip-*` 는 **얇은 facade**
+> (`y4-fip-core` · `y4-fip-arch` — `y4-fip-macros` · arch 크레이트 셋은 없앰), portable-fip 증명은 **Y4 proofs
+> 게이트에서 재검증**하되 Verus 백엔드는 **시스템 Z3 4.16.0 고정**.
+> - **해소:** §4-3(`T: Default` vs capability — portable-fip 은 호출자의 `hole`) · §4-4(`ArchTuning` — cfg 단일
+>   크레이트) · §4-5(`CACHE_LINE` override — `--cfg fip_cache_line`) · §5 Verus ⒜(조합자 기능 명세 — portable-fip
+>   증명, Y4 게이트 `just verus-portable-fip` 가 핀한 rev 를 verus-fork 로 재검증 · 변이 대조) · §5 aarch64 `PRFM`
+>   (fip-arch) · `#[fip]` 의 실제 검사(할당 원천 · 재귀 · strict 인증서).
+> - **남음:** §4-2 `Fip` 마커(facade 에 선언용으로 남김 — `FipBound` 와 뜻이 다름) · 꼬리 owned 원소 계약(두 구현
+>   같음) · F1 할당 원천 차이(`y4-alloc` · seL4 retype 은 portable-fip 이 모름 — portable-fip 과제 G) ·
+>   `fip-prelint` 게이트(첫 `#[fip]` 소비자와 함께 — 지금 두면 루트 0 인 공허 게이트) · riscv64 `prefetch.r`
+>   (no-op) · F4 고유성(어느 쪽도 검사 안 함) · 스택 바이트 상한.
+
 > **갱신 (2026-10-31) — 재점검 · 사용자 결정 · 조치.** 2026-10-31 재점검(4 관점 감사 + 반박 검증, Y4 `1930def`)
 > 결과 `fip/core` · `fip/macros` 는 이 노트 이후 바뀌지 않았고 §1 결함은 모두 미결이었다. 사용자 결정:
 > **(1)** Y4-FIP 등급(F1 할당 0 · F2 해제 0 · F3 정적 스택 상한 · F4 고유성 · F5 고차 인자 / Y4-FBIP / Y4-FIP(n))

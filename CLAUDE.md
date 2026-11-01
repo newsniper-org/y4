@@ -96,6 +96,7 @@ Y4 main tree. See `docs/licensing.md` §2.
 | Allocator | DragonFlyBSD lock-free SLAB + LLVM scudo | BSD-3 + Apache-2.0 | Algorithmic fusion (replaces original SLUB+OpenBSD-malloc plan; see `docs/architecture.md` §Memory allocator) |
 | Bootloader | Limine (1st), GRUB2-BLS (2nd), U-Boot (3rd), coreboot (4th) | mixed | Chain-loaded only, never linked |
 | Verification | Verus, Coq, Kani | MIT / LGPL-2.1 / Apache-2/MIT | Build-time only |
+| FIP (Y4-FIP in-place blocks) | portable-fip (same author) | Apache-2.0 | cargo git dep pinned by rev, re-exported by `fip/{core,arch}`; long-term moved into Y4 |
 
 **Excluded from Y4:** `systemd-boot` (boot-entry tool chain is
 systemd-tied; misaligned with Y4's BSD/Redox/Tock+Rust ecosystem),
@@ -124,10 +125,10 @@ Y4/
 │   └── phase_plan.md       Phase A → Phase E progression + entry triggers
 ├── alloc/               y4-alloc (DragonFly SLAB + hardened backend)
 ├── capsules/            y4-capsules (Tock isolation + PCIe enum)
-├── fip/{core,macros,x86_64,aarch64,riscv64}/
-│                        y4-fip-* — Y4-FIP(Fully in-Place, Perceus/FP² 차용) 정의
-│                        (F1–F5 · FBIP · FIP(n), 2026-10-31) + in-place 조합자
-│                        (alloc-transparent) + `#[fip]`(선언, 미강제) + per-ISA 튜닝
+├── fip/{core,arch}/     y4-fip-core / y4-fip-arch — Y4-FIP(Fully in-Place, Perceus/FP²
+│                        차용) 정의(F1–F5 · FBIP · FIP(n), 2026-10-31) + portable-fip
+│                        facade(2026-11-01): Verus 증명된 in-place 조합자(hole 자리값) ·
+│                        strict 인증서 · `#[fip]`/`#[fbip]`(실제 검사) · cfg 선택 arch 튜닝
 │                        (소비자 없음; 미결: `.claude-notes/fip-isa-subcrates-open-items.md`)
 ├── ipc/                 y4-ipc (Redox scheme + LWKT msgport hybrid)
 ├── kernel/              y4-roottask (bare-metal x86_64-unknown-none)

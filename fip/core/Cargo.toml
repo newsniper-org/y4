@@ -3,7 +3,7 @@
 
 [package]
 name = "y4-fip-core"
-description = "Y4-FIP — definition (F1–F5 · FBIP · FIP(n)) and arch-neutral in-place combinators; core-only, alloc-transparent (the combinators themselves never (de)allocate)."
+description = "Y4-FIP facade — the Y4-FIP definition (F1–F5 · FBIP · FIP(n)) over portable-fip's verified in-place combinators, strict certificates and #[fip]/#[fbip] macros."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,6 +12,9 @@ license.workspace = true
 publish = false
 
 [dependencies]
+fip-core.workspace = true
+fip-strict.workspace = true
+fip-macros.workspace = true
 
 [lints]
 workspace = true
