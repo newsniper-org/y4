@@ -10,9 +10,13 @@
 # Hash-driven incremental: each recipe that produces an artifact stamps
 # it via `stamp record` and shortcuts via `freshcheck`.
 #
-# logicutils tools are absorbed into adsmt (P5 option 5, 2026-06-01).
+# logicutils tools (freshcheck · stamp · lu-par · lu-rule) are built from the
+# adsmt repository (P5 option 5, 2026-06-01) and ship as their own package.
+# Y4 keeps using them (user decision 2026-11-01) even though adsmt itself is
+# detached from the Y4 schedule while it is refactored (delegation backends) —
+# known-good: logicutils-testing 1.0.0.rc.r582.5f659436.
 # Install path:
-#   Arch:    pacman -S adsmt-testing      # archlinux PKGBUILD (system-wide)
+#   Arch:    pacman -S logicutils-testing   # archlinux PKGBUILD (system-wide)
 #   cargo:   cargo install --git https://github.com/newsniper-org/adsmt --branch testing \
 #                          freshcheck stamp lu-par lu-rule
 # Man pages (post-install):
@@ -377,9 +381,9 @@ stamps-list:
 tools-check:
     @command -v cargo      >/dev/null || { echo "missing: cargo"; exit 1; }
     @command -v just       >/dev/null || { echo "missing: just"; exit 1; }
-    @command -v freshcheck >/dev/null || { echo "missing: freshcheck — install via 'pacman -S adsmt-testing' (Arch) or 'cargo install --git https://github.com/newsniper-org/adsmt --branch testing freshcheck'"; exit 1; }
+    @command -v freshcheck >/dev/null || { echo "missing: freshcheck — install via 'pacman -S logicutils-testing' (Arch) or 'cargo install --git https://github.com/newsniper-org/adsmt --branch testing freshcheck'"; exit 1; }
     @command -v stamp      >/dev/null || { echo "missing: stamp — same install path as freshcheck"; exit 1; }
     @command -v lu-par     >/dev/null || { echo "missing: lu-par — same install path as freshcheck"; exit 1; }
-    @echo "core tools OK (cargo, just, logicutils — adsmt absorbed)"
+    @echo "core tools OK (cargo, just, logicutils)"
     @[ -x verus-fork/source/target-verus/release/verus ] || echo "warn:  verus-fork submodule binary 없음 (verus-fork/source/target-verus/release/verus) — Verus proofs will fail. Build: git submodule update --init verus-fork && cd verus-fork/source && ./tools/get-z3.sh && source ../tools/activate.fish && vargo build --release"
     @command -v coqc       >/dev/null || echo "warn:  coqc not installed — Coq proofs will fail. See proofs/coq/README.md"

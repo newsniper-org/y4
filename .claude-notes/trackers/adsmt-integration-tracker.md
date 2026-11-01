@@ -3,6 +3,12 @@
 
 # adsmt integration tracker
 
+> **⏸ 분리 (2026-11-01, 사용자):** adsmt 는 위임 백엔드 관련 대규모 리팩터링 예정이라 당분간 Y4 개발 일정에서
+> 분리한다. Y4 의 게이트 · 계획은 adsmt 에 기대지 않는다 — Verus 백엔드는 시스템 Z3 4.16.0 고정, adsmt 레시피
+> (`proofs/verus/justfile` 의 verify-adsmt · cross-check · emit-*)는 보존만 하고 유지하지 않는다, testing channel
+> 추종(`unified-toolkit-pin.lock`)도 멈춘다. logicutils(freshcheck · stamp · lu-par · lu-rule — `logicutils-testing`
+> 패키지, adsmt 저장소에서 빌드)는 계속 쓴다(기준: 1.0.0.rc.r582.5f659436). 재통합 시점은 사용자가 정한다.
+
 > **갱신 정책:** adsmt 의 P5 도달 / v1.0 release / OxiZ 측 milestone /
 > Y4 측 spec 갱신 결정 시점에 row 추가.  v1.0 통합 후 Y4 측 학술
 > 차별점 (power_arch §6.1.8) + 산업 차별점 (§6.2) + prior art ledger

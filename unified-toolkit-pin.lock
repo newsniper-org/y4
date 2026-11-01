@@ -4,6 +4,12 @@
 # logicutils-driven verification: `freshcheck --method=hash` on this file
 # gates the proofs/ rebuild (proofs/README.md §"워크플로우" 정합).
 #
+# ⏸ adsmt detached (user decision 2026-11-01): adsmt is refactoring its
+#   delegation backends, so it is off the Y4 schedule — this lock is frozen
+#   as a record, testing-channel tracking is suspended, and no Y4 gate uses
+#   adsmt (Verus backend = system Z3 4.16.0).  logicutils stays in use
+#   (logicutils-testing 1.0.0.rc.r582.5f659436).
+#
 # Pre-population baseline (refreshed 2026-06-09 — adsmt v1.0.0-rc.33,
 #                          R7.11 emit pipeline end-to-end unblocked):
 #   - adsmt           = 5a1a6ee (tag v1.0.0-rc.33)

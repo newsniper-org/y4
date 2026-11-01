@@ -139,7 +139,8 @@ Y4/
 │                        - verus/ + coq/ = Y4 측 작성 spec (1st-tier
 │                          + reserved 2nd-tier)
 │                        - isabelle/ = adsmt-emit-isabelle 의 자동 emit
-│                          산출물 위치 (R7.7, 2026-06-03) — seL4 팀 측
+│                          산출물 위치 (R7.7, 2026-06-03 — adsmt 는
+│                          2026-11-01 부터 Y4 일정에서 분리, emit 정지) — seL4 팀 측
 │                          L4.verified inbound contract entry (`verus_to_
 │                          isabelle.md` §1.7), `imports Main` 만 의존
 ├── tools/{git-hooks,scudo-fetch.sh}
@@ -161,7 +162,10 @@ Y4/
                          + AOT prelude bank + JIT trace load 모두 직접
                          wire — Y4 측 wrapper Rust 코드 0 (sibling repo
                          `y4-verus2{isabelle,rocq}` 폐기, P-redesign.4/.5
-                         superseded by R7.1)
+                         superseded by R7.1).  **adsmt 분리 (2026-11-01)**:
+                         adsmt 는 위임 백엔드 대규모 리팩터링 중이라 Y4 일정 ·
+                         게이트에서 분리 — Y4 의 Verus 백엔드는 시스템 Z3
+                         4.16.0 고정, logicutils 는 계속 사용
 ```
 
 `hiu/` is the one Phase B subsystem still missing — unblocked since

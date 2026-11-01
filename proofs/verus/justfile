@@ -100,6 +100,15 @@ _check-z3:
         echo "  ✗ Z3 {{_z3_version}} required at {{_z3}} (found: ${v:-none})"; exit 1; \
     fi
 
+# --- adsmt: detached from the Y4 schedule (user decision 2026-11-01) -----
+#
+# adsmt is undergoing a large refactor around delegation backends, so it is
+# off the Y4 schedule for now: no gate or plan depends on it, and the
+# adsmt recipes below (verify-adsmt, verify-adsmt-fast, aot-bake,
+# cross-check, emit-isabelle, emit-rocq, emit-install) are kept for later
+# but not maintained or expected to work meanwhile.  The gate is `verify`
+# (Z3 4.16.0).  logicutils (freshcheck/stamp/…) is unaffected.
+
 # --- 1. verify with a chosen backend -----------------------------------
 
 # Verify with the Z3 backend (system Z3 4.16.0) — the gate.

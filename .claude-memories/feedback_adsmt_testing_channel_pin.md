@@ -4,6 +4,13 @@ description: Y4 가 adsmt + adsmt-contrib 둘 다 testing channel 으로 pin; ad
 type: feedback
 originSessionId: 78ff80c3-5421-425a-9e23-3da166ef2bb9
 ---
+
+> **⏸ 정지 (2026-11-01, 사용자 지시 「adsmt는 위임 백엔드 관련으로 대규모 리팩터링 예정이라 당분간 Y4 개발 일정에서
+> 분리하는 걸로.」 · 「logicutils는 계속 활용해.」):** adsmt 는 Y4 일정 · 게이트에서 분리됐다 — testing channel
+> 추종을 멈추고 `unified-toolkit-pin.lock` 은 기록으로 동결, adsmt 레시피는 보존만 한다. Y4 의 Verus 백엔드는
+> 시스템 Z3 4.16.0 고정. logicutils(`logicutils-testing` 패키지, adsmt 저장소 빌드)는 계속 쓴다 — 기준
+> 1.0.0.rc.r582.5f659436. 아래 본문은 분리 전 방침이다. 재통합은 사용자가 정한다.
+
 Y4 가 adsmt + adsmt-contrib 둘 다 **testing channel pin** — rolling
 release 패턴.
 
