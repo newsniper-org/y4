@@ -112,7 +112,7 @@ Y4/
 ├── CONTRIBUTING.md      DCO sign-off + SPDX header rules
 ├── CLAUDE.md            this file (Claude Code project context)
 ├── Cargo.toml           workspace root
-├── rust-toolchain.toml  channel = stable (MSRV 1.94)
+├── rust-toolchain.toml  channel = stable (MSRV 1.99.1)
 ├── justfile             top-level recipes (ci / scudo-fetch / mirror-memory / ...)
 ├── docs/
 │   ├── architecture.md     canonical design memo

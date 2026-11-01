@@ -29,7 +29,7 @@ set dotenv-load := false
 stamp_store := env_var_or_default("Y4_STAMP_STORE", justfile_directory() + "/.cache/stamps")
 
 # MSRV toolchain = workspace `rust-version`, padded to a full release
-# ("1.94" → "1.94.0") so it names an installable toolchain.
+# ("1.99" → "1.99.0"; "1.99.1" stays) so it names an installable toolchain.
 msrv_toolchain := `v=$(sed -n 's/^rust-version *= *"\(.*\)"/\1/p' Cargo.toml | head -1); case "$v" in *.*.*) echo "$v";; *) echo "$v.0";; esac`
 
 # Number of parallel slots for lu-par. Override with -j on the CLI:

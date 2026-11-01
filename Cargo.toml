@@ -38,7 +38,7 @@ exclude = ["proofs/verus", "kernel", "verus-fork"]
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.94"
+rust-version = "1.99.1"
 authors = ["윤병익 (BYUNG-IK YEUN) and Y4 contributors"]
 license = "Apache-2.0"
 repository = "https://github.com/y4-hypervisor/y4"

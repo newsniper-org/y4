@@ -94,7 +94,7 @@ Y4/
 ├── CLAUDE.md                     project context auto-loaded by Claude Code
 ├── CONTRIBUTING.md               DCO, SPDX header policy, signing
 ├── Cargo.toml                    cargo workspace root (alloc, capsules, fip/*, ipc, scudo-sys)
-├── rust-toolchain.toml           pins channel = stable (MSRV 1.94)
+├── rust-toolchain.toml           pins channel = stable (MSRV 1.99.1)
 ├── justfile                      top-level recipes (ci, scudo-fetch, mirror-memory, ...)
 ├── docs/
 │   ├── architecture.md           canonical design memo

@@ -106,6 +106,13 @@ backends · 최신 Verus upstream 으로부터 rebase.
 
 → 「미정」이 아니라 **「verus-fork 작업 후 재판정」**.  이 구분을 지울 것.
 
+**재판정 (2026-11-01, 사용자 지시 「MSRV를 1.99.1로 올려.」)** — verus-fork rebase(업스트림 0.2026.10.18,
+`559ac52`, rustc 1.99.1 고정)가 끝난 뒤의 결정. `Cargo.toml` · `kernel/Cargo.toml` 의 `rust-version` =
+`"1.99.1"`(충돌 ① 해소 — 하한 1.97 이상), CLAUDE.md · README 의 「MSRV 1.94」 → 1.99.1. 충돌 ② 도 사실상
+해소(verus-fork 1.99.1 ≥ 1.97). 충돌 ③(집행 기계)은 2026-10-31 부터 `just msrv` 게이트(`cargo +1.99.1
+check --workspace --all-targets`)와 pre-push 훅(`just ci-push`)이 집행한다. `rust-toolchain.toml` 은 여전히
+`channel = "stable"`(롤링) — 지금 stable = 1.99.1 이라 MSRV 와 같다. §3 표의 1.94 · 1.95 · 1.96 값은 당시 기록.
+
 ## 5. 「Y4 ABI」가 무엇을 가리키는가 — 실측 판정
 
 **`docs/hiu_abi.md` 는 그 ABI 가 **아니다**.  그리고 그 ABI 는 문서가
